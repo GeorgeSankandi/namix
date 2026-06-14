@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Brim -->
+  <path d="M2 16h20M3 16l1.5-8h15l1.5 8M6 16l0.5-6h11l0.5 6"/>
+  <!-- Crown -->
+  <path d="M8 10l2-6l6 0l2 6"/>
+  <!-- Star on hat -->
+  <path d="M12 4l0.5 1.5l1.5 0.5l-1.5 0.5l-0.5 1.5l-0.5-1.5l-1.5-0.5l1.5-0.5z" fill="#000"/>
+</svg>

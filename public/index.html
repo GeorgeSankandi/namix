@@ -1,0 +1,396 @@
+<!-- --- START OF FILE index.html --- -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NamKuku - Premium Tech Experience</title>
+    
+    <!-- FONT & ICONS -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600;700&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- STYLESHEET -->
+    <link rel="stylesheet" href="/css/style.css">
+    
+    <!-- CROPPER.JS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
+    <!-- LEAFLET (maps) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-sA+e2k8kG6k9qGkJ9Y6bQv0bqv1K8M+Y1m/6b9g8y+M=" crossorigin=""/>
+</head>
+<body>
+
+    <!-- ======== GLOBAL HEADER ======== -->
+    <header>
+        <div class="free-shipping-banner">
+            <p>Free Express Shipping On All Orders In Namibia <span class="flag-icon">
+                <svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img" preserveAspectRatio="xMidYMid meet"><path fill="#009543" d="M1.067 29.701A3.973 3.973 0 0 0 4 31h28a4 4 0 0 0 4-4V9a3.97 3.97 0 0 0-1.019-2.643L1.067 29.701z"></path><path fill="#003580" d="M34.933 6.299A3.973 3.973 0 0 0 32 5H4a4 4 0 0 0-4 4v18a3.97 3.97 0 0 0 1.019 2.643L34.933 6.299z"></path><path fill="#EEE" d="M36 9a4 4 0 0 0-4-4h-.664L0 26.942V27a4 4 0 0 0 4 4h.664L36 9.059V9z"></path><path fill="#D20F34" d="M32.984 5.136L.175 28.108a3.988 3.988 0 0 0 2.912 2.777L35.843 7.949a3.986 3.986 0 0 0-2.859-2.813z"></path><path fill="#FFCE00" d="M8 8l.809 1.981L10.5 8.67l-.29 2.12l2.12-.29l-1.311 1.691L13 13l-1.981.809L12.33 15.5l-2.12-.29l.29 2.12l-1.691-1.311L8 18l-.809-1.981L5.5 17.33l.29-2.12l-2.12.29l1.311-1.691L3 13l1.981-.809L3.67 10.5l2.12.29l-.29-2.12l1.691 1.311z"></path><circle fill="#003580" cx="8" cy="13" r="3.175"></circle><circle fill="#FFCE00" cx="8" cy="13" r="2.467"></circle></svg>
+            </span>
+            <span class="flag-heart" aria-hidden="true"><i class="fas fa-heart"></i></span>
+            </p>
+        </div>
+        <div class="top-header">
+            <a href="#home" class="logo">NamKuku</a>
+            
+            <div class="search-bar">
+                <input type="text" id="search-input" placeholder="Search products...">
+                <button class="search-btn" id="search-btn"><i class="fas fa-search"></i></button>
+            </div>
+            
+            <!-- Desktop Top Menu -->
+            <div class="top-nav-menu desktop-only">
+                <ul>
+                    <li><a href="#home">Home</a></li>
+                    <li><a href="#about">About Us</a></li>
+                    <li><a href="#trade-in">Trade-In</a></li>
+                    <li><a href="#second-hand">Second-Hand</a></li>
+                    <li><a href="#trending">Trending</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                </ul>
+            </div>
+
+            <div class="header-icons">
+                <a href="#login" id="login-link" class="auth-link"><i class="fas fa-sign-in-alt"></i> Login</a>
+                <a href="#register" id="register-link" class="auth-link"><i class="fas fa-user-plus"></i> Sign Up</a>
+                <a href="#" id="logout-link" class="auth-link hidden"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                <div id="account-balance" class="auth-link">
+                    <i class="fas fa-wallet"></i>
+                    <span>Balance: N$0.00</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ======== DESKTOP NAVIGATION ======== -->
+    <nav class="desktop-nav">
+        <ul>
+            <!-- 1. Electronics (With Sub-Dropdown Menus) -->
+            <li>
+                <a href="#category/electronics"><i class="fas fa-mobile-alt"></i>Electronics<span class="dropdown-arrow">▼</span></a>
+                <ul>
+                    <li class="has-submenu">
+                        <a href="#category/phones"><i class="fas fa-phone"></i> Phones & Accessories <span class="submenu-arrow">▶</span></a>
+                        <ul class="nested-submenu">
+                            <li><a href="#category/iphones"><i class="fab fa-apple"></i> iPhones</a></li>
+                            <li><a href="#category/samsung-phones"><i class="fab fa-android" style="color: #3DDC84;"></i> Samsung Phones</a></li>
+                            <li><a href="#category/android-phones"><i class="fas fa-mobile" style="color: #E4002B;"></i> Android Phones</a></li>
+                        </ul>
+                    </li>
+                    <li class="has-submenu">
+                        <a href="#category/tablets"><i class="fas fa-tablet-alt"></i> Tablets <span class="submenu-arrow">▶</span></a>
+                        <ul class="nested-submenu">
+                            <li><a href="#category/ipads"><i class="fab fa-apple"></i> iPads</a></li>
+                            <li><a href="#category/samsung-tabs"><i class="fab fa-android" style="color: #3DDC84;"></i> Samsung Tabs</a></li>
+                            <li><a href="#category/lenovo-tabs"><i class="fas fa-tablet" style="color: #E4002B;"></i> Lenovo/Android</a></li>
+                        </ul>
+                    </li>
+                    <li class="has-submenu">
+                        <a href="#category/laptops"><i class="fas fa-laptop"></i> Computers & Laptops <span class="submenu-arrow">▶</span></a>
+                        <ul class="nested-submenu">
+                            <li><a href="#category/macbooks"><i class="fab fa-apple"></i> MacBooks</a></li>
+                            <li><a href="#category/hp-laptops"><img src="/images/hp.svg" alt="HP" class="brand-icon"> HP Laptops</a></li>
+                            <li><a href="#category/dell-laptops"><img src="https://img.icons8.com/ios-filled/24/000000/dell.png" alt="Dell" class="brand-icon"> Dell Laptops</a></li>
+                            <li><a href="#category/imacs"><i class="fab fa-apple"></i> iMacs</a></li>
+                            <li><a href="#category/hp-aio"><img src="/images/hp.svg" alt="HP" class="brand-icon"> HP All-in-One</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="#category/tvs-audio"><i class="fas fa-tv"></i> TVs & Audio</a></li>
+                    <li><a href="#category/chargers-power"><i class="fas fa-battery-three-quarters"></i> Chargers & Power</a></li>
+                    <li><a href="#category/other-electronics"><i class="fas fa-microchip"></i> Other Electronics</a></li>
+                </ul>
+            </li>
+
+            <!-- 2. Solar Energy -->
+            <li>
+                <a href="#category/solar"><i class="fas fa-sun"></i>Solar Energy<span class="dropdown-arrow">▼</span></a>
+                <ul>
+                    <li><a href="#category/solar-panels"><i class="fas fa-solar-panel"></i> Solar Panels</a></li>
+                    <li><a href="#category/solar-lights"><i class="fas fa-lightbulb"></i> Lights & Lamps</a></li>
+                    <li><a href="#category/inverters-batteries"><i class="fas fa-car-battery"></i> Inverters & Batteries</a></li>
+                    <li><a href="#category/solar-kits"><i class="fas fa-tools"></i> Kits & Accessories</a></li>
+                </ul>
+            </li>
+
+            <!-- 3. Fashion & Beauty -->
+            <li>
+                <a href="#category/fashion"><i class="fas fa-shirt"></i>Fashion & Beauty<span class="dropdown-arrow">▼</span></a>
+                <ul>
+                    <li class="has-submenu">
+                        <a href="#category/clothes-shoes"><i class="fas fa-shoe-prints"></i> Clothes & Shoes <span class="submenu-arrow">▶</span></a>
+                        <ul class="nested-submenu">
+                            <li><a href="#category/mens-clothing"><i class="fas fa-male"></i> Men's Clothing</a></li>
+                            <li><a href="#category/womens-clothing"><i class="fas fa-female"></i> Women's Clothing</a></li>
+                            <li><a href="#category/kids-clothing"><i class="fas fa-child"></i> Children's Clothing</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="#category/traditional-attire"><i class="fas fa-feather-alt"></i> Traditional Attire</a></li>
+                    <li><a href="#category/beauty-products"><i class="fas fa-sparkles"></i> Beauty Products</a></li>
+                    <li><a href="#category/jewellery-accessories"><i class="fas fa-gem"></i> Jewellery & Acc.</a></li>
+                </ul>
+            </li>
+
+            <!-- 4. Groceries -->
+            <li>
+                <a href="#category/groceries"><i class="fas fa-basket-shopping"></i>Groceries<span class="dropdown-arrow">▼</span></a>
+                <ul>
+                    <li><a href="#category/food-items"><i class="fas fa-wheat-awn"></i> Food & Cooking</a></li>
+                    <li><a href="#category/drinks-beverages"><i class="fas fa-wine-glass"></i> Drinks & Beverages</a></li>
+                    <li><a href="#category/household-essentials"><i class="fas fa-pump-soap"></i> Household Essentials</a></li>
+                </ul>
+            </li>
+
+            <!-- 5. Home Appliances -->
+            <li>
+                <a href="#category/appliances"><i class="fas fa-couch"></i>Home Appliances<span class="dropdown-arrow">▼</span></a>
+                <ul>
+                    <li><a href="#category/fridges-freezers"><i class="fas fa-snowflake"></i> Fridges & Freezers</a></li>
+                    <li><a href="#category/stoves-cookers"><i class="fas fa-fire-burner"></i> Stoves & Cookers</a></li>
+                    <li class="has-submenu">
+                        <a href="#category/furniture"><i class="fas fa-chair"></i> Furniture <span class="submenu-arrow">▶</span></a>
+                        <ul class="nested-submenu">
+                            <li><a href="#category/beds"><i class="fas fa-bed"></i> Beds</a></li>
+                            <li><a href="#category/tables"><i class="fas fa-table"></i> Tables</a></li>
+                            <li><a href="#category/chairs"><i class="fas fa-chair"></i> Chairs</a></li>
+                            <li><a href="#category/sofas"><i class="fas fa-couch"></i> Sofas</a></li>
+                            <li><a href="#category/wardrobes"><i class="fas fa-door-closed"></i> Wardrobes</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="#category/kitchen-tools"><i class="fas fa-kitchen-set"></i> Kitchen Tools</a></li>
+                </ul>
+            </li>
+
+            <!-- 6. Vehicles & Parts -->
+            <li>
+                <a href="#category/vehicles"><i class="fas fa-car"></i>Vehicles & Parts<span class="dropdown-arrow">▼</span></a>
+                <ul>
+                    <li><a href="#category/cars-bakkies"><i class="fas fa-truck-pickup"></i> Cars & Bakkies</a></li>
+                    <li><a href="#category/motorcycles"><i class="fas fa-motorcycle"></i> Motorcycles</a></li>
+                    <li><a href="#category/vehicle-parts"><i class="fas fa-gauge-simple"></i> Parts & Tyres</a></li>
+                    <li><a href="#category/bicycles"><i class="fas fa-bicycle"></i> Bicycles</a></li>
+                </ul>
+            </li>
+
+            <!-- 7. Local Crafts & Handmade -->
+            <li>
+                <a href="#category/crafts"><i class="fas fa-paint-brush"></i>Local Crafts<span class="dropdown-arrow">▼</span></a>
+                <ul>
+                    <li><a href="#category/handmade-crafts"><i class="fas fa-hammer"></i> Handmade Crafts</a></li>
+                    <li><a href="#category/traditional-items"><i class="fas fa-mask"></i> Traditional Items</a></li>
+                    <li><a href="#category/art-decor"><i class="fas fa-palette"></i> Art & Decor</a></li>
+                </ul>
+            </li>
+
+            <!-- 8. Farm & Food Products -->
+            <li>
+                <a href="#category/farm"><i class="fas fa-tractor"></i>Farm Products<span class="dropdown-arrow">▼</span></a>
+                <ul>
+                    <li><a href="#category/fresh-produce"><i class="fas fa-carrot"></i> Fresh Produce</a></li>
+                    <li><a href="#category/meat-poultry"><i class="fas fa-drumstick-bite"></i> Meat & Poultry</a></li>
+                    <li><a href="#category/farm-tools"><i class="fas fa-screwdriver-wrench"></i> Farm Tools</a></li>
+                </ul>
+            </li>
+
+            <!-- 9. Charcoal & Fuel -->
+            <li>
+                <a href="#category/fuel"><i class="fas fa-fire"></i>Charcoal & Fuel<span class="dropdown-arrow">▼</span></a>
+                <ul>
+                    <li><a href="#category/charcoal"><i class="fas fa-circle" style="color: #333;"></i> Charcoal</a></li>
+                    <li><a href="#category/firewood"><i class="fas fa-tree"></i> Firewood</a></li>
+                    <li><a href="#category/other-fuel"><i class="fas fa-gas-pump"></i> Other Fuel</a></li>
+                </ul>
+            </li>
+
+            <!-- 10. Other / Miscellaneous -->
+            <li>
+                <a href="#category/other"><i class="fas fa-ellipsis-h"></i>Other / Misc<span class="dropdown-arrow">▼</span></a>
+                <ul>
+                    <li><a href="#category/books-stationery"><i class="fas fa-book"></i> Books & Stationery</a></li>
+                    <li><a href="#category/sports-toys"><i class="fas fa-basketball"></i> Sports & Toys</a></li>
+                    <li><a href="#category/services"><i class="fas fa-briefcase"></i> Services</a></li>
+                    <li><a href="#category/anything-else"><i class="fas fa-box-open"></i> Anything Else</a></li>
+                </ul>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- ======== MAIN CONTENT AREA ======== -->
+    <main id="app-root"></main>
+    
+    <!-- ======== IMAGE CROPPER MODAL ======== -->
+    <div id="image-cropper-modal" class="image-cropper-modal">
+        <div class="cropper-container">
+            <h3>Crop Image to Square</h3>
+            <div class="image-preview-container">
+                <img id="cropper-image" src="" alt="Image to crop">
+            </div>
+            <div class="cropper-buttons">
+                <button type="button" class="btn-cancel" id="crop-cancel-btn">Cancel</button>
+                <button type="button" class="btn-crop" id="crop-confirm-btn">Crop & Apply</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======== MOBILE SIDE MENU (POPUP) ======== -->
+    <div class="mobile-side-menu-overlay" id="mobile-menu-overlay"></div>
+    <div class="mobile-side-menu" id="mobile-side-menu">
+        <div class="menu-header">
+            <h3>Menu</h3>
+            <button class="close-menu-btn" id="close-menu-btn">&times;</button>
+        </div>
+        <ul class="mobile-menu-links">
+            <li><a href="#home"><i class="fas fa-home"></i> Home</a></li>
+            <li><a href="#about"><i class="fas fa-info-circle"></i> About Us</a></li>
+            <li><a href="#trade-in"><i class="fas fa-sync-alt"></i> Trade-In</a></li>
+            <li><a href="#second-hand"><i class="fas fa-recycle"></i> Second-Hand</a></li>
+            <li><a href="#trending"><i class="fas fa-fire"></i> Trending</a></li>
+            <li><a href="#contact"><i class="fas fa-envelope"></i> Contact</a></li>
+        </ul>
+    </div>
+
+    <!-- ======== MOBILE BOTTOM NAVIGATION ======== -->
+    <nav class="mobile-bottom-nav">
+        <ul>
+            <li class="mobile-nav-item">
+                <a href="javascript:void(0)" class="mobile-nav-link" data-menu="electronics-menu">
+                    <i class="fas fa-mobile-alt"></i><span>Electronics</span>
+                </a>
+                <ul class="mobile-dropup-menu" id="electronics-menu">
+                    <li><a href="#category/electronics"><strong>All Tech</strong></a></li>
+                    <li><a href="#category/phones">Phones</a></li>
+                    <li><a href="#category/computers">Computers</a></li>
+                </ul>
+            </li>
+            
+            <li class="mobile-nav-item">
+                <a href="javascript:void(0)" class="mobile-nav-link" data-menu="solar-menu">
+                    <i class="fas fa-sun"></i><span>Solar</span>
+                </a>
+                <ul class="mobile-dropup-menu" id="solar-menu">
+                    <li><a href="#category/solar"><strong>All Solar</strong></a></li>
+                    <li><a href="#category/solar-panels">Solar Panels</a></li>
+                    <li><a href="#category/solar-lights">Solar Lights</a></li>
+                </ul>
+            </li>
+
+            <li class="mobile-nav-item">
+                <a href="javascript:void(0)" class="mobile-nav-link" data-menu="fashion-menu">
+                    <i class="fas fa-shirt"></i><span>Fashion</span>
+                </a>
+                <ul class="mobile-dropup-menu" id="fashion-menu">
+                    <li><a href="#category/fashion"><strong>All Fashion</strong></a></li>
+                    <li><a href="#category/clothes-shoes">Clothing</a></li>
+                    <li><a href="#category/traditional-attire">Traditional</a></li>
+                </ul>
+            </li>
+
+            <li class="mobile-nav-item">
+                <a href="javascript:void(0)" class="mobile-nav-link" data-menu="groceries-menu">
+                    <i class="fas fa-basket-shopping"></i><span>Groceries</span>
+                </a>
+                <ul class="mobile-dropup-menu" id="groceries-menu">
+                    <li><a href="#category/groceries"><strong>All Groceries</strong></a></li>
+                    <li><a href="#category/food-items">Food Items</a></li>
+                    <li><a href="#category/drinks-beverages">Drinks</a></li>
+                </ul>
+            </li>
+
+            <li class="mobile-nav-item">
+                <a href="javascript:void(0)" class="mobile-nav-link" data-menu="appliances-menu">
+                    <i class="fas fa-couch"></i><span>Home</span>
+                </a>
+                <ul class="mobile-dropup-menu" id="appliances-menu">
+                    <li><a href="#category/appliances"><strong>All Appliances</strong></a></li>
+                    <li><a href="#category/fridges-freezers">Refrigerators</a></li>
+                    <li><a href="#category/furniture">Furniture</a></li>
+                </ul>
+            </li>
+        </ul>
+    </nav>
+    
+    <!-- ======== GLOBAL FOOTER ======== -->
+    <footer class="footer">
+        <div>
+            <h4>Shop</h4>
+            <ul>
+                <li><a href="#category/electronics">Electronics</a></li>
+                <li><a href="#category/solar">Solar Panels</a></li>
+                <li><a href="#category/fashion">Clothes & Shoes</a></li>
+                <li><a href="#category/groceries">Groceries</a></li>
+                <li><a href="#category/vehicles">Cars & Bakkies</a></li>
+            </ul>
+        </div>
+        <div>
+            <h4>Customer Service</h4>
+            <ul>
+                <li><a href="#contact">Contact Us</a></li>
+                <li><a href="#shipping">Delivery Info</a></li>
+                <li><a href="#returns">Returns</a></li>
+            </ul>
+        </div>
+        <div>
+            <h4>About NamKuku</h4>
+            <ul>
+                <li><a href="#about">Our Story</a></li>
+                <li><a href="#how-to-sell">Sell on NamKuku</a></li>
+                <li><a href="#terms">Terms & Conditions</a></li>
+                <li><a href="#privacy">Privacy Policy</a></li>
+                <li><a href="#faqs">FAQ's</a></li>
+            </ul>
+        </div>
+        <div>
+            <h4>Follow Us</h4>
+            <p>Join our community of tech enthusiasts.</p>
+        </div>
+    </footer>
+
+    <!-- ======== FLOATING HAMBURGER MENU (Mobile Only) ======== -->
+    <button class="hamburger-btn floating-hamburger" aria-label="Open Menu">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- ======== CHATBOT WIDGET ======== -->
+    <div class="chatbot-container">
+        <div class="chat-widget">
+            <div class="chat-header">
+                <h5>Kuku</h5>
+                <button class="chat-close-btn">&times;</button>
+            </div>
+            <div class="chat-messages" id="chat-messages">
+                <div class="message bot">Hello! How can I help you find the perfect tech today?</div>
+            </div>
+            <div class="chat-input-container">
+                <form id="chat-form">
+                    <input type="text" id="chat-input" placeholder="Ask about products..." autocomplete="off">
+                    <button type="submit"><i class="fas fa-paper-plane"></i></button>
+                </form>
+            </div>
+        </div>
+        <button class="chat-toggle-btn" aria-label="Open Kuku chat">
+            <img src="/images/old-lady-face.svg" alt="Kuku" class="assistant-icon">
+        </button>
+        <div class="chatbot-marquee" aria-hidden="false">
+            <div class="marquee"><span>Kuku AI is here to help with anything! Ask Kuku for Assistance! &nbsp;&nbsp; • &nbsp;&nbsp; Kuku AI is here to help with anything! Ask Kuku for Assistance!</span></div>
+        </div>
+    </div>
+
+    <!-- ======== FLOATING CART ======== -->
+    <div class="floating-cart-container" aria-hidden="false">
+        <a href="#cart" class="cart" aria-label="Open cart">
+            <i class="fas fa-shopping-cart"></i>
+            <span class="cart-badge">0</span>
+        </a>
+    </div>
+
+    <!-- CROPPER.JS LIBRARY -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-o9N1j7k3W2a3z6a1b6y1x3Y0f4x5Y6a7b8c9d0e1f2g=" crossorigin=""></script>
+    <script src="/socket.io/socket.io.js"></script>
+    
+    <!-- JAVASCRIPT MODULES -->
+    <script type="module" src="/js/main.js"></script>
+
+</body>
+</html>
+<!-- --- END OF FILE index.html --- -->
