@@ -47,15 +47,29 @@ const signup = async (req, res) => {
     let userSellerType = 'customer';
     let isApproved = true;
 
-    // Permit vehicles, property, food, and books seller types under approved verification checks
     if (['electronics', 'solar', 'fashion', 'groceries', 'appliances', 'vehicles', 'crafts', 'farm', 'fuel', 'other'].includes(sellerType)) {
       userSellerType = sellerType;
       isApproved = false; // Resellers require administrative verification
       if (!physicalAddress) {
         return res.status(400).json({ message: 'Physical address is required for reseller signup.' });
       }
-      if (!req.file) {
+      if (!req.files || !req.files['businessRegistrationDocument']) {
         return res.status(400).json({ message: 'Business registration document (PDF, max 25MB) is required for reseller signup.' });
+      }
+      if (!req.files['sellerIdImage']) {
+        return res.status(400).json({ message: 'A picture of your ID is required for reseller signup.' });
+      }
+    }
+
+    let businessRegistrationDocumentPath = '';
+    let sellerIdImagePath = '';
+
+    if (req.files) {
+      if (req.files['businessRegistrationDocument'] && req.files['businessRegistrationDocument'][0]) {
+        businessRegistrationDocumentPath = `/uploads/reseller-documents/${req.files['businessRegistrationDocument'][0].filename}`;
+      }
+      if (req.files['sellerIdImage'] && req.files['sellerIdImage'][0]) {
+        sellerIdImagePath = `/uploads/reseller-documents/${req.files['sellerIdImage'][0].filename}`;
       }
     }
 
@@ -67,8 +81,9 @@ const signup = async (req, res) => {
       isApproved: isApproved,
       isVerified: false,
       sellerIdNumber: sellerIdNumber || '',
+      sellerIdImage: sellerIdImagePath,
       businessRegistrationNumber: businessRegistrationNumber || '',
-      businessRegistrationDocument: req.file ? `/uploads/reseller-documents/${req.file.filename}` : '',
+      businessRegistrationDocument: businessRegistrationDocumentPath,
       physicalAddress: physicalAddress || ''
     });
 

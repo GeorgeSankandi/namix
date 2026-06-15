@@ -37,6 +37,10 @@ const userSchema = mongoose.Schema({
     type: String,
     default: ''
   },
+  sellerIdImage: {
+    type: String,
+    default: ''
+  },
   businessRegistrationNumber: {
     type: String,
     default: ''

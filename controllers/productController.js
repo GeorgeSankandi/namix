@@ -145,7 +145,14 @@ const createProduct = async (req, res) => {
             giftCardEnabled: req.body.giftCardEnabled,
             giftCardType: req.body.giftCardType,
             giftCardValue: req.body.giftCardValue,
-            exploreMoreReseller: req.body.exploreMoreReseller || undefined
+            exploreMoreReseller: req.body.exploreMoreReseller || undefined,
+            // Trust Visibility Badges
+            showTradeIn: req.body.showTradeIn !== undefined ? req.body.showTradeIn : true,
+            showLayBye: req.body.showLayBye !== undefined ? req.body.showLayBye : true,
+            showDeposit: req.body.showDeposit !== undefined ? req.body.showDeposit : true,
+            showDeliveryNationwide: req.body.showDeliveryNationwide !== undefined ? req.body.showDeliveryNationwide : true,
+            showOneYearWarranty: req.body.showOneYearWarranty !== undefined ? req.body.showOneYearWarranty : true,
+            showFifteenDayReturns: req.body.showFifteenDayReturns !== undefined ? req.body.showFifteenDayReturns : true
           });
 
           if (req.body.seller) product.seller = req.body.seller;

@@ -74,6 +74,14 @@ const productSchema = mongoose.Schema({
   purchaseCount: { type: Number, default: 0 },
   condition: { type: String, enum: ['new', 'second-hand'], default: 'new' },
   viewers: [viewerSchema],
+  
+  // Trust Visibility Toggles
+  showTradeIn: { type: Boolean, default: true },
+  showLayBye: { type: Boolean, default: true },
+  showDeposit: { type: Boolean, default: true },
+  showDeliveryNationwide: { type: Boolean, default: true },
+  showOneYearWarranty: { type: Boolean, default: true },
+  showFifteenDayReturns: { type: Boolean, default: true }
 }, {
   timestamps: true
 });
