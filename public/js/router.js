@@ -74,7 +74,7 @@ export const handleRouteChange = async () => {
 
     switch (path) {
         case 'home':
-            ui.renderHomePage();
+            await ui.renderHomePage();
             break;
         
         case 'category':
@@ -154,7 +154,13 @@ export const handleRouteChange = async () => {
         case 'how-to-sell': ui.renderHowToSellPage ? ui.renderHowToSellPage() : ui.renderHomePage(); break;
         case 'terms': ui.renderTermsAndConditionsPage ? ui.renderTermsAndConditionsPage() : ui.renderHomePage(); break;
         case 'privacy': ui.renderPrivacyPolicyPage ? ui.renderPrivacyPolicyPage() : ui.renderHomePage(); break;
-        case 'faqs': ui.renderFaqsPage ? ui.renderFaqsPage() : ui.renderHomePage(); break;
+        case 'faqs': 
+            if (ui.renderFaqsPage) {
+                await ui.renderFaqsPage();
+            } else {
+                await ui.renderHomePage();
+            }
+            break;
         case 'contact': ui.renderContactPage ? ui.renderContactPage() : ui.renderHomePage(); break;
         case 'trade-in': ui.renderTradeInPage ? ui.renderTradeInPage() : ui.renderHomePage(); break;
         case 'shipping': ui.renderShippingInfoPage ? ui.renderShippingInfoPage() : ui.renderHomePage(); break;
@@ -223,12 +229,12 @@ export const handleRouteChange = async () => {
 
                     console.log('router: calling renderAdminPage with', { productsCount: allProducts.length, usersCount: allUsers.length, viewersCount: allViewers.length, transactionsCount: allTransactions.length, faqsCount: allFAQs.length, sellerType });
                     
-                    ui.renderAdminPage(allProducts, allUsers, allViewers, allTransactions, allFAQs, settings, sellerType);
+                    await ui.renderAdminPage(allProducts, allUsers, allViewers, allTransactions, allFAQs, settings, sellerType);
                     console.log('router: rendered admin page successfully');
                 } catch (err) {
                     console.error('Error loading admin dashboard:', err);
                     // Still render the page with empty data so user can see it
-                    ui.renderAdminPage([], [], [], [], [], [], sellerType);
+                    await ui.renderAdminPage([], [], [], [], [], [], sellerType);
                 }
             } else {
                 console.log('router: not admin logged in, redirecting to admin-login');
@@ -241,7 +247,7 @@ export const handleRouteChange = async () => {
              break;
 
         default:
-            ui.renderHomePage();
+            await ui.renderHomePage();
             break;
     }
     

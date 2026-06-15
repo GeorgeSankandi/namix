@@ -1,5 +1,3 @@
-// --- START OF FILE public/js/main.js ---
-
 import { handleRouteChange } from './router.js';
 import { CartManager } from './cart.js';
 import * as ui from './ui.js';
@@ -161,6 +159,8 @@ document.body.addEventListener('click', async (e) => {
             document.getElementById('faq-id-hidden').value = faqToEdit._id;
             document.getElementById('faq-question').value = faqToEdit.question;
             document.getElementById('faq-answer').value = faqToEdit.answer;
+            const faqSaveBtn = document.getElementById('faq-save-btn');
+            if (faqSaveBtn) faqSaveBtn.textContent = 'Update FAQ';
             const addFaqTabBtn = document.querySelector('.admin-tab-btn[data-tab="faqs"]');
             if (addFaqTabBtn) addFaqTabBtn.click();
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -179,6 +179,38 @@ document.body.addEventListener('click', async (e) => {
                 location.reload();
             } catch (err) {
                 alert('Error deleting FAQ: ' + err.message);
+            }
+        }
+        return;
+    }
+
+    // --- Admin Brands Event Delegation ---
+    const editBrandBtn = e.target.closest('.edit-brand-btn');
+    if (editBrandBtn) {
+        e.preventDefault();
+        const brandId = editBrandBtn.dataset.brandId;
+        const allBrands = await api.fetchBrands();
+        const brandToEdit = allBrands.find(b => b._id === brandId);
+        if (brandToEdit) {
+            document.getElementById('brand-id-hidden').value = brandToEdit._id;
+            document.getElementById('brand-name').value = brandToEdit.name;
+            const brandSaveBtn = document.getElementById('brand-save-btn');
+            if (brandSaveBtn) brandSaveBtn.textContent = 'Update Brand';
+        }
+        return;
+    }
+
+    const deleteBrandBtn = e.target.closest('.delete-brand-btn');
+    if (deleteBrandBtn) {
+        e.preventDefault();
+        const brandId = deleteBrandBtn.dataset.brandId;
+        if (confirm('Are you sure you want to delete this brand?')) {
+            try {
+                await api.deleteBrand(brandId);
+                alert('Brand deleted successfully.');
+                location.reload();
+            } catch (err) {
+                alert('Error deleting brand: ' + err.message);
             }
         }
         return;
@@ -241,8 +273,8 @@ document.body.addEventListener('click', async (e) => {
             { day: 24, phase: "Lead-up", peak: "21:00", persona: "Wishlist-Builder", score: 82 },
             { day: 25, phase: "Payday-Eve", peak: "23:30", persona: "Impulse", score: 92 },
             { day: 26, phase: "Payday-Eve", peak: "00:00", persona: "Impulse", score: 95 },
-            { day: 27, phase: "Payday-Eve", peak: "09:00", persona: "Early-Adopter", score: 100 },
-            { day: 28, phase: "Payday-Eve", peak: "10:00", persona: "Early-Adopter", score: 98 },
+            { day: 27, phase: "Payday-Peak", peak: "09:00", persona: "Early-Adopter", score: 100 },
+            { day: 28, phase: "Payday-Peak", peak: "10:00", persona: "Early-Adopter", score: 98 },
             { day: 29, phase: "Retention", peak: "18:00", persona: "Bundle-Buyer", score: 82 },
             { day: 30, phase: "Retention", peak: "19:00", persona: "Bundle-Buyer", score: 80 },
             { day: 31, phase: "Retention", peak: "20:00", persona: "Bundle-Buyer", score: 78 }
@@ -361,6 +393,31 @@ document.body.addEventListener('change', async (e) => {
             checkbox.checked = !isApproved; 
         }
     }
+    
+    // Dynamic Hero file configuration change event listener
+    if (e.target.classList.contains('dynamic-hero-file-input')) {
+        const fileInput = e.target;
+        const settingKey = fileInput.dataset.settingKey;
+        if (fileInput.files.length > 0) {
+            try {
+                const fd = new FormData();
+                fd.append('image', fileInput.files[0]);
+                const res = await fetch('/api/upload/hero', { method: 'POST', body: fd });
+                if (!res.ok) throw new Error('Upload failed');
+                const data = await res.json();
+                if (data.image) {
+                    const textInput = document.querySelector(`input[name="${settingKey}"]`);
+                    if (textInput) {
+                        textInput.value = data.image;
+                        textInput.dispatchEvent(new Event('change'));
+                        alert('Image uploaded successfully and path saved into URL input.');
+                    }
+                }
+            } catch (err) {
+                alert('File upload failed: ' + err.message);
+            }
+        }
+    }
 });
 
 // Submit Form Handler Routing
@@ -415,13 +472,35 @@ document.body.addEventListener('submit', async e => {
         }
         return;
     }
+
+    // --- Admin Brand Form (Create/Update) ---
+    if (e.target.id === 'brand-form') {
+        e.preventDefault();
+        const brandId = document.getElementById('brand-id-hidden').value;
+        const name = document.getElementById('brand-name').value;
+
+        try {
+            if (brandId) {
+                await api.updateBrand(brandId, { name });
+                alert('Brand updated successfully!');
+            } else {
+                await api.createBrand({ name });
+                alert('Brand created successfully!');
+            }
+            location.reload();
+        } catch (err) {
+            alert('Error saving brand: ' + err.message);
+        }
+        return;
+    }
     
     // --- Admin Site Settings Form ---
     if (e.target.id === 'site-settings-form') {
         e.preventDefault();
         const form = e.target;
-        const inputs = form.querySelectorAll('input[type="text"]');
-        const fileInputs = form.querySelectorAll('input[type="file"]');
+        // Ignore specific cards manager text inputs from being updated dynamically as standard key-value
+        const inputs = form.querySelectorAll('input[type="text"]:not(.card-title-input):not(.card-link-input):not(.card-image-url-input)');
+        const fileInputs = form.querySelectorAll('input[type="file"]:not(.dynamic-hero-file-input):not(.card-image-file-input)');
         
         try {
             // Handle URL inputs
@@ -438,6 +517,7 @@ document.body.addEventListener('submit', async e => {
                     const res = await fetch('/api/upload/hero', { method: 'POST', body: fd });
                     const data = await res.json();
                     
+                    // Prioritize dataset settingKey for dynamic multi-slide edits
                     let settingKey = fileInput.dataset.settingKey;
                     if (!settingKey) {
                         if (fileInput.id.startsWith('home-hero-file-')) {
@@ -456,6 +536,11 @@ document.body.addEventListener('submit', async e => {
                         await api.updateSetting(settingKey, data.image);
                     }
                 }
+            }
+            
+            // Save dynamically edited Home Page Category Cards into global collection setting
+            if (window.currentUnderHeroCards) {
+                await api.updateSetting('home_under_hero_cards', JSON.stringify(window.currentUnderHeroCards));
             }
             
             alert('Site settings saved successfully!');
@@ -528,8 +613,12 @@ document.body.addEventListener('submit', async e => {
         const sellerIdNumber = e.target.elements.sellerIdNumber ? e.target.elements.sellerIdNumber.value.trim() : '';
         const businessRegistrationNumber = e.target.elements.businessRegistrationNumber ? e.target.elements.businessRegistrationNumber.value.trim() : '';
         const physicalAddress = e.target.elements.physicalAddress ? e.target.elements.physicalAddress.value.trim() : '';
+        
         const registrationDocumentInput = e.target.elements.businessRegistrationDocument;
         const businessRegistrationDocument = registrationDocumentInput && registrationDocumentInput.files.length ? registrationDocumentInput.files[0] : null;
+
+        const sellerIdImageInput = e.target.elements.sellerIdImage;
+        const sellerIdImage = sellerIdImageInput && sellerIdImageInput.files.length ? sellerIdImageInput.files[0] : null;
 
         const msgEl = document.getElementById('register-message');
         if (msgEl) msgEl.textContent = '';
@@ -561,10 +650,18 @@ document.body.addEventListener('submit', async e => {
                 }
                 return;
             }
+            if (!sellerIdImage) {
+                if (msgEl) {
+                    msgEl.textContent = 'A picture upload of your ID is required for reseller accounts.';
+                    msgEl.classList.remove('success');
+                    msgEl.classList.add('error');
+                }
+                return;
+            }
         }
         
         try {
-            const res = await api.sessionSignup(name, email, password, sellerType, sellerIdNumber, businessRegistrationNumber, physicalAddress, businessRegistrationDocument);
+            const res = await api.sessionSignup(name, email, password, sellerType, sellerIdNumber, businessRegistrationNumber, physicalAddress, businessRegistrationDocument, sellerIdImage);
             
             if (res.pendingApproval) {
                 if (msgEl) {
@@ -658,7 +755,6 @@ async function handleProductFormSubmit(e) {
     const form = e.target;
     const hiddenId = form.elements['product-id-hidden'].value;
     const category = form.elements['product-category'].value;
-    const isClothes = ['clothes', 'clothing', 'womens-clothes', 'mens-clothes'].includes(category.toLowerCase());
 
     if (!hiddenId) {
         const hasMainImageUrl = form.elements['product-image'].value.trim() !== '';
@@ -689,13 +785,16 @@ async function handleProductFormSubmit(e) {
         return map[id];
     });
 
-    const clothingFilters = [
-        'product-filter-tops', 'product-filter-bottoms', 'product-filter-official',
-        'product-filter-traditional', 'product-filter-shoes', 'product-filter-accessories',
-        'product-filter-furniture', 'product-filter-appliances'
-    ]
-    .filter(id => form.elements[id]?.checked)
-    .map(id => id.replace('product-filter-', ''));
+    // RETRIEVE FILTER TAGS FROM THE NEW DYNAMIC TAG MANAGER FIELD INSTEAD OF CHECKBOXES
+    const dynamicFiltersInput = document.getElementById('product-clothing-filters-hidden');
+    let clothingFilters = [];
+    if (dynamicFiltersInput && dynamicFiltersInput.value) {
+        try {
+            clothingFilters = JSON.parse(dynamicFiltersInput.value);
+        } catch (parseError) {
+            console.error('Failed to parse dynamic clothing filters:', parseError);
+        }
+    }
     
     const features = Array.from(document.querySelectorAll('#product-features-container .ai-feature-input'))
                          .map(input => input.value.trim())
@@ -738,7 +837,14 @@ async function handleProductFormSubmit(e) {
         colorsEnabled: document.getElementById('enable-product-colors')?.checked || false,
         sizes: sizes,
         thumbnails: carouselUrls,
-        exploreMoreReseller: form.elements['product-exploreMoreReseller']?.value || undefined
+        exploreMoreReseller: form.elements['product-exploreMoreReseller']?.value || undefined,
+        // Added trust visibility configurations:
+        showTradeIn: form.elements['product-showTradeIn']?.checked,
+        showLayBye: form.elements['product-showLayBye']?.checked,
+        showDeposit: form.elements['product-showDeposit']?.checked,
+        showDeliveryNationwide: form.elements['product-showDeliveryNationwide']?.checked,
+        showOneYearWarranty: form.elements['product-showOneYearWarranty']?.checked,
+        showFifteenDayReturns: form.elements['product-showFifteenDayReturns']?.checked
     };
     
     if (productData.image && !productData.thumbnails.includes(productData.image)) {
@@ -773,14 +879,12 @@ async function handleProductFormSubmit(e) {
         }
     }
 
-    // CHANGED: Support uploading the cropped binary Blobs cached in window.croppedProductImages
-    const croppedImages = window.croppedProductImages || [];
-    if (croppedImages.length > 0) {
+    const fileInput = document.getElementById('product-images');
+    if (fileInput && fileInput.files.length > 0) {
         const filePaths = [];
-        for (let i = 0; i < croppedImages.length; i++) {
-            const blob = croppedImages[i];
+        for (const file of fileInput.files) {
             const fd = new FormData();
-            fd.append('image', blob, `cropped-image-${Date.now()}-${i}.jpg`);
+            fd.append('image', file);
             try {
                 const res = await fetch('/api/upload/product', { method: 'POST', body: fd });
                 if (res.ok) {
@@ -795,30 +899,6 @@ async function handleProductFormSubmit(e) {
         if (filePaths.length > 0) {
             if (!productData.image) productData.image = filePaths[0];
             productData.thumbnails = [...filePaths, ...productData.thumbnails];
-        }
-        window.croppedProductImages = []; // Reset after upload
-    } else {
-        const fileInput = document.getElementById('product-images');
-        if (fileInput && fileInput.files.length > 0) {
-            const filePaths = [];
-            for (const file of fileInput.files) {
-                const fd = new FormData();
-                fd.append('image', file);
-                try {
-                    const res = await fetch('/api/upload/product', { method: 'POST', body: fd });
-                    if (res.ok) {
-                        const json = await res.json();
-                        filePaths.push(json.image);
-                    }
-                } catch (err) {
-                    console.error("Upload failed", err);
-                }
-            }
-            
-            if (filePaths.length > 0) {
-                if (!productData.image) productData.image = filePaths[0];
-                productData.thumbnails = [...filePaths, ...productData.thumbnails];
-            }
         }
     }
 

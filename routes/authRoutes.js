@@ -19,33 +19,23 @@ const resellerDocStorage = multer.diskStorage({
     cb(null, resellerDocumentDir);
   },
   filename(req, file, cb) {
-    cb(null, `business-registration-${Date.now()}${path.extname(file.originalname).toLowerCase()}`);
+    cb(null, `${file.fieldname}-${Date.now()}${path.extname(file.originalname).toLowerCase()}`);
   },
 });
 
-const resellerDocFilter = (req, file, cb) => {
-  const isPDF = file.mimetype === 'application/pdf' || path.extname(file.originalname).toLowerCase() === '.pdf';
-  if (isPDF) {
-    cb(null, true);
-  } else {
-    cb(new Error('Business registration document must be a PDF file.'));
-  }
-};
-
-const uploadResellerDocument = multer({
+const uploadFields = multer({
   storage: resellerDocStorage,
-  fileFilter: resellerDocFilter,
   limits: { fileSize: 25 * 1024 * 1024 },
-}).single('businessRegistrationDocument');
+}).fields([
+  { name: 'businessRegistrationDocument', maxCount: 1 },
+  { name: 'sellerIdImage', maxCount: 1 }
+]);
 
 const handleResellerDocumentUpload = (req, res, next) => {
   if (req.is('multipart/form-data')) {
-    uploadResellerDocument(req, res, (err) => {
+    uploadFields(req, res, (err) => {
       if (err) {
-        const message = err.code === 'LIMIT_FILE_SIZE'
-          ? 'Business registration PDF must be 25MB or smaller.'
-          : err.message || 'Failed to upload business registration document.';
-        return res.status(400).json({ message });
+        return res.status(400).json({ message: err.message || 'Failed to upload reseller documents.' });
       }
       next();
     });
@@ -57,9 +47,8 @@ const handleResellerDocumentUpload = (req, res, next) => {
 // Session-based signup
 router.post('/signup', handleResellerDocumentUpload, signup);
 
-// Session-based login handled by passport at /auth/login via frontend POST
+// Session-based login
 router.post('/login', passport.authenticate('local'), (req, res) => {
-  // Ensure session is saved before responding
   req.session.save((err) => {
     if (err) {
       console.error('Session save error:', err);
@@ -70,7 +59,6 @@ router.post('/login', passport.authenticate('local'), (req, res) => {
     
     const user = req.user;
     
-    // Also generate a JWT token as fallback for API authentication
     const token = jwt.sign(
       { id: user._id, email: user.email },
       process.env.JWT_SECRET || 'dev_fallback_secret_change_me',
@@ -90,7 +78,7 @@ router.post('/login', passport.authenticate('local'), (req, res) => {
   });
 });
 
-// Return the current logged-in user for session-based auth (used when admin logged-in via session cookies)
+// Return current user session info
 router.get('/me', (req, res) => {
   if (req.user) {
     res.json({
@@ -106,9 +94,7 @@ router.get('/me', (req, res) => {
 });
 
 router.post('/logout', logout);
-
 router.post('/forgot', forgotPassword);
-
 router.post('/reset/:token', resetPassword);
 
 export default router;

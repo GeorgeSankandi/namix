@@ -1,5 +1,3 @@
-// --- START OF FILE public/js/chatbot.js ---
-
 // Track the last thing the bot said to provide context for "Yes/No" answers
 let lastBotReplyText = "";
 
@@ -162,6 +160,40 @@ export function initChatbot() {
     const chatForm = document.getElementById('chat-form');
     const chatInput = document.getElementById('chat-input');
     const messagesContainer = document.getElementById('chat-messages');
+    const voiceBtn = document.getElementById('chat-voice-search');
+
+    // Voice recognition setup inside the chatbot widget
+    if (voiceBtn) {
+        voiceBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert('Voice search is not supported in this browser.');
+                return;
+            }
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            recognition.start();
+            voiceBtn.style.backgroundColor = 'var(--corporate-red)';
+
+            recognition.onresult = (event) => {
+                const speechResult = event.results[0][0].transcript;
+                chatInput.value = speechResult;
+                chatForm.dispatchEvent(new Event('submit'));
+            };
+
+            recognition.onerror = () => {
+                voiceBtn.style.backgroundColor = 'var(--corporate-blue)';
+            };
+
+            recognition.onend = () => {
+                voiceBtn.style.backgroundColor = 'var(--corporate-blue)';
+            };
+        });
+    }
 
     // Function to add a message to the chat window
     function addMessage(text, sender) {
@@ -243,4 +275,3 @@ export function initChatbot() {
         }
     });
 }
-// --- END OF FILE public/js/chatbot.js ---

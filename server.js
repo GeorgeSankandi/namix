@@ -35,11 +35,11 @@ import settingsRoutes from './routes/settingsRoutes.js';
 import transactionRoutes from './routes/transactionRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
 import faqRoutes from './routes/faqRoutes.js';
+import brandRoutes from './routes/brandRoutes.js';
 
 // --- Basic Setup ---
 const app = express();
 
-// --- Core Middleware ---
 // Allow CORS for the requesting origin and allow credentials so frontend
 // requests using cookies/sessions work from the same host or proxied hosts.
 app.use(cors({
@@ -79,6 +79,7 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/faqs', faqRoutes);
+app.use('/api/brands', brandRoutes);
 
 // Session-based auth routes
 app.use('/auth', authRoutes);

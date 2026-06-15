@@ -1,4 +1,3 @@
-// --- START OF FILE public/js/ui.js ---
 import { isLoggedIn, logout } from './auth.js';
 import { getSellerType } from './adminAuth.js';
 import { CartManager, setCartUpdateCallback } from './cart.js';
@@ -10,6 +9,7 @@ let isMainAdmin = false;
 let isFurnitureAdmin = false;
 let isClothesAdmin = false;
 let isKidsAdmin = false;
+let isFashionAdmin = false;
 
 // Dynamic check variables for streamlined modules
 let isVehiclesAdmin = false;
@@ -287,7 +287,6 @@ export let categoryData = {
     'anything-else': { name: 'Anything Else', parent: 'other', heroImage: 'https://images.unsplash.com/photo-151342789411-b6a5d4f31634?auto=format&fit=crop&w=1350&q=80' }
 };
 
-// Caching local configurations from Mongo settings collections
 export const updateCategoryData = (settings) => {
     globalSettingsMap = settings || {};
     for (const key in settings) {
@@ -300,7 +299,6 @@ export const updateCategoryData = (settings) => {
 const getAppRoot = () => {
     const root = document.getElementById('app-root');
     if (!root) {
-        console.error('CRITICAL: #app-root element not found in DOM.');
         const main = document.createElement('main');
         main.id = 'app-root';
         document.body.appendChild(main);
@@ -379,7 +377,8 @@ export const startLiveTimerUpdates = () => {
                     el.textContent = timeLeft;
                     hasActiveTimers = true;
                 } else {
-                    el.closest('.product-timer, .product-detail-timer').style.display = 'none';
+                    const foundTimer = el.closest('.product-timer, .product-detail-timer');
+                    if (foundTimer) foundTimer.style.display = 'none';
                 }
             }
         });
@@ -473,11 +472,6 @@ const createProductCard = (product) => {
     `;
 };
 
-
-// ===================================
-// DYNAMIC 4-SLIDE HERO GENERATOR HOOKS
-// ===================================
-
 const getDefaultHeroImage = (pageKey, slideIdx) => {
     const defaults = {
         home: [
@@ -495,7 +489,7 @@ const getDefaultHeroImage = (pageKey, slideIdx) => {
         'how-to-sell': [
             'https://images.unsplash.com/photo-1556742049-0cfed4f7a07d?auto=format&fit=crop&w=1350&q=80',
             'https://images.unsplash.com/photo-1556742502-ec7c0e9f34b1?auto=format&fit=crop&w=1350&q=80',
-            'https://images.unsplash.com/photo-1563013544-824ae1d704d3?auto=format&fit=crop&w=1350&q=80',
+            'https://images.unsplash.com/photo-1563013544-824ae1d704d3?auto=format&fit=crop&w=800&q=60',
             'https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&w=1350&q=80'
         ]
     };
@@ -588,7 +582,7 @@ export const renderDynamicHero = (pageKey, defaultTitle) => {
             <div class="slides-container">
                 ${slides.map((slide, idx) => `
                     <div class="slide ${idx === 0 ? 'active' : ''}" style="background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('${slide.image}');">
-                        <div class="content" style="bottom: 12%;">
+                        <div class="content">
                             <h1>${slide.title}</h1>
                             ${slide.subtitle ? `<p class="hero-subtitle">${slide.subtitle}</p>` : ''}
                             ${slide.desc ? `<p>${slide.desc}</p>` : ''}
@@ -659,7 +653,6 @@ export const populateHeroSlidesEditor = (pageKey) => {
         const keyBtnText = `${pageKey}_hero_btn_text_${i}`;
         const keyBtnLink = `${pageKey}_hero_btn_link_${i}`;
 
-        // Fetch configured setting or fallback safely
         const imgVal = globalSettingsMap[keyImage] || getDefaultHeroImage(pageKey, i);
         const titleVal = globalSettingsMap[keyTitle] || getDefaultHeroTitle(pageKey, i, pageKey.charAt(0).toUpperCase() + pageKey.slice(1));
         const subtitleVal = globalSettingsMap[keySubtitle] || getDefaultHeroSubtitle(pageKey, i);
@@ -705,9 +698,6 @@ export const populateHeroSlidesEditor = (pageKey) => {
     }
     container.innerHTML = slidesHTML;
 };
-
-
-// --- STATIC PAGE RENDERERS ---
 
 export const renderShippingInfoPage = () => {
     getAppRoot().innerHTML = `
@@ -784,10 +774,8 @@ export const renderContactPage = () => {
 export const renderHowToSellPage = () => {
     getAppRoot().innerHTML = `
         <div class="amazon-layout-wrapper">
-            <!-- Hero Section -->
             ${renderDynamicHero('how-to-sell', 'Become a NAMIX Seller')}
 
-            <!-- Quick Stats -->
             <div class="amazon-stats-bar">
                 <div class="amazon-stat">
                     <strong>24h</strong>
@@ -803,7 +791,6 @@ export const renderHowToSellPage = () => {
                 </div>
             </div>
 
-            <!-- Benefits Grid -->
             <div class="amazon-section">
                 <div class="amazon-section-header">
                     <h2>Why Sell on NAMIX?</h2>
@@ -829,7 +816,6 @@ export const renderHowToSellPage = () => {
                 </div>
             </div>
 
-            <!-- How It Works (Steps) -->
             <div class="amazon-section" style="background-color: #fcfcfc;">
                 <div class="amazon-section-header">
                     <h2>How It Works</h2>
@@ -840,7 +826,7 @@ export const renderHowToSellPage = () => {
                     <div class="amazon-card">
                         <div class="amazon-card-icon" style="background-color: #fff3e0; color: #d35400;">1</div>
                         <h3>Register</h3>
-                        <p>Create an account and select your seller category (Clothing, Furniture, or Kids). Submit your details for admin review.</p>
+                        <p>Create an account and select your seller category. Submit your details for admin review.</p>
                     </div>
                     <div class="amazon-card">
                         <div class="amazon-card-icon" style="background-color: #e8f5e9; color: #2e7d32;">2</div>
@@ -855,7 +841,6 @@ export const renderHowToSellPage = () => {
                 </div>
             </div>
 
-            <!-- Final CTA -->
             <div class="amazon-final-cta">
                 <h2 style="font-size: 2.5rem; margin-bottom: 20px;">Ready to start selling?</h2>
                 <p style="margin-bottom: 30px; font-size: 1.1rem; color: #565959;">Join the NAMIX marketplace today.</p>
@@ -1026,28 +1011,24 @@ export const renderHomePage = async () => {
         </section>
     `;
 
-    const paymentOptionsHTML = `
-        <section class="payment-options-section page-container">
-            <h2 class="section-title">Flexible Ways to Pay & Save</h2>
-            <div class="payment-options-grid">
-                <a href="#trade-in" class="payment-option-card">
-                    <div class="icon-wrapper"><i class="fas fa-sync-alt"></i></div>
-                    <h3>Trade-In</h3>
-                    <p>Get credit for your old device towards a new one.</p>
-                </a>
-                <a href="#faqs" class="payment-option-card">
-                    <div class="icon-wrapper"><i class="fas fa-layer-group"></i></div>
-                    <h3>Lay-Bye</h3>
-                    <p>Pay for your device over 3 months, interest-free.</p>
-                </a>
-                <a href="#faqs" class="payment-option-card">
-                    <div class="icon-wrapper"><i class="fas fa-hand-holding-usd"></i></div>
-                    <h3>Deposit</h3>
-                    <p>Secure your dream tech with a small upfront payment.</p>
-                </a>
-            </div>
-        </section>
-    `;
+    const defaultUnderHeroCards = [
+      { title: "Trending Now", link: "#trending", image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" },
+      { title: "New Arrivals", link: "#new-arrivals", image: "https://images.unsplash.com/photo-1546054454-aa26e2b734c7?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" },
+      { title: "Super Combos", link: "#combos", image: "https://images.unsplash.com/photo-1572594691920-87d1b7b7a8a0?auto=format&fit=crop&w=800&q=60" },
+      { title: "Pre-Owned Deals", link: "#second-hand", image: "https://images.unsplash.com/photo-1598327105666-658454354c03?auto=format&fit=crop&w=800&q=60" },
+      { title: "On Sale", link: "#on-sale", image: "https://images.unsplash.com/photo-1555774698-0b77e0d5fac6?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" },
+      { title: "Gaming Gear", link: "#category/gaming-accessories", image: "https://images.unsplash.com/photo-1598550476439-6847785fcea6?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" }
+    ];
+
+    let underHeroCards = defaultUnderHeroCards;
+    if (globalSettingsMap['home_under_hero_cards']) {
+        try {
+            underHeroCards = JSON.parse(globalSettingsMap['home_under_hero_cards']);
+        } catch (e) {
+            console.error('Failed to parse home_under_hero_cards', e);
+            underHeroCards = defaultUnderHeroCards;
+        }
+    }
 
     const appRoot = getAppRoot();
     if(appRoot) {
@@ -1057,35 +1038,16 @@ export const renderHomePage = async () => {
             <div class="carousel-wrapper">
                 <button class="carousel-chevron carousel-chevron-left"><i class="fas fa-chevron-left"></i></button>
                 <section class="home-category-carousel">
-                    <a href="#trending" class="item" style="background-image: url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');">
-                        <h2>Trending Now</h2>
-                        <span class="shop-now-btn">Shop Now</span>
-                    </a>
-                    <a href="#new-arrivals" class="item" style="background-image: url('https://images.unsplash.com/photo-1546054454-aa26e2b734c7?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');">
-                        <h2>New Arrivals</h2>
-                        <span class="shop-now-btn">Shop Now</span>
-                    </a>
-                    <a href="#combos" class="item" style="background-image: url('https://images.unsplash.com/photo-1572594691920-87d1b7b7a8a0?auto=format&fit=crop&w=800&q=60');">
-                        <h2>Super Combos</h2>
-                        <span class="shop-now-btn">Shop Now</span>
-                    </a>
-                    <a href="#second-hand" class="item" style="background-image: url('https://images.unsplash.com/photo-1598327105666-658454354c03?auto=format&fit=crop&w=800&q=60');">
-                        <h2>Pre-Owned Deals</h2>
-                        <span class="shop-now-btn">Shop Now</span>
-                    </a>
-                    <a href="#on-sale" class="item" style="background-image: url('https://images.unsplash.com/photo-1555774698-0b77e0d5fac6?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');">
-                        <h2>On Sale</h2>
-                        <span class="shop-now-btn">Shop Now</span>
-                    </a>
-                    <a href="#category/gaming-accessories" class="item" style="background-image: url('https://images.unsplash.com/photo-1598550476439-6847785fcea6?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');">
-                        <h2>Gaming Gear</h2>
-                        <span class="shop-now-btn">Shop Now</span>
-                    </a>
+                    ${underHeroCards.map(card => `
+                        <a href="${card.link || '#'}" class="item" style="background-image: url('${card.image || ''}');">
+                            <h2>${card.title || ''}</h2>
+                            <span class="shop-now-btn">Shop Now</span>
+                        </a>
+                    `).join('')}
                 </section>
                 <button class="carousel-chevron carousel-chevron-right"><i class="fas fa-chevron-right"></i></button>
             </div>
 
-            ${paymentOptionsHTML}
             ${reviewsHTML}
         `;
 
@@ -1107,7 +1069,7 @@ export const renderHomePage = async () => {
     }
 };
 
-export const renderCategoryPage = (products, categoryKey, searchTerm = '') => {
+export const renderCategoryPage = async (products, categoryKey, searchTerm = '') => {
     const category = categoryData[categoryKey];
     let title = "Search Results";
     let heroHTML = '';
@@ -1117,7 +1079,7 @@ export const renderCategoryPage = (products, categoryKey, searchTerm = '') => {
         heroHTML = renderDynamicHero(categoryKey, category.name);
     }
 
-    const isClothesLanding = categoryKey === 'clothes' || categoryKey === 'clothing';
+    const isClothesLanding = categoryKey === 'clothes' || categoryKey === 'clothing' || categoryKey === 'mens-clothing' || categoryKey === 'womens-clothing' || categoryKey === 'clothes-shoes';
     const productGridHTML = products && products.length > 0 ? products.map(p => createProductCard(p)).join('') : (isClothesLanding ? `<h3>No clothes available at the moment.</h3>` : `<h3>No products found ${searchTerm ? `for "${searchTerm}"` : 'in this category yet'}.</h3>`);
 
     let clothingOptionsHTML = '';
@@ -1192,9 +1154,30 @@ export const renderCategoryPage = (products, categoryKey, searchTerm = '') => {
         `;
     }
 
+    let brandFilterDropdownHTML = '';
+    if (isClothesLanding) {
+        try {
+            const brandsList = await api.fetchBrands();
+            if (brandsList && brandsList.length > 0) {
+                brandFilterDropdownHTML = `
+                    <div class="filter-group">
+                        <label for="brand-filter">Brand:</label>
+                        <select id="brand-filter">
+                            <option value="all">All Brands</option>
+                            ${brandsList.map(b => `<option value="${b.name.toLowerCase()}">${b.name}</option>`).join('')}
+                        </select>
+                    </div>
+                `;
+            }
+        } catch (err) {
+            console.error('Failed to load brands for filter dropdown:', err);
+        }
+    }
+
     const filterControlsHTML = `
         <div class="filter-controls">
             ${secondHandFilterHTML}
+            ${brandFilterDropdownHTML}
             <div class="filter-group">
                 <label for="sort-by">Sort By:</label>
                 <select id="sort-by">
@@ -1365,13 +1348,50 @@ export const renderCategoryPage = (products, categoryKey, searchTerm = '') => {
         }
     }
 
+    const brandFilterDropdown = document.getElementById('brand-filter');
+    if (brandFilterDropdown) {
+        brandFilterDropdown.addEventListener('change', (e) => {
+            const selectedBrand = e.target.value;
+            let filteredResults = [];
+            
+            if (selectedBrand === 'all') {
+                filteredResults = [...products];
+            } else {
+                filteredResults = products.filter(p => {
+                    const filtersList = Array.isArray(p.clothingFilters) ? p.clothingFilters.map(f => f.toLowerCase()) : [];
+                    return filtersList.includes(`brand-${selectedBrand}`) || 
+                           filtersList.includes(selectedBrand) || 
+                           (p.title && p.title.toLowerCase().includes(selectedBrand));
+                });
+            }
+            
+            currentDisplayed = filteredResults;
+            const sortVal = document.getElementById('sort-by')?.value || 'default';
+            if (sortVal !== 'default' && !sortVal.startsWith('filter-')) {
+                const [sortBy, order] = sortVal.split('-');
+                if (sortBy === 'price') {
+                    currentDisplayed.sort((a, b) => order === 'asc' ? a.currentPrice - b.currentPrice : b.currentPrice - a.currentPrice);
+                } else if (sortBy === 'name') {
+                    currentDisplayed.sort((a, b) => order === 'asc' ? a.title.localeCompare(b.title) : b.title.localeCompare(a.title));
+                }
+            }
+
+            const newGridHTML = currentDisplayed.length > 0 
+                ? currentDisplayed.map(p => createProductCard(p)).join('') 
+                : '<h3>No products match this brand selection.</h3>';
+            
+            document.querySelector('.products-grid').innerHTML = newGridHTML;
+            startLiveTimerUpdates();
+        });
+    }
+
     const filterMap = {
         tops: ['shirt','sweater','jersey','jacket','coat','blazer','top','hoodie'],
         bottoms: ['skirt','trouser','trousers','pants','shorts','dress','jean','jeans'],
         official: ['uniform','official','suit','blazer','tie','blouse'],
         traditional: ['traditional','attire','ethnic','kandeka','oshifima','shaku'],
         shoes: ['shoe','sneaker','boot','sandals','heel','loafer','trainer'],
-        accessories: ['belt','hat','cap','scarf','bag','purse','sunglass','gemini','watch'],
+        accessories: ['belt','hat','cap','scarf','bag','purse','sunglass','jewel','watch'],
         furniture: ['sofa','sofas','couch','table','tables','chair','chairs','bed','beds','desk','shelf','cabinet','furniture','wardrobe','dresser'],
         appliances: ['fridge','refrigerator','oven','stove','microwave','washer','dryer','appliance','blender','toaster','kettle'],
         bakkies: ['bakkie', 'hilux', 'pickup', 'truck'],
@@ -1440,6 +1460,14 @@ export const renderCategoryPage = (products, categoryKey, searchTerm = '') => {
                     }
                 }
 
+                const brandVal = document.getElementById('brand-filter')?.value;
+                if (brandVal && brandVal !== 'all') {
+                    currentDisplayed = currentDisplayed.filter(p => {
+                        const filtersList = Array.isArray(p.clothingFilters) ? p.clothingFilters.map(f => f.toLowerCase()) : [];
+                        return filtersList.includes(`brand-${brandVal}`) || filtersList.includes(brandVal) || (p.title && p.title.toLowerCase().includes(brandVal));
+                    });
+                }
+
                 const newGridHTML = currentDisplayed.map(p => createProductCard(p)).join('');
                 document.querySelector('.products-grid').innerHTML = newGridHTML;
                 startLiveTimerUpdates();
@@ -1460,6 +1488,13 @@ export const renderCategoryPage = (products, categoryKey, searchTerm = '') => {
                 } else {
                      sortedProducts = Array.isArray(products) ? [...products] : [];
                 }
+                const brandVal = document.getElementById('brand-filter')?.value;
+                if (brandVal && brandVal !== 'all') {
+                    sortedProducts = sortedProducts.filter(p => {
+                        const filtersList = Array.isArray(p.clothingFilters) ? p.clothingFilters.map(f => f.toLowerCase()) : [];
+                        return filtersList.includes(`brand-${brandVal}`) || filtersList.includes(brandVal) || (p.title && p.title.toLowerCase().includes(brandVal));
+                    });
+                }
             }
 
             const newGridHTML = sortedProducts.map(p => createProductCard(p)).join('');
@@ -1475,8 +1510,8 @@ export const renderCategoryPage = (products, categoryKey, searchTerm = '') => {
                 const el = document.querySelector(`.products-grid .product-card[data-id="${focusId}"]`);
                 if (el) {
                     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    el.classList.add('highlight-product');
-                    setTimeout(() => el.classList.remove('highlight-product'), 4000);
+                    el.classList.add('product-highlight');
+                    setTimeout(() => el.classList.remove('product-highlight'), 4000);
                 }
             }, 150);
             sessionStorage.removeItem('focusProduct');
@@ -1611,11 +1646,24 @@ export const renderProductPage = async (product) => {
     const savedAmount = (product.oldPrice || 0) - (product.currentPrice || 0);
     const isActuallyOnSale = savedAmount > 0;
 
+    // Trust Toggles filtering logic: only append code if configurations are verified true in DB
+    const trustBar1Items = [];
+    if (product.showTradeIn !== false) trustBar1Items.push('<div class="trust-info-item"><i class="fas fa-sync-alt"></i> Trade-In</div>');
+    if (product.showLayBye !== false) trustBar1Items.push('<div class="trust-info-item"><i class="fas fa-layer-group"></i> Lay-Bye</div>');
+    if (product.showDeposit !== false) trustBar1Items.push('<div class="trust-info-item"><i class="fas fa-hand-holding-usd"></i> Deposit</div>');
+
+    const trustBar2Items = [];
+    if (product.showDeliveryNationwide !== false) trustBar2Items.push('<div class="trust-info-item"><i class="fas fa-truck"></i> Delivery Nationwide</div>');
+    if (product.showOneYearWarranty !== false) trustBar2Items.push('<div class="trust-info-item"><i class="fas fa-shield-alt"></i> 1-Year Warranty</div>');
+    if (product.showFifteenDayReturns !== false) trustBar2Items.push('<div class="trust-info-item"><i class="fas fa-undo"></i> 15-Day Returns</div>');
+
+    const trustBar1HTML = trustBar1Items.length > 0 ? `<div class="trust-info-bar">${trustBar1Items.join('')}</div>` : '';
+    const trustBar2HTML = trustBar2Items.length > 0 ? `<div class="trust-info-bar">${trustBar2Items.join('')}</div>` : '';
+
     getAppRoot().innerHTML = `
     <div class="page-container product-page-container" data-sale-end-date="${product.saleEndDate || ''}" data-combo-end-date="${product.comboEndDate || ''}">
         <div class="product-page-top-bar">
             <a href="#" class="back-to-products" id="back-to-products"><i class="fas fa-arrow-left"></i>&nbsp; Back</a>
-            <button id="product-voice-search" aria-label="Voice search" title="Voice search" style="margin-left:12px;background:transparent;border:0;font-size:1.1rem;cursor:pointer;"><i class="fas fa-microphone"></i></button>
             ${topBarTimerHTML}
         </div>
         <div class="product-main">
@@ -1657,23 +1705,13 @@ export const renderProductPage = async (product) => {
                 ${colorOptionsHTML}
                 ${sizeOptionsHTML}
 
-                <div class="trust-info-bar">
-                    <div class="trust-info-item"><i class="fas fa-sync-alt"></i> Trade-In</div>
-                    <div class="trust-info-item"><i class="fas fa-layer-group"></i> Lay-Bye</div>
-                    <div class="trust-info-item"><i class="fas fa-hand-holding-usd"></i> Deposit</div>
-                </div>
-
-                <div class="trust-info-bar">
-                    <div class="trust-info-item"><i class="fas fa-truck"></i> Delivery Nationwide</div>
-                    <div class="trust-info-item"><i class="fas fa-shield-alt"></i> 1-Year Warranty</div>
-                    <div class="trust-info-item"><i class="fas fa-undo"></i> 15-Day Returns</div>
-                </div>
+                ${trustBar1HTML}
+                ${trustBar2HTML}
                 
                 <div style="margin-top: 15px; display:flex; flex-direction:column; gap:8px;">
                     <button class="add-to-cart-btn" id="btn-add-cart-detail" ${product.stock !== undefined && product.stock <= 0 ? 'disabled' : ''}>
                         ${product.stock !== undefined && product.stock <= 0 ? 'Sold Out' : 'Add to Cart'}
                     </button>
-                    <!-- Explore More Button (Filters Category Page to Specific Assigned Reseller) -->
                     <button id="btn-explore-more" class="btn btn-outline" style="width: 100%; display: block; border-radius: 25px; padding: 12px 25px; font-weight: 600;">
                         Explore More from Reseller
                     </button>
@@ -1705,27 +1743,6 @@ export const renderProductPage = async (product) => {
             e.preventDefault();
             try { sessionStorage.setItem('focusProduct', product.productId); } catch (err) {}
             history.back();
-        });
-    }
-
-    const voiceBtnEl = document.getElementById('product-voice-search');
-    if (voiceBtnEl) {
-        voiceBtnEl.addEventListener('click', () => {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) return alert('Voice search is not supported in this browser');
-            const recog = new SpeechRecognition();
-            recog.lang = 'en-US';
-            recog.interimResults = false;
-            recog.maxAlternatives = 1;
-            recog.start();
-            voiceBtnEl.classList.add('listening');
-            recog.onresult = (ev) => {
-                const term = ev.results[0][0].transcript;
-                try { sessionStorage.setItem('lastVoiceSearch', term); } catch(e){}
-                location.hash = `#search/${encodeURIComponent(term)}`;
-            };
-            recog.onerror = () => { voiceBtnEl.classList.remove('listening'); };
-            recog.onend = () => { voiceBtnEl.classList.remove('listening'); };
         });
     }
 
@@ -1780,9 +1797,9 @@ export const renderProductPage = async (product) => {
         });
     });
 
-    const addToCartBtn = document.getElementById('btn-add-cart-detail');
-    if (addToCartBtn) {
-        addToCartBtn.addEventListener('click', () => {
+    const addToCartBtnDetail = document.getElementById('btn-add-cart-detail');
+    if (addToCartBtnDetail) {
+        addToCartBtnDetail.addEventListener('click', () => {
             const selectedColorEl = document.querySelector('.color-swatch.selected');
             const selectedSizeEl = document.querySelector('.size-btn.selected');
             
@@ -1802,9 +1819,9 @@ export const renderProductPage = async (product) => {
         });
     }
 
-    const msgBtn = document.getElementById('btn-message-seller');
-    if (msgBtn) {
-        msgBtn.addEventListener('click', () => {
+    const msgBtnDetail = document.getElementById('btn-message-seller');
+    if (msgBtnDetail) {
+        msgBtnDetail.addEventListener('click', () => {
             if (!product.seller) return alert('Seller information not available.');
             createSellerChatModal({
                 sellerId: product.seller._id || product.seller.email || 'seller',
@@ -1813,9 +1830,9 @@ export const renderProductPage = async (product) => {
         });
     }
 
-    const mapBtn = document.getElementById('btn-show-seller-map');
-    if (mapBtn) {
-        mapBtn.addEventListener('click', async () => {
+    const mapBtnDetail = document.getElementById('btn-show-seller-map');
+    if (mapBtnDetail) {
+        mapBtnDetail.addEventListener('click', async () => {
             const loc = product.seller ? (product.seller.physicalAddress || product.seller.location || '') : '';
             if (!loc) return alert('Seller address not available');
             const geo = await geocodeLocation(loc);
@@ -1855,9 +1872,9 @@ export const renderProductPage = async (product) => {
         });
     }
 
-    const exploreMoreBtn = document.getElementById('btn-explore-more');
-    if (exploreMoreBtn) {
-        exploreMoreBtn.addEventListener('click', () => {
+    const exploreMoreBtnDetail = document.getElementById('btn-explore-more');
+    if (exploreMoreBtnDetail) {
+        exploreMoreBtnDetail.addEventListener('click', () => {
             const targetResellerId = (product.exploreMoreReseller && (product.exploreMoreReseller._id || product.exploreMoreReseller)) || (product.seller ? product.seller._id : null);
             if (targetResellerId) {
                 location.hash = `#category/${product.category}?seller=${targetResellerId}`;
@@ -1952,13 +1969,6 @@ export const renderCartPage = (detailedCartItems) => {
     
     const giftAmount = subtotal * 0.05;
 
-    const paymentInfoHTML = `
-        <div class="payment-info-summary">
-            <h4>Payment Options Available</h4>
-            <p>Proceed to checkout to pay via <i class="fas fa-university"></i> EFT, <i class="fas fa-wallet"></i> E-Wallet or Blue wallet, or to arrange a <i class="fas fa-calendar-alt"></i> Lay-by.</p>
-        </div>
-    `;
-
     getAppRoot().innerHTML = `
         <div class="cart-page-container">
             <div class="cart-header"><h1>Shopping Cart</h1></div>
@@ -1972,7 +1982,6 @@ export const renderCartPage = (detailedCartItems) => {
                     <div class="summary-row" style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>Delivery:</span> <span class="free-shipping" style="color: var(--success-green);">FREE</span></div>
                     <div class="summary-row total-row" style="display: flex; justify-content: space-between; font-weight: bold; margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;"><span>Total:</span> <span>${formatCurrency(subtotal)}</span></div>
                 </div>` : ''}
-                ${subtotal > 0 ? paymentInfoHTML : ''}
                 <div class="action-buttons">
                     <a href="#home" class="btn btn-outline">← Continue Shopping</a>
                     ${validItems.length > 0 ? `<a href="#checkout" class="btn btn-primary">Proceed to Checkout →</a>` : ''}
@@ -2012,9 +2021,7 @@ export const renderCartPage = (detailedCartItems) => {
                         if (updatedItems.length === 0) {
                             const cartSection = document.querySelector('.cart-section');
                             if (cartSection) {
-                                {
-                                    cartSection.innerHTML = '<p>Your cart is empty.</p><div class="action-buttons"><a href="#home" class="btn btn-outline">← Continue Shopping</a></div>';
-                                }
+                                cartSection.innerHTML = '<p>Your cart is empty.</p><div class="action-buttons"><a href="#home" class="btn btn-outline">← Continue Shopping</a></div>';
                             }
                         } else {
                             updateCartSummary(updatedItems);
@@ -2073,49 +2080,36 @@ const updateCartSummary = (items) => {
 export const renderCheckoutPage = (detailedCartItems) => {
     const subtotal = detailedCartItems.reduce((acc, item) => acc + item.currentPrice * item.quantity, 0);
     const giftAmount = subtotal * 0.05;
-    
-    const paymentOptionsSummaryHTML = `
-        <div class="payment-info-summary" style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-            <h4>Payment Options Available</h4>
-            <p>Proceed to the next step to pay via <i class="fas fa-university"></i> EFT, <i class="fas fa-wallet"></i> E-Wallet or Blue wallet, or to arrange a <i class="fas fa-calendar-alt"></i> Lay-by.</p>
-        </div>
-    `;
 
     getAppRoot().innerHTML = `
         <div class="checkout-page-container">
             <div class="cart-header"><h1>Checkout</h1></div>
             <div class="checkout-form">
-                <h2>Delivery Information</h2>
+                <h2>Customer Information</h2>
                 <form id="checkout-form">
                     <div class="form-group"><label for="name">Full Name</label><input type="text" id="name" required></div>
-                    <div class="form-group"><label for="address">Town/City</label><select id="address" required><option value="">Select a town or city</option><option value="Windhoek">Windhoek</option><option value="Walvis Bay">Walvis Bay</option><option value="Swakopmund">Swakopmund</option><option value="Oshakati">Oshakati</option><option value="Rundu">Rundu</option><option value="Gobabis">Gobabis</option><option value="Rehoboth">Rehoboth</option><option value="Katima Mulilo">Katima Mulilo</option><option value="Outjo">Outjo</option><option value="Ondangwa">Ondangwa</option><option value="Okahandja">Okahandja</option><option value="Otjiwarongo">Otjiwarongo</option><option value="Karibib">Karibib</option><option value="Mariental">Mariental</option><option value="Keetmanshoop">Keetmanshoop</option><option value="Lüderitz">Lüderitz</option><option value="Henties Bay">Henties Bay</option><option value="Omaruru">Omaruru</option><option value="Aranos">Aranos</option><option value="Opuwo">Opuwo</option><option value="Eenhana">Eenhana</option><option value="Ngweze">Ngweze</option><option value="Ongwediva">Ongwediva</option><option value="Tsumeb">Tsumeb</option><option value="Usakos">Usakos</option><option value="Damaraland">Damaraland</option><option value="Sesfontein">Sesfontein</option><option value="Rosh Pinah">Rosh Pinah</option><option value="Aus">Aus</option></select></div>
-                    <div class="form-group"><label for="physical-address">Physical Address</label><input type="text" id="physical-address" placeholder="Street address, house number, etc." required></div>
                     <div class="form-group"><label for="phone">Phone Number</label><input type="tel" id="phone" placeholder="+264 or 081..." required></div>
                     <div class="form-group"><label for="email">Email</label><input type="email" id="email" required></div>
                 </form>
                 <button id="place-order-btn" class="btn btn-primary" style="width: 100%; margin-top: 20px;">Place Order</button>
-                
-                ${paymentOptionsSummaryHTML}
             </div>
         </div>`;
     
     document.getElementById('place-order-btn').addEventListener('click', async () => {
         const customerName = document.getElementById('name').value;
         const customerEmail = document.getElementById('email').value;
-        const customerAddress = document.getElementById('address').value;
-        const physicalAddress = document.getElementById('physical-address').value;
         const phoneNumber = document.getElementById('phone').value;
 
-        if (!customerName || !customerEmail || !customerAddress || !physicalAddress || !phoneNumber) {
-            alert('Please fill in all delivery information.');
+        if (!customerName || !customerEmail || !phoneNumber) {
+            alert('Please fill in all information.');
             return;
         }
 
         const pendingOrder = {
             customerName,
             customerEmail,
-            customerAddress,
-            physicalAddress,
+            customerAddress: 'N/A',
+            physicalAddress: 'N/A',
             phoneNumber,
             items: detailedCartItems.map(item => ({
                 productId: item.productId,
@@ -2400,7 +2394,7 @@ export const renderRegisterPage = () => {
         <div class="page-container" style="max-width: 500px; margin-top: 3rem;">
             <div style="background: var(--white); padding: 2.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow-medium);">
                 <h1 style="text-align: center; color: var(--corporate-blue); margin-bottom: 2rem;">Create Account</h1>
-                <form id="register-form">
+                <form id="register-form" enctype="multipart/form-data">
                     <div class="form-group">
                         <label for="name">Full Name</label>
                         <input type="text" id="name" name="name" required autocomplete="name">
@@ -2442,6 +2436,12 @@ export const renderRegisterPage = () => {
                             <label for="sellerIdNumber">Seller ID Number</label>
                             <input type="text" id="sellerIdNumber" name="sellerIdNumber" autocomplete="off">
                         </div>
+                        
+                        <div class="form-group">
+                            <label for="sellerIdImage">Upload Picture of ID (JPG/PNG/WEBP, max 25MB)</label>
+                            <input type="file" id="sellerIdImage" name="sellerIdImage" accept="image/*">
+                        </div>
+
                         <div class="form-group">
                             <label for="businessRegistrationNumber">Business Registration Number</label>
                             <input type="text" id="businessRegistrationNumber" name="businessRegistrationNumber" autocomplete="off">
@@ -2456,14 +2456,14 @@ export const renderRegisterPage = () => {
                         </div>
                         <div style="margin-top: 0.5rem; padding: 0.75rem; background-color: #eef7ff; border-radius: 4px; font-size: 0.85rem; color: #333;">
                             <strong>Reseller accounts require strong verification.</strong>
-                            Please enter your physical address and upload a PDF copy of your business registration document. Seller ID and registration number are optional.
+                            Please enter your physical address, upload a picture of your ID, and upload a PDF copy of your business registration document.
                         </div>
                     </div>
                     <div id="register-message" class="form-message" style="text-align: center;"></div>
                     <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem; padding: 15px;">Create Account</button>
                 </form>
                 <div style="text-align: center; margin-top: 1.5rem;">
-                    <p>Already have an account? <a href="#login" style="color: var(--corporate-blue); text-decoration: underline;">Sign Up</a></p>
+                    <p>Already have an account? <a href="#login" style="color: var(--corporate-blue); text-decoration: underline;">Sign In</a></p>
                 </div>
             </div>
         </div>
@@ -2492,15 +2492,13 @@ export const renderRegisterPage = () => {
     }
 };
 
-export const renderAdminPage = (allProducts, allUsers, allViewers, allTransactions, allFAQs, settings, sellerType) => {
+export const renderAdminPage = async (allProducts, allUsers, allViewers, allTransactions, allFAQs, settings, sellerType) => {
     sellerType = sellerType || 'admin';
     allProducts = Array.isArray(allProducts) ? allProducts : (allProducts ? Array.from(allProducts) : []);
     allUsers = Array.isArray(allUsers) ? allUsers : [];
     allViewers = Array.isArray(allViewers) ? allViewers : [];
     allTransactions = Array.isArray(allTransactions) ? allTransactions : [];
     allFAQs = Array.isArray(allFAQs) ? allFAQs : [];
-
-    console.log('ui.renderAdminPage called', { sellerType, products: allProducts.length, users: allUsers.length, viewers: allViewers.length, transactions: allTransactions.length, faqs: allFAQs.length });
 
     isMainAdmin = sellerType === 'admin';
     const mapSellerToCategory = (st) => {
@@ -2514,19 +2512,11 @@ export const renderAdminPage = (allProducts, allUsers, allViewers, allTransactio
     };
     const mappedSellerCategory = mapSellerToCategory(sellerType);
     
-    // Assign mapped sub-booleans for administrative form visibility
-    const isElectronicsAdmin = mappedSellerCategory === 'electronics';
-    const isSolarAdmin = mappedSellerCategory === 'solar';
-    const isFashionAdmin = mappedSellerCategory === 'fashion';
-    const isGroceriesAdmin = mappedSellerCategory === 'groceries';
-    const isAppliancesAdmin = mappedSellerCategory === 'appliances';
-    isVehiclesAdmin = mappedSellerCategory === 'vehicles';
-    const isCraftsAdmin = mappedSellerCategory === 'crafts';
-    const isFarmAdmin = mappedSellerCategory === 'farm';
-    const isFuelAdmin = mappedSellerCategory === 'fuel';
-    const isOtherAdmin = mappedSellerCategory === 'other';
+    isClothesAdmin = mappedSellerCategory === 'fashion';
+    isFashionAdmin = isClothesAdmin;
+    isFurnitureAdmin = mappedSellerCategory === 'appliances';
+    isKidsAdmin = mappedSellerCategory === 'electronics';
 
-    // FIX: Resellers only see products where the logged-in product seller ID matches their own user ID
     const currentUser = getCurrentUser();
     const relevantProducts = isMainAdmin
         ? allProducts
@@ -2550,6 +2540,7 @@ export const renderAdminPage = (allProducts, allUsers, allViewers, allTransactio
             <button class="admin-tab-btn" data-tab="users">Users</button>
             <button class="admin-tab-btn" data-tab="sellers">Seller Accounts</button>
             <button class="admin-tab-btn" data-tab="faqs">FAQs</button>
+            <button class="admin-tab-btn" data-tab="brands">Brands Manager</button>
             <button class="admin-tab-btn" data-tab="site-settings">Site Settings</button>
             <button class="admin-tab-btn" data-tab="page-settings">Page Settings</button>
             <button class="admin-tab-btn" data-tab="simulate-views">Simulate Views</button>
@@ -2593,6 +2584,8 @@ export const renderAdminPage = (allProducts, allUsers, allViewers, allTransactio
                 <div class="user-info">
                     <div style="font-weight: 600; display:flex; align-items:center; gap:10px;">${u.name} ${statusBadge}</div>
                     <span style="font-size: 0.9rem; color: #666;">${u.email} | Type: <strong>${u.sellerType}</strong></span>
+                    ${u.sellerIdImage ? `<div style="margin-top:6px;"><a href="${u.sellerIdImage}" target="_blank" style="font-size:0.85rem; color:var(--corporate-blue); font-weight:600;"><i class="fas fa-id-card"></i> View ID Picture</a></div>` : ''}
+                    ${u.businessRegistrationDocument ? `<div style="margin-top:4px;"><a href="${u.businessRegistrationDocument}" target="_blank" style="font-size:0.85rem; color:var(--corporate-blue); font-weight:600;"><i class="fas fa-file-pdf"></i> View Business Registration PDF</a></div>` : ''}
                 </div>
                 <div class="actions" style="display:flex; gap:20px; align-items:center;">
                     ${approvalControl}
@@ -2617,7 +2610,6 @@ export const renderAdminPage = (allProducts, allUsers, allViewers, allTransactio
         });
     }).join('') || "<li>No viewers found.</li>";
     
-    // FIX: Resellers only see transactions containing products sold by their specific seller user ID
     const relevantTransactions = isMainAdmin 
         ? allTransactions 
         : allTransactions.filter(transaction => transaction.items.some(item => {
@@ -2626,6 +2618,16 @@ export const renderAdminPage = (allProducts, allUsers, allViewers, allTransactio
         }));
 
     const faqListHTML = allFAQs.map(faq => `<li><div class="faq-info"><strong>Q:</strong> ${faq.question}<p style="margin-left: 20px; color: #555;"><strong>A:</strong> ${faq.answer}</p></div><div class="actions"><button class="edit-faq-btn" data-faq-id="${faq._id}"><i class="fas fa-edit"></i> Edit</button><button class="delete-faq-btn" data-faq-id="${faq._id}"><i class="fas fa-trash"></i> Delete</button></div></li>`).join('');
+
+    let brandListHTML = '';
+    if (isMainAdmin) {
+        try {
+            const allBrands = await api.fetchBrands();
+            brandListHTML = allBrands.map(brand => `<li><div class="brand-info"><strong>Brand:</strong> ${brand.name}</div><div class="actions"><button class="edit-brand-btn" data-brand-id="${brand._id}"><i class="fas fa-edit"></i> Edit</button><button class="delete-brand-btn" data-brand-id="${brand._id}"><i class="fas fa-trash"></i> Delete</button></div></li>`).join('');
+        } catch (err) {
+            console.error('Failed to render admin brands manager:', err);
+        }
+    }
 
     const transactionsListHTML = (relevantTransactions || []).length > 0 ? (() => {
         const totalRevenue = (relevantTransactions || []).reduce((sum, t) => sum + (t.totalAmount || 0), 0);
@@ -2638,428 +2640,404 @@ export const renderAdminPage = (allProducts, allUsers, allViewers, allTransactio
         ? `<button id="back-to-main-admin" class="btn btn-primary" style="margin-bottom: 1rem; background-color: var(--corporate-gold); color: #333;"><i class="fas fa-arrow-left"></i> Return to Main Admin Dashboard</button>` 
         : '';
 
-    try {
-        getAppRoot().innerHTML = `
-        <div class="page-container admin-container">
-            <div style="background-color: #d4edda; border: 2px solid #28a745; padding: 12px; margin-bottom: 16px; border-radius: 6px; color: #155724;">
-                <strong>✓ Admin Dashboard Loaded Successfully</strong> | Role: ${sellerType} | Time: ${new Date().toLocaleTimeString()}
-            </div>
-            ${backToAdminButton}
-             <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h1>${sellerType.charAt(0).toUpperCase() + sellerType.slice(1)} Dashboard</h1>
-                <button id="logout-btn" class="btn btn-outline">Logout</button>
-            </div>
-            <div class="admin-tabs">${adminTabs}</div>
+    getAppRoot().innerHTML = `
+    <div class="page-container admin-container">
+        <div style="background-color: #d4edda; border: 2px solid #28a745; padding: 12px; margin-bottom: 16px; border-radius: 6px; color: #155724;">
+            <strong>✓ Admin Dashboard Loaded Successfully</strong> | Role: ${sellerType} | Time: ${new Date().toLocaleTimeString()}
+        </div>
+        ${backToAdminButton}
+         <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h1>${sellerType.charAt(0).toUpperCase() + sellerType.slice(1)} Dashboard</h1>
+            <button id="logout-btn" class="btn btn-outline">Logout</button>
+        </div>
+        <div class="admin-tabs">${adminTabs}</div>
 
-            <div id="products" class="admin-tab-content active">
-                <section class="admin-section">
-                    <h2>Add / Edit Product</h2>
-                    <form id="product-form" class="admin-form">
-                        <input type="hidden" id="product-id-hidden">
-                        <div class="form-grid">
-                            <div class="form-group"><label for="product-id">Product ID</label><input type="text" id="product-id" required></div>
-                            <div class="form-group"><label for="product-title">Title</label><input type="text" id="product-title" required></div>
-                            <div class="form-group"><label for="product-currentPrice">Current Price</label><input type="number" id="product-currentPrice" required></div>
-                            <div class="form-group"><label for="product-oldPrice">Old Price</label><input type="number" id="product-oldPrice" required></div>
-                            <div class="form-group"><label for="product-category">Category</label><input type="text" id="product-category" value="${isMainAdmin ? '' : mappedSellerCategory}" ${!isMainAdmin ? 'readonly' : ''} required></div>
-                            <div class="form-group">
-                                <label for="product-image">Main Image URL</label>
-                                <input type="text" id="product-image" required>
-                                <label for="product-image-file" style="margin-top:0.35rem; display:block; font-size:0.85rem; color:#555;">or Upload Main Image</label>
-                                <input type="file" id="product-image-file" accept="image/*">
-                            </div>
-                            <div id="main-image-preview-container" style="margin-top:8px; display:none;">
-                                <img id="main-image-preview" src="" alt="Main Image Preview" style="max-width:150px; max-height:150px; object-fit:cover; border-radius:6px; box-shadow:0 2px 8px rgba(0,0,0,0.1);" onerror="this.style.display='none'; document.getElementById('main-image-preview-error').style.display='block';">
-                                <div id="main-image-preview-error" style="color:#d32f2f; font-size:0.85rem; margin-top:4px; display:none;">⚠️ Image failed to load. Check URL.</div>
-                            </div>
-                            <div id="carousel-image-urls" class="form-group full-width">
-                                <label>Carousel Image URLs (up to 4)</label>
-                                <div class="form-grid">
-                                    <div style="display:flex; flex-direction:column; gap:4px;"><input type="text" id="carousel-url-1" placeholder="Carousel Image 1 URL"><input type="file" id="carousel-file-1" accept="image/*"></div>
-                                    <div style="display:flex; flex-direction:column; gap:4px;"><input type="text" id="carousel-url-2" placeholder="Carousel Image 2 URL"><input type="file" id="carousel-file-2" accept="image/*"></div>
-                                    <div style="display:flex; flex-direction:column; gap:4px;"><input type="text" id="carousel-url-3" placeholder="Carousel Image 3 URL"><input type="file" id="carousel-file-3" accept="image/*"></div>
-                                    <div style="display:flex; flex-direction:column; gap:4px;"><input type="text" id="carousel-url-4" placeholder="Carousel Image 4 URL"><input type="file" id="carousel-file-4" accept="image/*"></div>
-                                </div>
-                                <div id="carousel-images-preview-container" style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
-                                    <div id="carousel-preview-1-wrapper" style="display:none; position:relative;">
-                                        <img id="carousel-preview-1" src="" alt="Carousel 1" style="width:120px; height:120px; object-fit:cover; border-radius:6px; box-shadow:0 2px 8px rgba(0,0,0,0.1);" onerror="document.getElementById('carousel-preview-1-wrapper').style.display='none';">
-                                    </div>
-                                    <div id="carousel-preview-2-wrapper" style="display:none; position:relative;">
-                                        <img id="carousel-preview-2" src="" alt="Carousel 2" style="width:120px; height:120px; object-fit:cover; border-radius:6px; box-shadow:0 2px 8px rgba(0,0,0,0.1);" onerror="document.getElementById('carousel-preview-2-wrapper').style.display='none';">
-                                    </div>
-                                    <div id="carousel-preview-3-wrapper" style="display:none; position:relative;">
-                                        <img id="carousel-preview-3" src="" alt="Carousel 3" style="width:120px; height:120px; object-fit:cover; border-radius:6px; box-shadow:0 2px 8px rgba(0,0,0,0.1);" onerror="document.getElementById('carousel-preview-3-wrapper').style.display='none';">
-                                    </div>
-                                    <div id="carousel-preview-4-wrapper" style="display:none; position:relative;">
-                                        <img id="carousel-preview-4" src="" alt="Carousel 4" style="width:120px; height:120px; object-fit:cover; border-radius:6px; box-shadow:0 2px 8px rgba(0,0,0,0.1);" onerror="document.getElementById('carousel-preview-4-wrapper').style.display='none';">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="form-group"><label for="product-description">Description</label><textarea id="product-description" placeholder="Enter product description (optional - AI will generate if blank)" rows="4"></textarea><div id="ai-desc-status" style="font-size:0.85rem; margin-top:5px; font-style:italic;"></div></div>
-                            <div class="form-group"><label>Or Upload up to 3 images</label><input type="file" id="product-images" accept="image/*" multiple></div>
-                            <div id="product-images-preview" class="images-preview" style="display:flex; gap:8px; margin-top:8px;"></div>
-                            <input type="hidden" id="product-thumbnails-hidden">
-                            <div class="form-group"><label>Track Stock?</label><input type="checkbox" id="product-stockToggle"></div>
-                            <div class="form-group" id="stock-field-group" style="display: none;"><label for="product-stock">Stock Amount</label><input type="number" id="product-stock" value="10" min="0" step="1"></div>
-                            ${!isClothesAdmin && !isKidsAdmin && !isFoodAdmin ? `<div class="form-group"><label for="product-condition">Condition</label><select id="product-condition"><option value="new">New</option><option value="second-hand">Second-Hand</option></select></div>` : ''}
-                            
-                            <div class="form-group" style="display: flex; align-items: center; gap: 12px;"><label style="margin: 0;">Enable Color Variations?</label><input type="checkbox" id="enable-product-colors"></div>
-                            
-                            <div id="product-colors-section" style="display:none; margin-top:1.5rem; padding:1rem; background-color:#f9f9f9; border-radius:8px;">
-                                <label style="display:block; margin-bottom:8px; font-weight:600;">Product Colors (Enter up to 3 color names or hex codes)</label>
-                                <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                                    <input type="text" id="product-color-1" placeholder="e.g., Black or #000000" style="flex:1; min-width:150px;">
-                                    <input type="text" id="product-color-2" placeholder="e.g., Silver or #C0C0C0" style="flex:1; min-width:150px;">
-                                    <input type="text" id="product-color-3" placeholder="e.g., Gold or #FFD700" style="flex:1; min-width:150px;">
-                                </div>
-                                <div id="product-colors-preview" style="display:flex; gap:12px; margin-top:10px;"></div>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="product-exploreMoreReseller">Explore More Reseller Assignment</label>
-                                <select id="product-exploreMoreReseller" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border-color);">
-                                    <option value="">-- None (Defaults to current seller) --</option>
-                                    ${allUsers.filter(u => u.sellerType && u.sellerType !== 'customer' && u.sellerType !== 'admin').map(u => `
-                                        <option value="${u._id}">${u.businessName || u.name} (${u.sellerType})</option>
-                                    `).join('')}
-                                </select>
-                            </div>
-                            
-                            <!-- CLOTHING SIZE SECTION -->
-                            ${isClothesAdmin ? `
-                            <div id="clothing-size-section" style="margin-top: 1.5rem; padding: 1rem; background-color: #f9f9f9; border-radius: 8px;">
-                                <label style="display:block; margin-bottom: 10px; font-weight: 600;">Available Clothing Sizes (Select multiple)</label>
-                                <select id="product-sizes-select" multiple class="admin-input" style="width: 100%; height: 150px; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px;">
-                                    ${STANDARD_SIZES.map(size => `<option value="${size}">${size}</option>`).join('')}
-                                </select>
-                                <small style="display:block; margin-top:5px; color:#666;">Hold Ctrl (Windows) or Cmd (Mac) to select multiple sizes.</small>
-                            </div>
-                            ` : ''}
-
-                            ${isMainAdmin ? `
-                            <div id="ai-features-section" style="margin-top:1.5rem; padding:1rem; background-color:#f0f7ff; border-radius:8px; border-left:4px solid var(--primary-blue);">
-                                <h3 style="margin-top:0; margin-bottom:1rem; color:var(--primary-blue);">🤖 AI-Generated Features</h3>
-                                <div style="margin-bottom:1rem;">
-                                    <label style="display:block; margin-bottom:0.5rem; font-weight:600;">Product Features</label>
-                                    <p style="margin:0.5rem 0 0.5rem 0; font-size:0.9rem; color:#666;">Features are generated automatically from the product title.</p>
-                                    <div id="product-features-container" style="display:flex; flex-direction:column; gap:8px; margin-top:8px;"></div>
-                                    <button type="button" id="ai-generate-features-btn" style="margin-top:10px; padding:8px 16px; background-color:var(--primary-blue); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:600;">Regenerate Features</button>
-                                    <button type="button" id="ai-clear-features-btn" style="margin-top:10px; margin-left:8px; padding:8px 16px; background-color:#ccc; color:#333; border:none; border-radius:4px; cursor:pointer;">Clear All</button>
-                                    <div id="ai-features-status" style="margin-top:10px; font-size:0.9rem; color:#666; display:none;"></div>
-                                    <div id="ai-images-status" style="margin-top:10px; font-size:0.9rem; color:#666; display:none;"></div>
-                                </div>
-                            </div>
-                            ` : `
-                            <div id="manual-features-section" style="margin-top:1.5rem; padding:1rem; background-color:#f9f9f9; border-radius:8px; border-left:4px solid #999;">
-                                <h3 style="margin-top:0; margin-bottom:1rem; color:#333;">Manual Product Features</h3>
-                                <div style="margin-bottom:1rem;">
-                                    <label style="display:block; margin-bottom:0.5rem; font-weight:600;">Product Features</label>
-                                    <p style="margin:0.5rem 0 0.5rem 0; font-size:0.9rem; color:#666;">Add / edit feature bullets manually.</p>
-                                    <input type="text" id="manual-feature-input" placeholder="Enter a new feature" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px; margin-bottom:8px;" />
-                                    <div id="product-features-container" style="display:flex; flex-direction:column; gap:8px; margin-top:8px;"></div>
-                                    <button type="button" id="manual-add-feature-btn" style="margin-top:10px; padding:8px 16px; background-color:var(--secondary-blue); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:600;">Add Feature</button>
-                                    <button type="button" id="ai-clear-features-btn" style="margin-top:10px; margin-left:8px; padding:8px 16px; background-color:#ccc; color:#333; border:none; border-radius:4px; cursor:pointer;">Clear All</button>
-                                </div>
-                            </div>
-                            `}
-                            
-                            <div class="form-group"><label>On Sale?</label><input type="checkbox" id="product-onSale"></div>
+        <div id="products" class="admin-tab-content active">
+            <section class="admin-section">
+                <h2>Add / Edit Product</h2>
+                <form id="product-form" class="admin-form">
+                    <input type="hidden" id="product-id-hidden">
+                    <div class="form-grid">
+                        <div class="form-group"><label for="product-id">Product ID</label><input type="text" id="product-id" required></div>
+                        <div class="form-group"><label for="product-title">Title</label><input type="text" id="product-title" required></div>
+                        <div class="form-group"><label for="product-currentPrice">Current Price</label><input type="number" id="product-currentPrice" required></div>
+                        <div class="form-group"><label for="product-oldPrice">Old Price</label><input type="number" id="product-oldPrice" required></div>
+                        <div class="form-group"><label for="product-category">Category</label><input type="text" id="product-category" value="${isMainAdmin ? '' : mappedSellerCategory}" ${!isMainAdmin ? 'readonly' : ''} required></div>
+                        <div class="form-group">
+                            <label for="product-image">Main Image URL</label>
+                            <input type="text" id="product-image" required>
+                            <label for="product-image-file" style="margin-top:0.35rem; display:block; font-size:0.85rem; color:#555;">or Upload Main Image</label>
+                            <input type="file" id="product-image-file" accept="image/*">
                         </div>
-                        <div id="sale-dates-section" style="display:none; margin-top:1.5rem; padding:1rem; background-color:#f9f9f9; border-radius:8px;">
-                            <h3 style="margin-bottom:1rem;">Sale Duration</h3>
+                        <div id="main-image-preview-container" style="margin-top:8px; display:none;">
+                            <img id="main-image-preview" src="" alt="Main Image Preview" style="max-width:150px; max-height:150px; object-fit:cover; border-radius:6px; box-shadow:0 2px 8px rgba(0,0,0,0.1);" onerror="this.style.display='none'; document.getElementById('main-image-preview-error').style.display='block';">
+                            <div id="main-image-preview-error" style="color:#d32f2f; font-size:0.85rem; margin-top:4px; display:none;">⚠️ Image failed to load. Check URL.</div>
+                        </div>
+                        <div id="carousel-image-urls" class="form-group full-width">
+                            <label>Carousel Image URLs (up to 4)</label>
                             <div class="form-grid">
-                                <div class="form-group"><label for="product-saleStartDate">Sale Start Date & Time</label><input type="datetime-local" id="product-saleStartDate"></div>
-                                <div class="form-group"><label for="product-saleEndDate">Sale End Date & Time</label><input type="datetime-local" id="product-saleEndDate"></div>
+                                <div style="display:flex; flex-direction:column; gap:4px;"><input type="text" id="carousel-url-1" placeholder="Carousel Image 1 URL"><input type="file" id="carousel-file-1" accept="image/*"></div>
+                                <div style="display:flex; flex-direction:column; gap:4px;"><input type="text" id="carousel-url-2" placeholder="Carousel Image 2 URL"><input type="file" id="carousel-file-2" accept="image/*"></div>
+                                <div style="display:flex; flex-direction:column; gap:4px;"><input type="text" id="carousel-url-3" placeholder="Carousel Image 3 URL"><input type="file" id="carousel-file-3" accept="image/*"></div>
+                                <div style="display:flex; flex-direction:column; gap:4px;"><input type="text" id="carousel-url-4" placeholder="Carousel Image 4 URL"><input type="file" id="carousel-file-4" accept="image/*"></div>
                             </div>
-                        </div>
-                        <h3 style="margin-top: 1.5rem; margin-bottom: 1rem;">Assign to Curated Pages</h3>
-                        ${isMainAdmin ? `
-                        <div class="form-grid">
-                            <div class="form-group"><label>Trending Now <input type="checkbox" id="product-curate-trending" class="product-curate-toggle"></label></div>
-                            <div class="form-group"><label>New Releases <input type="checkbox" id="product-curate-new-arrivals" class="product-curate-toggle"></label></div>
-                            <div class="form-group"><label>Super Combos <input type="checkbox" id="product-curate-combos" class="product-curate-toggle"></label></div>
-                        </div>
-                        ` : `
-                        <div class="form-grid">
-                            ${isKidsAdmin ? `
-                            <div class="form-group"><label>Kids Electronics <input type="checkbox" id="product-curate-kids-electronics" class="product-curate-toggle"></label></div>
-                            <div class="form-group"><label>Kids Clothing <input type="checkbox" id="product-curate-kids-clothing" class="product-curate-toggle"></label></div>
-                            <div class="form-group"><label>Kids Toys <input type="checkbox" id="product-curate-kids-toys" class="product-curate-toggle"></label></div>
-                            ` : `
-                            ${isVehiclesAdmin ? `
-                                <div class="form-group" style="grid-column: 1 / -1;">
-                                    <label style="display:block; margin-bottom:6px; font-weight:600;">Vehicle Type Filters</label>
-                                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                                        <label><input type="checkbox" id="product-filter-bakkies" class="product-curated-checkbox"> Bakkies</label>
-                                        <label><input type="checkbox" id="product-filter-suvs" class="product-curated-checkbox"> SUVs</label>
-                                        <label><input type="checkbox" id="product-filter-sedans" class="product-curated-checkbox"> Sedans</label>
-                                        <label><input type="checkbox" id="product-filter-hatchbacks" class="product-curated-checkbox"> Hatchbacks</label>
-                                    </div>
+                            <div id="carousel-images-preview-container" style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
+                                <div id="carousel-preview-1-wrapper" style="display:none; position:relative;">
+                                    <img id="carousel-preview-1" src="" alt="Carousel 1" style="width:120px; height:120px; object-fit:cover; border-radius:6px; box-shadow:0 2px 8px rgba(0,0,0,0.1);" onerror="document.getElementById('carousel-preview-1-wrapper').style.display='none';">
                                 </div>
-                            ` : ''}
-                            ${isPropertyAdmin ? `
-                                <div class="form-group" style="grid-column: 1 / -1;">
-                                    <label style="display:block; margin-bottom:6px; font-weight:600;">Property Type Filters</label>
-                                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                                        <label><input type="checkbox" id="product-filter-houses" class="product-curated-checkbox"> Houses</label>
-                                        <label><input type="checkbox" id="product-filter-apartments" class="product-curated-checkbox"> Apartments</label>
-                                    </div>
+                                <div id="carousel-preview-2-wrapper" style="display:none; position:relative;">
+                                    <img id="carousel-preview-2" src="" alt="Carousel 2" style="width:120px; height:120px; object-fit:cover; border-radius:6px; box-shadow:0 2px 8px rgba(0,0,0,0.1);" onerror="document.getElementById('carousel-preview-2-wrapper').style.display='none';">
                                 </div>
-                            ` : ''}
-                            ${isFoodAdmin ? `
-                                <div class="form-group" style="grid-column: 1 / -1;">
-                                    <label style="display:block; margin-bottom:6px; font-weight:600;">Food Type Filters</label>
-                                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                                        <label><input type="checkbox" id="product-filter-meals" class="product-curated-checkbox"> Prepared Meals</label>
-                                        <label><input type="checkbox" id="product-filter-biltong" class="product-curated-checkbox"> Biltong & Snacks</label>
-                                    </div>
+                                <div id="carousel-preview-3-wrapper" style="display:none; position:relative;">
+                                    <img id="carousel-preview-3" src="" alt="Carousel 3" style="width:120px; height:120px; object-fit:cover; border-radius:6px; box-shadow:0 2px 8px rgba(0,0,0,0.1);" onerror="document.getElementById('carousel-preview-3-wrapper').style.display='none';">
                                 </div>
-                            ` : ''}
-                            ${isBooksAdmin ? `
-                                <div class="form-group" style="grid-column: 1 / -1;">
-                                    <label style="display:block; margin-bottom:6px; font-weight:600;">Book Genre / Classification Filters</label>
-                                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                                        <label><input type="checkbox" id="product-filter-fiction" class="product-curated-checkbox"> Fiction & Literature</label>
-                                        <label><input type="checkbox" id="product-filter-nonfiction" class="product-curated-checkbox"> Non-Fiction & Self-Development</label>
-                                        <label><input type="checkbox" id="product-filter-spirituality" class="product-curated-checkbox"> Spirituality & Consciousness</label>
-                                        <label><input type="checkbox" id="product-filter-heritage" class="product-curated-checkbox"> Namibian Heritage & Local Interest</label>
-                                        <label><input type="checkbox" id="product-filter-children" class="product-curated-checkbox"> Children's & Young Adult</label>
-                                        <label><input type="checkbox" id="product-filter-education" class="product-curated-checkbox"> Education & Learning</label>
-                                        <label><input type="checkbox" id="product-filter-practical" class="product-curated-checkbox"> Other Practical</label>
-                                    </div>
-                                </div>
-                            ` : ''}
-                            ${isFashionAdmin ? `
-                            <div class="form-group"><label>Women's Clothes Page <input type="checkbox" id="product-curate-womens" class="product-curate-toggle"></label></div>
-                            <div class="form-group"><label>Men's Clothes Page <input type="checkbox" id="product-curate-mens" class="product-curate-toggle"></label></div>
-                            ` : ''}
-                            ${isFurnitureAdmin ? `
-                            <div class="form-group"><label>Living Room <input type="checkbox" id="product-curate-livingroom" class="product-curate-toggle"></label></div>
-                            <div class="form-group"><label>Bedroom <input type="checkbox" id="product-curate-bedroom" class="product-curate-toggle"></label></div>
-                            <div class="form-group"><label>Office <input type="checkbox" id="product-curate-office" class="product-curate-toggle"></label></div>
-                            <div class="form-group"><label>Kitchen <input type="checkbox" id="product-curate-kitchen" class="product-curate-toggle"></label></div>
-                            ` : ''}
-                            `}
-                            <div class="form-group"><label>Super Combos <input type="checkbox" id="product-curate-combos" class="product-curate-toggle"></label></div>
-                            ${!isKidsAdmin && !isVehiclesAdmin && !isPropertyAdmin && !isFoodAdmin && !isBooksAdmin && !isSolarAdmin && !isElectronicsAdmin && !isGroceriesAdmin && !isAppliancesAdmin && !isCraftsAdmin && !isFarmAdmin && !isFuelAdmin && !isOtherAdmin ? `
-                            <div class="form-group" style="grid-column: 1 / -1;">
-                                <label style="display:block; margin-bottom:6px; font-weight:600;">${isFurnitureAdmin ? 'Furniture Filters (assign this product to specific furniture filter categories)' : 'Clothing Filters (assign this product to specific clothing filter categories)'}</label>
-                                <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                                    ${!isFurnitureAdmin ? `
-                                    <label><input type="checkbox" id="product-filter-tops" class="product-curated-checkbox"> Tops</label>
-                                    <label><input type="checkbox" id="product-filter-bottoms" class="product-curated-checkbox"> Bottoms</label>
-                                    <label><input type="checkbox" id="product-filter-official" class="product-curated-checkbox"> Official</label>
-                                    <label><input type="checkbox" id="product-filter-traditional" class="product-curated-checkbox"> Traditional</label>
-                                    <label><input type="checkbox" id="product-filter-shoes" class="product-curated-checkbox"> Shoes</label>
-                                    <label><input type="checkbox" id="product-filter-accessories" class="product-curated-checkbox"> Accessories</label>
-                                    ` : ''}
-                                    ${isFurnitureAdmin ? `<label><input type="checkbox" id="product-filter-furniture" class="product-curated-checkbox"> Furniture</label>
-                                    <label><input type="checkbox" id="product-filter-appliances" class="product-curated-checkbox"> Appliances</label>` : ''}
+                                <div id="carousel-preview-4-wrapper" style="display:none; position:relative;">
+                                    <img id="carousel-preview-4" src="" alt="Carousel 4" style="width:120px; height:120px; object-fit:cover; border-radius:6px; box-shadow:0 2px 8px rgba(0,0,0,0.1);" onerror="document.getElementById('carousel-preview-4-wrapper').style.display='none';">
                                 </div>
                             </div>
-                            ` : ''}
                         </div>
-                        `}
-                        <div id="combo-expiry-section" style="display:none; margin-top:1.5rem; padding:1rem; background-color:#fffbe6; border-radius:8px; border-left: 4px solid var(--corporate-gold);">
-                            <div class="form-group">
-                                <label for="product-comboEndDate">Combo Sale End Date</label>
-                                <input type="datetime-local" id="product-comboEndDate">
-                            </div>
-                        </div>
-                        <div id="combo-builder-section" class="admin-form" style="display:none; margin-top:1.5rem; padding:1.5rem; background-color:#eaf5ff; border-radius:12px; border-left: 4px solid var(--corporate-blue);">
-                            <h3 style="margin-top:0; margin-bottom: 1rem; color: var(--corporate-blue);">Combo Product Builder</h3>
-                            <p style="margin-top:0; margin-bottom:1rem; font-size: 0.9rem; color: #555;">Select up to 5 products to create a visual combo. The generated image will become this product's main image.</p>
-                            <div class="form-group">
-                                <label for="combo-product-search">Search products to add</label>
-                                <input type="text" id="combo-product-search" placeholder="Type to filter product list...">
-                            </div>
-                            <div id="combo-product-list" style="max-height: 200px; overflow-y: auto; border: 1px solid #d2d2d7; background: white; padding: 10px; margin-bottom: 1rem; border-radius: 8px;">
-                            </div>
-                            <p style="font-weight: 600;">Selected Products (<span id="combo-selected-count">0</span>/5):</p>
-                            <div id="combo-selected-preview" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom: 1.5rem; min-height: 50px; background: #dfeffc; padding: 10px; border-radius: 8px;">
-                            </div>
-                            <h4 style="margin-bottom: 0.5rem;">Generated Combo Image Preview:</h4>
-                            <canvas id="combo-image-canvas" width="500" height="500" style="width: 250px; height: 250px; border: 2px dashed #ccc; background: #f9f9f9; border-radius: 8px;"></canvas>
-                            <div id="combo-total-display" style="margin-top:10px; font-weight:700;">Calculated Total (Old Price): N$<span id="combo-total-value">0</span></div>
-                            <div class="form-group" style="margin-top: 1rem;">
-                                <label for="product-comboSalePrice"><strong>Combo Sale Price (Current Price)</strong></label>
-                                <input type="number" id="product-comboSalePrice">
-                            </div>
-                            <input type="hidden" id="combo-product-ids-hidden">
-                        </div>
-                        ${isMainAdmin ? `
-                        <h3 style="margin-top: 1.5rem; margin-bottom: 1rem;">Rewards & Promotions</h3>
-                        <div class="form-grid">
-                           <div class="form-group">
-                               <label>Enable Gift Card Reward <input type="checkbox" id="product-giftCardEnabled" class="product-curate-toggle"></label>
-                           </div>
-                        </div>
-                        <div id="gift-card-config-section" style="display:none; margin-top:1rem; padding:1rem; background-color:#f0f7ff; border-radius:8px; border-left:4px solid var(--corporate-blue);">
-                           <div class="form-grid">
-                               <div class="form-group">
-                                   <label for="product-giftCardType">Reward Type</label>
-                                   <select id="product-giftCardType">
-                                       <option value="percent">Percentage</option>
-                                       <option value="fixed">Fixed Amount</option>
-                                   </select>
-                               </div>
-                               <div class="form-group">
-                                   <label for="product-giftCardValue" id="gift-card-value-label">Value (%)</label>
-                                   <input type="number" id="product-giftCardValue" value="5" min="0" step="0.01">
-                               </div>
-                           </div>
-                        </div>
-                        ` : ''}
-                        <div id="product-validation-msg" style="color:#b71c1c; margin:8px 0; display:none; font-weight:600;"></div>
-                        <button id="product-save-btn" type="submit" class="btn btn-primary">Save Product</button>
-                        <button type="reset" id="clear-form-btn" class="btn btn-outline">Clear Form</button>
-                        <button type="button" id="cancel-edit-btn" class="btn btn-outline" style="display:none;">Cancel</button>
-                    </form>
-                </section>
-                <section class="admin-section">
-                    <h2>Manage Products</h2>
-                    <div id="product-list-admin"><ul>${productListHTML}</ul></div>
-                </section>
-            </div>
-            
-            <div id="transactions" class="admin-tab-content">
-                <section class="admin-section">
-                    <h2>${isMainAdmin ? 'All Transactions' : 'Your Transactions'}</h2>
-                    <div id="transaction-list-admin">${transactionsListHTML}</div>
-                </section>
-            </div>
-
-            ${isMainAdmin ? `
-                <div id="add-viewer" class="admin-tab-content"><section class="admin-section"><h3>Add New Viewer</h3><div id="viewers-message" style="display: none;"></div><form id="add-viewers-form"><div class="form-group"><label for="viewers-product">Select Product</label><select id="viewers-product" required>${productOptions}</select></div><div class="form-group"><label for="viewer-name">Viewer Name (optional)</label><input type="text" id="viewer-name" placeholder="e.g. John Doe"></div><div class="form-group"><label>Also add a review for this viewer <input type="checkbox" id="add-review-now" class="product-curate-toggle"></label></div><div id="add-review-fields" style="display:none; margin-top:8px;"><div class="form-group"><label for="review-rating">Rating</label><select id="review-rating"><option value="5">5</option><option value="4">4</option><option value="3">3</option><option value="2">2</option><option value="1">1</option></select></div><div class="form-group"><label for="review-text">Review Text</label><input type="text" id="review-text" placeholder="Write the review here"></div></div><div class="form-group"><label>Select Peak Time</label><div id="peak-times-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px;"></div></div><button type="submit" class="btn btn-primary">Add Viewer</button></form></section></div>
-                <div id="manage-viewers" class="admin-tab-content"><section class="admin-section"><h2>Manage Viewers</h2><div id="viewer-list-admin"><ul>${viewerListHTML}</ul></div></section></div>
-                <div id="users" class="admin-tab-content"><section class="admin-section"><h2>Manage Users</h2><div id="user-list-admin"><ul>${userListHTML}</ul></div></section></div>
-                <div id="sellers" class="admin-tab-content">
-                    <section class="admin-section">
-                        <h2>Manage Seller Accounts</h2>
-                        <p>Click on a seller account to view their dashboard in this tab, or use the <strong>Open Dashboard</strong> links to open a reseller's dashboard directly in a new tab.</p>
-                        <div id="seller-list-admin"><ul>${sellerListHTML}</ul></div>
-                    </section>
-                </div>
-                <div id="faqs" class="admin-tab-content">
-                    <section class="admin-section">
-                        <h2>Add / Edit FAQ</h2>
-                        <form id="faq-form" class="admin-form">
-                            <input type="hidden" id="faq-id-hidden">
-                            <div class="form-group full-width"><label for="faq-question">Question</label><input type="text" id="faq-question" required></div>
-                            <div class="form-group full-width"><label for="faq-answer">Answer</label><textarea id="faq-answer" required></textarea></div>
-                            <button id="faq-save-btn" type="submit" class="btn btn-primary">Save FAQ</button>
-                            <button type="reset" id="clear-faq-form-btn" class="btn btn-outline">Clear</button>
-                        </form>
-                    </section>
-                    <section class="admin-section">
-                        <h2>Manage FAQs</h2>
-                        <div id="faq-list-admin"><ul>${faqListHTML}</ul></div>
-                    </section>
-                </div>
-                <div id="site-settings" class="admin-tab-content"><section class="admin-section"><h2>Site Settings & Hero Images</h2>
-                    <p>Update homepage hero carousel images and category hero images used across the site.</p>
-                    <form id="site-settings-form">
-                        <h3>Homepage Heroes (4 slides)</h3>
-                        <div class="form-grid">
-                            ${[1,2,3,4].map(i => `
-                                <div class="form-group">
-                                    <label for="home-hero-url-${i}">Hero ${i} URL</label>
-                                    <input type="text" id="home-hero-url-${i}" name="home_hero_${i}" placeholder="Image URL" value="${(settings && Array.isArray(settings) ? (settings.find(s=>s.key==='home_hero_' + i)?.value || '') : '')}">
-                                    <label for="home-hero-file-${i}">Or upload file</label>
-                                    <input type="file" id="home-hero-file-${i}" accept="image/*">
-                                </div>
-                            `).join('')}
-                        </div>
+                        <div class="form-group"><label for="product-description">Description</label><textarea id="product-description" placeholder="Enter product description (optional - AI will generate if blank)" rows="4"></textarea><div id="ai-desc-status" style="font-size:0.85rem; margin-top:5px; font-style:italic;"></div></div>
+                        <div class="form-group"><label>Or Upload up to 3 images</label><input type="file" id="product-images" accept="image/*" multiple></div>
+                        <div id="product-images-preview" class="images-preview" style="display:flex; gap:8px; margin-top:8px;"></div>
+                        <input type="hidden" id="product-thumbnails-hidden">
+                        <div class="form-group"><label>Track Stock?</label><input type="checkbox" id="product-stockToggle"></div>
+                        <div class="form-group" id="stock-field-group" style="display: none;"><label for="product-stock">Stock Amount</label><input type="number" id="product-stock" value="10" min="0" step="1"></div>
+                        ${!isClothesAdmin && !isKidsAdmin && !isFoodAdmin ? `<div class="form-group"><label for="product-condition">Condition</label><select id="product-condition"><option value="new">New</option><option value="second-hand">Second-Hand</option></select></div>` : ''}
                         
-                        <!-- Page Heros Editor -->
-                        <h3 style="margin-top: 2rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem;">Page Heros Editor (4 Slides each)</h3>
-                        <div style="margin-bottom: 1.5rem;">
-                            <label for="edit-hero-page-select" style="font-weight:600; display:block; margin-bottom:8px;">Select Website Page to Edit:</label>
-                            <select id="edit-hero-page-select" style="width:100%; padding:12px; border-radius:8px; border:1px solid var(--border-color); font-size:1rem; font-weight:600;">
-                                <option value="home">Home Page</option>
-                                <option value="about">About Us</option>
-                                <option value="how-to-sell">Become a Seller</option>
-                                <option value="trade-in">Trade-In Program</option>
-                                <option value="faqs">Frequently Asked Questions (FAQs)</option>
-                                <option value="shipping">Delivery & Shipping</option>
-                                <option value="returns">Returns & Warranty</option>
-                                <option value="terms">Terms & Conditions</option>
-                                <option value="privacy">Privacy Policy</option>
-                                <option value="contact">Contact Us</option>
-                                <option value="payment">Choose Payment Method</option>
-                                <optgroup label="Main Categories">
-                                    ${Object.keys(categoryData).map(k => `<option value="${k}">${categoryData[k].name}</option>`).join('')}
-                                </optgroup>
+                        <div class="form-group" style="display: flex; align-items: center; gap: 12px;"><label style="margin: 0;">Enable Color Variations?</label><input type="checkbox" id="enable-product-colors"></div>
+                        
+                        <div id="product-colors-section" style="display:none; margin-top:1.5rem; padding:1rem; background-color:#f9f9f9; border-radius:8px;">
+                            <label style="display:block; margin-bottom:8px; font-weight:600;">Product Colors (Enter up to 3 color names or hex codes)</label>
+                            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                                <input type="text" id="product-color-1" placeholder="e.g., Black or #000000" style="flex:1; min-width:150px;">
+                                <input type="text" id="product-color-2" placeholder="e.g., Silver or #C0C0C0" style="flex:1; min-width:150px;">
+                                <input type="text" id="product-color-3" placeholder="e.g., Gold or #FFD700" style="flex:1; min-width:150px;">
+                            </div>
+                            <div id="product-colors-preview" style="display:flex; gap:12px; margin-top:10px;"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="product-exploreMoreReseller">Explore More Reseller Assignment</label>
+                            <select id="product-exploreMoreReseller" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border-color);">
+                                <option value="">-- None (Defaults to current seller) --</option>
+                                ${allUsers.filter(u => u.sellerType && u.sellerType !== 'customer' && u.sellerType !== 'admin').map(u => `
+                                    <option value="${u._id}">${u.businessName || u.name} (${u.sellerType})</option>
+                                `).join('')}
                             </select>
                         </div>
-                        <div id="page-hero-slides-editor" style="background:#fafafa; border:1px solid var(--border-color); border-radius:12px; padding:20px; margin-bottom: 2rem;">
-                        </div>
                         
-                        <h3 style="margin-top: 1rem;">Category Hero Images</h3>
-                        <div style="margin-bottom: 1rem;">Set hero image URL or upload for each category.</div>
-                        <div class="form-grid" id="category-hero-grid">
-                            ${Object.keys(categoryData).filter(k => categoryData[k] && categoryData[k].heroImage).map(k => `
-                                <div class="form-group">
-                                    <label for="cat-hero-url-${k}">${categoryData[k].name}</label>
-                                    <input type="text" id="cat-hero-url-${k}" name="heroImage_${k}" placeholder="Image URL" value="${(settings && Array.isArray(settings) ? (settings.find(s=>s.key==='heroImage_'+k)?.value || '') : '')}">
-                                    <label for="cat-hero-file-${k}">Or upload file</label>
-                                    <input type="file" id="cat-hero-file-${k}" accept="image/*">
-                                </div>
-                            `).join('')}
+                        ${isClothesAdmin ? `
+                        <div id="clothing-size-section" style="margin-top: 1.5rem; padding: 1rem; background-color: #f9f9f9; border-radius: 8px;">
+                            <label style="display:block; margin-bottom: 10px; font-weight: 600;">Available Clothing Sizes (Select multiple)</label>
+                            <select id="product-sizes-select" multiple class="admin-input" style="width: 100%; height: 150px; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px;">
+                                ${STANDARD_SIZES.map(size => `<option value="${size}">${size}</option>`).join('')}
+                            </select>
+                            <small style="display:block; margin-top:5px; color:#666;">Hold Ctrl (Windows) or Cmd (Mac) to select multiple sizes.</small>
                         </div>
-                        
-                        <h3 style="margin-top: 1rem;">Payment Success Page Carousel</h3>
-                        <div style="margin-bottom: 1rem;">Images to show on the confirmation page after selecting payment method (1 to 4 images).</div>
-                        <div class="form-grid">
-                            ${[1,2,3,4].map(i => `
-                                <div class="form-group">
-                                    <label for="payment-carousel-url-${i}">Image ${i} URL</label>
-                                    <input type="text" id="payment-carousel-url-${i}" name="payment_carousel_${i}" placeholder="Image URL" value="${(settings && Array.isArray(settings) ? (settings.find(s=>s.key==='payment_carousel_' + i)?.value || '') : '')}">
-                                    <label for="payment-carousel-file-${i}">Or upload file</label>
-                                    <input type="file" id="payment-carousel-file-${i}" accept="image/*">
-                                </div>
-                            `).join('')}
-                        </div>
+                        ` : ''}
 
-                        <div style="margin-top: 1rem;"><button class="btn btn-primary" type="submit">Save Site Settings</button></div>
-                    </form>
-                </section></div>
-                <div id="page-settings" class="admin-tab-content">
-                    <section class="admin-section">
-                        <h2>Page-Specific Images</h2>
-                        <form id="page-settings-form">
-                            <h3>About Us Page Image</h3>
-                            <div class="form-group">
-                                <label for="about-us-image-file">Upload New Image</label>
-                                <input type="file" id="about-us-image-file-tab" accept="image/*">
-                                <p style="font-size: 0.9rem; color: #666; margin-top: 5px;">Current Image:</p>
-                                <img id="about-us-image-preview-tab" src="${(settings && Array.isArray(settings) ? (settings.find(s => s.key === 'about_us_image')?.value || 'https://via.placeholder.com/150') : 'https://via.placeholder.com/150')}" alt="About Us Preview" style="width: 200px; height: auto; margin-top: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                        ${isMainAdmin ? `
+                        <div id="ai-features-section" style="margin-top:1.5rem; padding:1rem; background-color:#f0f7ff; border-radius:8px; border-left:4px solid var(--primary-blue);">
+                            <h3 style="margin-top:0; margin-bottom:1rem; color:var(--primary-blue);">🤖 AI-Generated Features</h3>
+                            <div style="margin-bottom:1rem;">
+                                <label style="display:block; margin-bottom:0.5rem; font-weight:600;">Product Features</label>
+                                <p style="margin:0.5rem 0 0.5rem 0; font-size:0.9rem; color:#666;">Features are generated automatically from the product title.</p>
+                                <div id="product-features-container" style="display:flex; flex-direction:column; gap:8px; margin-top:8px;"></div>
+                                <button type="button" id="ai-generate-features-btn" style="margin-top:10px; padding:8px 16px; background-color:var(--primary-blue); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:600;">Regenerate Features</button>
+                                <button type="button" id="ai-clear-features-btn" style="margin-top:10px; margin-left:8px; padding:8px 16px; background-color:#ccc; color:#333; border:none; border-radius:4px; cursor:pointer;">Clear All</button>
+                                <div id="ai-features-status" style="margin-top:10px; font-size:0.9rem; color:#666; display:none;"></div>
+                                <div id="ai-images-status" style="margin-top:10px; font-size:0.9rem; color:#666; display:none;"></div>
                             </div>
-                            <button type="submit" class="btn btn-primary">Save Page Settings</button>
-                        </form>
-                    </section>
-                </div>
-                <div id="simulate-views" class="admin-tab-content">
-                    <section class="admin-section">
-                        <h2>One-Month Traffic Simulation</h2>
-                        <p>This tool will simulate one month of user traffic based on predefined personas and peak times. It will create "viewer" entries for various products to make the site look more active. This process can take a minute to complete.</p>
-                        <button id="start-simulation-btn" class="btn btn-primary">Start One-Month Simulation</button>
-                        <div id="simulation-log" style="margin-top: 20px; background: #f0f0f0; border: 1px solid #ccc; border-radius: 8px; padding: 15px; height: 300px; overflow-y: auto; font-family: monospace; white-space: pre-wrap;">Simulation log will appear here...</div>
-                    </section>
-                </div>
-            ` : ''}
-        </div>`;
-    } catch (err) {
-        console.error('CRITICAL ERROR rendering admin page:', err);
-        getAppRoot().innerHTML = `
-            <div style="background-color: #f8d7da; border: 2px solid #f5c6cb; padding: 20px; margin: 20px; border-radius: 6px; color: #721c24;">
-                <h2>❌ Admin Dashboard Failed to Load</h2>
-                <p><strong>Error:</strong> ${err.message || 'Unknown rendering error'}</p>
-                <p>Please check the browser console (F12) for more details and contact support if this persists.</p>
-                <pre style="background: #f1f3f4; padding: 10px; border-radius: 4px; overflow-x: auto;">${err.stack || 'No stack trace available'}</pre>
+                        </div>
+                        ` : `
+                        <div id="manual-features-section" style="margin-top:1.5rem; padding:1rem; background-color:#f9f9f9; border-radius:8px; border-left:4px solid #999;">
+                            <h3 style="margin-top:0; margin-bottom:1rem; color:#333;">Manual Product Features</h3>
+                            <div style="margin-bottom:1rem;">
+                                <label style="display:block; margin-bottom:0.5rem; font-weight:600;">Product Features</label>
+                                <p style="margin:0.5rem 0 0.5rem 0; font-size:0.9rem; color:#666;">Add / edit feature bullets manually.</p>
+                                <input type="text" id="manual-feature-input" placeholder="Enter a new feature" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px; margin-bottom:8px;" />
+                                <div id="product-features-container" style="display:flex; flex-direction:column; gap:8px; margin-top:8px;"></div>
+                                <button type="button" id="manual-add-feature-btn" style="margin-top:10px; padding:8px 16px; background-color:var(--secondary-blue); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:600;">Add Feature</button>
+                                <button type="button" id="ai-clear-features-btn" style="margin-top:10px; margin-left:8px; padding:8px 16px; background-color:#ccc; color:#333; border:none; border-radius:4px; cursor:pointer;">Clear All</button>
+                            </div>
+                        </div>
+                        `}
+
+                        <div class="form-group full-width" style="margin-top: 1.5rem; padding: 1rem; background-color: #f9f9f9; border-radius: 8px;">
+                            <label style="font-weight: 600;">Manage Product Filter Tags (For Sorting & Category Filters)</label>
+                            <p style="font-size: 0.85rem; color: #666; margin: 4px 0 10px 0;">Add, update, or remove filter tags for this product. These determine how the product is classified in the Sort & Category filter dropdowns (e.g. tops, bottoms, bakkies, suvs, traditional, fiction, nonfiction, hotmeals, etc.).</p>
+                            <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                                <input type="text" id="new-filter-tag-input" placeholder="e.g. tops, bottoms, suvs, forsale" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                <button type="button" id="add-filter-tag-btn" style="padding: 8px 16px; background-color: var(--corporate-blue); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Add Tag</button>
+                            </div>
+                            <div id="product-filter-tags-container" style="display: flex; gap: 8px; flex-wrap: wrap; min-height: 35px; padding: 8px; background: white; border: 1px solid #ddd; border-radius: 6px;">
+                                <span style="color:#999; font-size:12px;">No active tags</span>
+                            </div>
+                            <input type="hidden" id="product-clothing-filters-hidden" name="clothingFilters">
+                        </div>
+                        
+                        <div class="form-group"><label>On Sale?</label><input type="checkbox" id="product-onSale"></div>
+                    </div>
+                    
+                    <!-- Trust Visibility Config Panel -->
+                    <h3 style="margin-top: 1.5rem; margin-bottom: 1rem;">Trust Section Badges Visibility</h3>
+                    <div class="form-grid">
+                        <div class="form-group"><label>Display Trade-In Badge <input type="checkbox" id="product-showTradeIn" class="product-curate-toggle" checked></label></div>
+                        <div class="form-group"><label>Display Lay-Bye Badge <input type="checkbox" id="product-showLayBye" class="product-curate-toggle" checked></label></div>
+                        <div class="form-group"><label>Display Deposit Badge <input type="checkbox" id="product-showDeposit" class="product-curate-toggle" checked></label></div>
+                        <div class="form-group"><label>Display Delivery Nationwide Badge <input type="checkbox" id="product-showDeliveryNationwide" class="product-curate-toggle" checked></label></div>
+                        <div class="form-group"><label>Display 1-Year Warranty Badge <input type="checkbox" id="product-showOneYearWarranty" class="product-curate-toggle" checked></label></div>
+                        <div class="form-group"><label>Display 15-Day Returns Badge <input type="checkbox" id="product-showFifteenDayReturns" class="product-curate-toggle" checked></label></div>
+                    </div>
+
+                    <div id="sale-dates-section" style="display:none; margin-top:1.5rem; padding:1rem; background-color:#f9f9f9; border-radius:8px;">
+                        <h3 style="margin-bottom:1rem;">Sale Duration</h3>
+                        <div class="form-grid">
+                            <div class="form-group"><label for="product-saleStartDate">Sale Start Date & Time</label><input type="datetime-local" id="product-saleStartDate"></div>
+                            <div class="form-group"><label for="product-saleEndDate">Sale End Date & Time</label><input type="datetime-local" id="product-saleEndDate"></div>
+                        </div>
+                    </div>
+                    <h3 style="margin-top: 1.5rem; margin-bottom: 1rem;">Assign to Curated Pages</h3>
+                    ${isMainAdmin ? `
+                    <div class="form-grid">
+                        <div class="form-group"><label>Trending Now <input type="checkbox" id="product-curate-trending" class="product-curate-toggle"></label></div>
+                        <div class="form-group"><label>New Releases <input type="checkbox" id="product-curate-new-arrivals" class="product-curate-toggle"></label></div>
+                        <div class="form-group"><label>Super Combos <input type="checkbox" id="product-curate-combos" class="product-curate-toggle"></label></div>
+                    </div>
+                    ` : `
+                    <div class="form-grid">
+                        ${isKidsAdmin ? `
+                        <div class="form-group"><label>Kids Electronics <input type="checkbox" id="product-curate-kids-electronics" class="product-curate-toggle"></label></div>
+                        <div class="form-group"><label>Kids Clothing <input type="checkbox" id="product-curate-kids-clothing" class="product-curate-toggle"></label></div>
+                        <div class="form-group"><label>Kids Toys <input type="checkbox" id="product-curate-kids-toys" class="product-curate-toggle"></label></div>
+                        ` : `
+                        ${isFashionAdmin ? `
+                        <div class="form-group"><label>Women's Clothes Page <input type="checkbox" id="product-curate-womens" class="product-curate-toggle"></label></div>
+                        <div class="form-group"><label>Men's Clothes Page <input type="checkbox" id="product-curate-mens" class="product-curate-toggle"></label></div>
+                        ` : ''}
+                        ${isFurnitureAdmin ? `
+                        <div class="form-group"><label>Living Room <input type="checkbox" id="product-curate-livingroom" class="product-curate-toggle"></label></div>
+                        <div class="form-group"><label>Bedroom <input type="checkbox" id="product-curate-bedroom" class="product-curate-toggle"></label></div>
+                        <div class="form-group"><label>Office <input type="checkbox" id="product-curate-office" class="product-curate-toggle"></label></div>
+                        <div class="form-group"><label>Kitchen <input type="checkbox" id="product-curate-kitchen" class="product-curate-toggle"></label></div>
+                        ` : ''}
+                        `}
+                        <div class="form-group"><label>Super Combos <input type="checkbox" id="product-curate-combos" class="product-curate-toggle"></label></div>
+                    </div>
+                    `}
+                    <div id="combo-expiry-section" style="display:none; margin-top:1.5rem; padding:1rem; background-color:#fffbe6; border-radius:8px; border-left: 4px solid var(--corporate-gold);">
+                        <div class="form-group">
+                            <label for="product-comboEndDate">Combo Sale End Date</label>
+                            <input type="datetime-local" id="product-comboEndDate">
+                        </div>
+                    </div>
+                    <div id="combo-builder-section" class="admin-form" style="display:none; margin-top:1.5rem; padding:1.5rem; background-color:#eaf5ff; border-radius:12px; border-left: 4px solid var(--corporate-blue);">
+                        <h3 style="margin-top:0; margin-bottom: 1rem; color: var(--corporate-blue);">Combo Product Builder</h3>
+                        <p style="margin-top:0; margin-bottom:1rem; font-size: 0.9rem; color: #555;">Select up to 5 products to create a visual combo. The generated image will become this product's main image.</p>
+                        <div class="form-group">
+                            <label for="combo-product-search">Search products to add</label>
+                            <input type="text" id="combo-product-search" placeholder="Type to filter product list...">
+                        </div>
+                        <div id="combo-product-list" style="max-height: 200px; overflow-y: auto; border: 1px solid #d2d2d7; background: white; padding: 10px; margin-bottom: 1rem; border-radius: 8px;">
+                        </div>
+                        <p style="font-weight: 600;">Selected Products (<span id="combo-selected-count">0</span>/5):</p>
+                        <div id="combo-selected-preview" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom: 1.5rem; min-height: 50px; background: #dfeffc; padding: 10px; border-radius: 8px;">
+                        </div>
+                        <h4 style="margin-bottom: 0.5rem;">Generated Combo Image Preview:</h4>
+                        <canvas id="combo-image-canvas" width="500" height="500" style="width: 250px; height: 250px; border: 2px dashed #ccc; background: #f9f9f9; border-radius: 8px;"></canvas>
+                        <div id="combo-total-display" style="margin-top:10px; font-weight:700;">Calculated Total (Old Price): N$<span id="combo-total-value">0</span></div>
+                        <div class="form-group" style="margin-top: 1rem;">
+                            <label for="product-comboSalePrice"><strong>Combo Sale Price (Current Price)</strong></label>
+                            <input type="number" id="product-comboSalePrice">
+                        </div>
+                        <input type="hidden" id="combo-product-ids-hidden">
+                    </div>
+                    
+                    ${isMainAdmin || (sellerType && sellerType !== 'customer') ? `
+                    <h3 style="margin-top: 1.5rem; margin-bottom: 1rem;">Rewards & Promotions</h3>
+                    <div class="form-grid">
+                       <div class="form-group">
+                           <label>Enable Gift Card Reward <input type="checkbox" id="product-giftCardEnabled" class="product-curate-toggle"></label>
+                       </div>
+                    </div>
+                    <div id="gift-card-config-section" style="display:none; margin-top:1rem; padding:1rem; background-color:#f0f7ff; border-radius:8px; border-left:4px solid var(--corporate-blue);">
+                       <div class="form-grid">
+                           <div class="form-group">
+                               <label for="product-giftCardType">Reward Type</label>
+                               <select id="product-giftCardType">
+                                   <option value="percent">Percentage</option>
+                                   <option value="fixed">Fixed Amount</option>
+                               </select>
+                           </div>
+                           <div class="form-group">
+                               <label for="product-giftCardValue" id="gift-card-value-label">Value (%)</label>
+                               <input type="number" id="product-giftCardValue" value="5" min="0" step="0.01">
+                           </div>
+                       </div>
+                    </div>
+                    ` : ''}
+                    <div id="product-validation-msg" style="color:#b71c1c; margin:8px 0; display:none; font-weight:600;"></div>
+                    <button id="product-save-btn" type="submit" class="btn btn-primary">Save Product</button>
+                    <button type="reset" id="clear-form-btn" class="btn btn-outline">Clear Form</button>
+                    <button type="button" id="cancel-edit-btn" class="btn btn-outline" style="display:none;">Cancel</button>
+                </form>
+            </section>
+            <section class="admin-section">
+                <h2>Manage Products</h2>
+                <div id="product-list-admin"><ul>${productListHTML}</ul></div>
+            </section>
+        </div>
+        
+        <div id="transactions" class="admin-tab-content">
+            <section class="admin-section">
+                <h2>${isMainAdmin ? 'All Transactions' : 'Your Transactions'}</h2>
+                <div id="transaction-list-admin">${transactionsListHTML}</div>
+            </section>
+        </div>
+
+        ${isMainAdmin ? `
+            <div id="add-viewer" class="admin-tab-content"><section class="admin-section"><h3>Add New Viewer</h3><div id="viewers-message" style="display: none;"></div><form id="add-viewers-form"><div class="form-group"><label for="viewers-product">Select Product</label><select id="viewers-product" required>${productOptions}</select></div><div class="form-group"><label for="viewer-name">Viewer Name (optional)</label><input type="text" id="viewer-name" placeholder="e.g. John Doe"></div><div class="form-group"><label>Also add a review for this viewer <input type="checkbox" id="add-review-now" class="product-curate-toggle"></label></div><div id="add-review-fields" style="display:none; margin-top:8px;"><div class="form-group"><label for="review-rating">Rating</label><select id="review-rating"><option value="5">5</option><option value="4">4</option><option value="3">3</option><option value="2">2</option><option value="1">1</option></select></div><div class="form-group"><label for="review-text">Review Text</label><input type="text" id="review-text" placeholder="Write the review here"></div></div><div class="form-group"><label>Select Peak Time</label><div id="peak-times-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px;"></div></div><button type="submit" class="btn btn-primary">Add Viewer</button></form></section></div>
+            <div id="manage-viewers" class="admin-tab-content"><section class="admin-section"><h2>Manage Viewers</h2><div id="viewer-list-admin"><ul>${viewerListHTML}</ul></div></section></div>
+            <div id="users" class="admin-tab-content"><section class="admin-section"><h2>Manage Users</h2><div id="user-list-admin"><ul>${userListHTML}</ul></div></section></div>
+            <div id="sellers" class="admin-tab-content">
+                <section class="admin-section">
+                    <h2>Manage Seller Accounts</h2>
+                    <p>Click on a seller account to view their dashboard in this tab, or use the <strong>Open Dashboard</strong> links to open a reseller's dashboard directly in a new tab.</p>
+                    <div id="seller-list-admin"><ul>${sellerListHTML}</ul></div>
+                </section>
             </div>
-        `;
-    }
+            <div id="faqs" class="admin-tab-content">
+                <section class="admin-section">
+                    <h2>Add / Edit FAQ</h2>
+                    <form id="faq-form" class="admin-form">
+                        <input type="hidden" id="faq-id-hidden">
+                        <div class="form-group full-width"><label for="faq-question">Question</label><input type="text" id="faq-question" required></div>
+                        <div class="form-group full-width"><label interpreter="faq-answer">Answer</label><textarea id="faq-answer" required></textarea></div>
+                        <button id="faq-save-btn" type="submit" class="btn btn-primary">Save FAQ</button>
+                        <button type="reset" id="clear-faq-form-btn" class="btn btn-outline">Clear</button>
+                    </form>
+                </section>
+                <section class="admin-section">
+                    <h2>Manage FAQs</h2>
+                    <div id="faq-list-admin"><ul>${faqListHTML}</ul></div>
+                </section>
+            </div>
+            <div id="brands" class="admin-tab-content">
+                <section class="admin-section">
+                    <h2>Add / Edit Brand</h2>
+                    <form id="brand-form" class="admin-form">
+                        <input type="hidden" id="brand-id-hidden">
+                        <div class="form-group full-width">
+                            <label for="brand-name">Brand Name</label>
+                            <input type="text" id="brand-name" required placeholder="e.g., Nike, Adidas, Gucci...">
+                        </div>
+                        <button id="brand-save-btn" type="submit" class="btn btn-primary">Save Brand</button>
+                        <button type="reset" id="clear-brand-form-btn" class="btn btn-outline" onclick="document.getElementById('brand-id-hidden').value=''; document.getElementById('brand-save-btn').textContent='Save Brand';">Clear</button>
+                    </form>
+                </section>
+                <section class="admin-section">
+                    <h2>Manage Brands</h2>
+                    <div id="brand-list-admin"><ul>${brandListHTML}</ul></div>
+                </section>
+            </div>
+            <div id="site-settings" class="admin-tab-content"><section class="admin-section"><h2>Site Settings & Hero Images</h2>
+                <p>Update homepage hero carousel images and category hero images used across the site.</p>
+                <form id="site-settings-form">
+                    <h3>Homepage Heroes (4 slides)</h3>
+                    <div class="form-grid">
+                        ${[1,2,3,4].map(i => `
+                            <div class="form-group">
+                                <label for="home-hero-url-${i}">Hero ${i} URL</label>
+                                <input type="text" id="home-hero-url-${i}" name="home_hero_${i}" placeholder="Image URL" value="${(settings && Array.isArray(settings) ? (settings.find(s=>s.key==='home_hero_' + i)?.value || '') : '')}">
+                                <label for="home-hero-file-${i}">Or upload file</label>
+                                <input type="file" id="home-hero-file-${i}" accept="image/*">
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <h3 style="margin-top: 2rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem;">Page Heros Editor (4 Slides each)</h3>
+                    <div style="margin-bottom: 1.5rem;">
+                        <label for="edit-hero-page-select" style="font-weight:600; display:block; margin-bottom:8px;">Select Website Page to Edit:</label>
+                        <select id="edit-hero-page-select" style="width:100%; padding:12px; border-radius:8px; border:1px solid var(--border-color); font-size:1rem; font-weight:600;">
+                            <option value="home">Home Page</option>
+                            <option value="about">About Us</option>
+                            <option value="how-to-sell">Become a Seller</option>
+                            <option value="trade-in">Trade-In Program</option>
+                            <option value="faqs">Frequently Asked Questions (FAQs)</option>
+                            <option value="shipping">Delivery & Shipping</option>
+                            <option value="returns">Returns & Warranty</option>
+                            <option value="terms">Terms & Conditions</option>
+                            <option value="privacy">Privacy Policy</option>
+                            <option value="contact">Contact Us</option>
+                            <option value="payment">Choose Payment Method</option>
+                            <optgroup label="Main Categories">
+                                ${Object.keys(categoryData).map(k => `<option value="${k}">${categoryData[k].name}</option>`).join('')}
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div id="page-hero-slides-editor" style="background:#fafafa; border:1px solid var(--border-color); border-radius:12px; padding:20px; margin-bottom: 2rem;">
+                    </div>
+                    
+                    <!-- Under Hero Category Cards Manager UI -->
+                    <h3 style="margin-top: 2rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem;">Home Page Under-Hero Category Cards</h3>
+                    <p style="margin-bottom: 1rem; font-size: 0.9rem; color: #555;">Manage the items displayed directly under the home page hero section. You can add new cards, update their text and links, upload images, or delete cards entirely.</p>
+                    <div id="under-hero-cards-manager-container" style="background: #fafafa; border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 1rem;"></div>
+                    <button type="button" id="add-under-hero-card-btn" class="btn btn-outline" style="margin-bottom: 2rem; width: auto; display: inline-block;">+ Add New Category Card</button>
+                    
+                    <h3 style="margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem;">Category Hero Images</h3>
+                    <div style="margin-bottom: 1rem;">Set hero image URL or upload for each category.</div>
+                    <div class="form-grid" id="category-hero-grid">
+                        ${Object.keys(categoryData).filter(k => categoryData[k] && categoryData[k].heroImage).map(k => `
+                            <div class="form-group">
+                                <label for="cat-hero-url-${k}">${categoryData[k].name}</label>
+                                <input type="text" id="cat-hero-url-${k}" name="heroImage_${k}" placeholder="Image URL" value="${(settings && Array.isArray(settings) ? (settings.find(s=>s.key==='heroImage_'+k)?.value || '') : '')}">
+                                <label for="cat-hero-file-${k}">Or upload file</label>
+                                <input type="file" id="cat-hero-file-${k}" accept="image/*">
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <h3 style="margin-top: 1rem;">Payment Success Page Carousel</h3>
+                    <div style="margin-bottom: 1rem;">Images to show on the confirmation page after selecting payment method (1 to 4 images).</div>
+                    <div class="form-grid">
+                        ${[1,2,3,4].map(i => `
+                            <div class="form-group">
+                                <label for="payment-carousel-url-${i}">Image ${i} URL</label>
+                                <input type="text" id="payment-carousel-url-${i}" name="payment_carousel_${i}" placeholder="Image URL" value="${(settings && Array.isArray(settings) ? (settings.find(s=>s.key==='payment_carousel_' + i)?.value || '') : '')}">
+                                <label for="payment-carousel-file-${i}">Or upload file</label>
+                                <input type="file" id="payment-carousel-file-${i}" accept="image/*">
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <div style="margin-top: 1rem;"><button class="btn btn-primary" type="submit">Save Site Settings</button></div>
+                </form>
+            </section></div>
+            <div id="page-settings" class="admin-tab-content">
+                <section class="admin-section">
+                    <h2>Page-Specific Images</h2>
+                    <form id="page-settings-form">
+                        <h3>About Us Page Image</h3>
+                        <div class="form-group">
+                            <label for="about-us-image-file">Upload New Image</label>
+                            <input type="file" id="about-us-image-file-tab" accept="image/*">
+                            <p style="font-size: 0.9rem; color: #666; margin-top: 5px;">Current Image:</p>
+                            <img id="about-us-image-preview-tab" src="${(settings && Array.isArray(settings) ? (settings.find(s => s.key === 'about_us_image')?.value || 'https://via.placeholder.com/150') : 'https://via.placeholder.com/150')}" alt="About Us Preview" style="width: 200px; height: auto; margin-top: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save Page Settings</button>
+                    </form>
+                </section>
+            </div>
+            <div id="simulate-views" class="admin-tab-content">
+                <section class="admin-section">
+                    <h2>One-Month Traffic Simulation</h2>
+                    <p>This tool will simulate one month of user traffic based on predefined personas and peak times. It will create "viewer" entries for various products to make the site look more active. This process can take a minute to complete.</p>
+                    <button id="start-simulation-btn" class="btn btn-primary">Start One-Month Simulation</button>
+                    <div id="simulation-log" style="margin-top: 20px; background: #f0f0f0; border: 1px solid #ccc; border-radius: 8px; padding: 15px; height: 300px; overflow-y: auto; font-family: monospace; white-space: pre-wrap;">Simulation log will appear here...</div>
+                </section>
+            </div>
+        ` : ''}
+    </div>`;
     
     attachAdminEventListeners(isMainAdmin, isFashionAdmin, allProducts, relevantTransactions, allFAQs);
     if (isMainAdmin) {
@@ -3081,14 +3059,208 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
         }
     });
 
-    // Dynamic Page Hero Carousel Select Listener
     const pageSelect = document.getElementById('edit-hero-page-select');
     if (pageSelect) {
         pageSelect.addEventListener('change', (e) => {
             populateHeroSlidesEditor(e.target.value);
         });
-        // Populate initial page on render
         populateHeroSlidesEditor(pageSelect.value);
+    }
+
+    // Home Page under-hero Category Cards Live Editor Events setup
+    const cardsContainer = document.getElementById('under-hero-cards-manager-container');
+    const addCardBtn = document.getElementById('add-under-hero-card-btn');
+
+    let currentCards = [];
+    const defaultUnderHeroCards = [
+      { title: "Trending Now", link: "#trending", image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" },
+      { title: "New Arrivals", link: "#new-arrivals", image: "https://images.unsplash.com/photo-1546054454-aa26e2b734c7?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" },
+      { title: "Super Combos", link: "#combos", image: "https://images.unsplash.com/photo-1572594691920-87d1b7b7a8a0?auto=format&fit=crop&w=800&q=60" },
+      { title: "Pre-Owned Deals", link: "#second-hand", image: "https://images.unsplash.com/photo-1598327105666-658454354c03?auto=format&fit=crop&w=800&q=60" },
+      { title: "On Sale", link: "#on-sale", image: "https://images.unsplash.com/photo-1555774698-0b77e0d5fac6?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" },
+      { title: "Gaming Gear", link: "#category/gaming-accessories", image: "https://images.unsplash.com/photo-1598550476439-6847785fcea6?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" }
+    ];
+
+    if (globalSettingsMap['home_under_hero_cards']) {
+        try {
+            currentCards = JSON.parse(globalSettingsMap['home_under_hero_cards']);
+        } catch (e) {
+            currentCards = [...defaultUnderHeroCards];
+        }
+    } else {
+        currentCards = [...defaultUnderHeroCards];
+    }
+
+    const renderCardsManagerList = () => {
+        if (!cardsContainer) return;
+        cardsContainer.innerHTML = '';
+        if (currentCards.length === 0) {
+            cardsContainer.innerHTML = '<p style="color: #666; font-style: italic;">No category cards configured. Add one below.</p>';
+            return;
+        }
+
+        currentCards.forEach((card, idx) => {
+            const cardEl = document.createElement('div');
+            cardEl.style.cssText = 'border-bottom: 1px dashed var(--border-color); padding-bottom: 1.5rem; margin-bottom: 1.5rem; display: flex; gap: 15px; align-items: flex-start;';
+            cardEl.innerHTML = `
+                <div style="width: 80px; height: 80px; background-image: url('${card.image || ''}'); background-size: cover; background-position: center; border-radius: 8px; border: 1px solid #ddd; flex-shrink: 0; margin-top: 25px;"></div>
+                <div style="flex: 1;" class="form-grid">
+                    <div class="form-group">
+                        <label>Card Title</label>
+                        <input type="text" class="card-title-input" data-index="${idx}" value="${card.title || ''}" placeholder="e.g. Trending Now" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    <div class="form-group">
+                        <label>Card Link/Hash</label>
+                        <input type="text" class="card-link-input" data-index="${idx}" value="${card.link || ''}" placeholder="e.g. #trending" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    <div class="form-group">
+                        <label>Image URL</label>
+                        <input type="text" class="card-image-url-input" id="card-img-url-${idx}" data-index="${idx}" value="${card.image || ''}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    <div class="form-group">
+                        <label>Or Upload Image</label>
+                        <input type="file" class="card-image-file-input" data-index="${idx}" accept="image/*" style="width: 100%;">
+                    </div>
+                </div>
+                <button type="button" class="remove-card-btn" data-index="${idx}" style="margin-top: 25px; padding: 8px 12px; background: #ff4444; color: white; border: none; border-radius: 4px; cursor: pointer;"><i class="fas fa-trash"></i></button>
+            `;
+            cardsContainer.appendChild(cardEl);
+        });
+
+        // Store edited configuration globally for interception by primary settings submit listener in main.js
+        window.currentUnderHeroCards = currentCards;
+    };
+
+    renderCardsManagerList();
+
+    if (addCardBtn) {
+        addCardBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            currentCards.push({ title: '', link: '#', image: '' });
+            renderCardsManagerList();
+        });
+    }
+
+    if (cardsContainer) {
+        cardsContainer.addEventListener('input', (e) => {
+            const index = parseInt(e.target.dataset.index, 10);
+            if (isNaN(index)) return;
+
+            if (e.target.classList.contains('card-title-input')) {
+                currentCards[index].title = e.target.value;
+            } else if (e.target.classList.contains('card-link-input')) {
+                currentCards[index].link = e.target.value;
+            } else if (e.target.classList.contains('card-image-url-input')) {
+                currentCards[index].image = e.target.value;
+            }
+            window.currentUnderHeroCards = currentCards;
+        });
+
+        cardsContainer.addEventListener('click', (e) => {
+            const removeBtn = e.target.closest('.remove-card-btn');
+            if (removeBtn) {
+                e.preventDefault();
+                const index = parseInt(removeBtn.dataset.index, 10);
+                currentCards.splice(index, 1);
+                renderCardsManagerList();
+            }
+        });
+
+        cardsContainer.addEventListener('change', async (e) => {
+            const fileInput = e.target.closest('.card-image-file-input');
+            if (fileInput && fileInput.files.length > 0) {
+                const index = parseInt(fileInput.dataset.index, 10);
+                const file = fileInput.files[0];
+                const fd = new FormData();
+                fd.append('image', file);
+                try {
+                    const res = await fetch('/api/upload/hero', { method: 'POST', body: fd });
+                    if (!res.ok) throw new Error('Upload failed');
+                    const data = await res.json();
+                    if (data.image) {
+                        currentCards[index].image = data.image;
+                        const urlInput = document.getElementById(`card-img-url-${index}`);
+                        if (urlInput) urlInput.value = data.image;
+                        renderCardsManagerList();
+                    }
+                } catch (err) {
+                    alert('Upload failed: ' + err.message);
+                }
+            }
+        });
+    }
+
+    const addFilterTagBtn = document.getElementById('add-filter-tag-btn');
+    const newFilterTagInput = document.getElementById('new-filter-tag-input');
+    const filtersContainer = document.getElementById('product-filter-tags-container');
+    const filtersHidden = document.getElementById('product-clothing-filters-hidden');
+
+    const updateFilterTagsUI = () => {
+        if (!filtersContainer || !filtersHidden) return;
+        filtersContainer.innerHTML = '';
+        let tags = [];
+        try {
+            tags = JSON.parse(filtersHidden.value || '[]');
+        } catch (e) {
+            tags = [];
+        }
+        if (tags.length === 0) {
+            filtersContainer.innerHTML = '<span style="color:#999; font-size:12px;">No active tags</span>';
+            return;
+        }
+        tags.forEach(tag => {
+            const tagEl = document.createElement('span');
+            tagEl.style.cssText = 'display:inline-flex; align-items:center; gap:6px; background:var(--corporate-blue); color:white; padding:4px 10px; border-radius:15px; font-size:12px; font-weight:600; margin-right:5px; margin-bottom:5px;';
+            tagEl.innerHTML = `${tag} <button type="button" class="remove-tag-btn" data-tag="${tag}" style="border:none; background:none; color:white; cursor:pointer; font-weight:bold; font-size:12px; padding:0 0 0 4px; line-height:1;">&times;</button>`;
+            filtersContainer.appendChild(tagEl);
+        });
+    };
+
+    if (addFilterTagBtn && newFilterTagInput && filtersHidden) {
+        addFilterTagBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const tag = newFilterTagInput.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+            if (!tag) return;
+            let tags = [];
+            try {
+                tags = JSON.parse(filtersHidden.value || '[]');
+            } catch (e) {
+                tags = [];
+            }
+            if (!tags.includes(tag)) {
+                tags.push(tag);
+                filtersHidden.value = JSON.stringify(tags);
+                updateFilterTagsUI();
+            }
+            newFilterTagInput.value = '';
+            newFilterTagInput.focus();
+        });
+
+        newFilterTagInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addFilterTagBtn.click();
+            }
+        });
+    }
+
+    if (filtersContainer) {
+        filtersContainer.addEventListener('click', (e) => {
+            const removeBtn = e.target.closest('.remove-tag-btn');
+            if (removeBtn && filtersHidden) {
+                e.preventDefault();
+                const tagToRemove = removeBtn.dataset.tag;
+                let tags = [];
+                try {
+                    tags = JSON.parse(filtersHidden.value || '[]');
+                } catch (e) {
+                    tags = [];
+                }
+                tags = tags.filter(t => t !== tagToRemove);
+                filtersHidden.value = JSON.stringify(tags);
+                updateFilterTagsUI();
+            }
+        });
     }
 
     const productForm = document.getElementById('product-form');
@@ -3130,16 +3302,10 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
         ];
         curatedIds.forEach(id => { const el = document.getElementById(id); if (el) el.checked = false; });
         
-        [
-            'product-filter-tops','product-filter-bottoms','product-filter-official','product-filter-traditional','product-filter-shoes','product-filter-accessories','product-filter-furniture','product-filter-appliances',
-            'product-filter-bakkies', 'product-filter-suvs', 'product-filter-sedans', 'product-filter-hatchbacks',
-            'product-filter-forsale', 'product-filter-forrent', 'product-filter-commercial',
-            'product-filter-hotmeals', 'product-filter-groceries', 'product-filter-beverages',
-            'product-filter-fiction', 'product-filter-nonfiction', 'product-filter-spirituality', 'product-filter-heritage', 'product-filter-children', 'product-filter-education', 'product-filter-practical'
-        ].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.checked = false;
-        });
+        if (filtersHidden) {
+            filtersHidden.value = '[]';
+            updateFilterTagsUI();
+        }
 
         ['product-color-1', 'product-color-2', 'product-color-3'].forEach(id => {
             const el = document.getElementById(id);
@@ -3196,7 +3362,6 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
             filesToProcess = Array.from(e.target.files).slice(0, 3);
             processedImages = [];
             currentImageIndex = 0;
-            
             if (filesToProcess.length > 0) {
                 processNextImage();
             }
@@ -3262,17 +3427,6 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
                 imageSmoothingQuality: 'high',
             });
             
-            // Cache cropped blobs for multi-image product submissions
-            if (!window.croppedProductImages) {
-                window.croppedProductImages = [];
-            }
-            
-            canvas.toBlob((blob) => {
-                if (blob) {
-                    window.croppedProductImages.push(blob);
-                }
-            }, 'image/jpeg', 0.9);
-
             processedImages.push(canvas.toDataURL());
             currentImageIndex++;
             
@@ -3729,34 +3883,11 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
         });
     });
 
-    const formFilterIds = [
-        'product-filter-tops','product-filter-bottoms','product-filter-official','product-filter-traditional','product-filter-shoes','product-filter-accessories','product-filter-furniture','product-filter-appliances',
-        'product-filter-bakkies', 'product-filter-suvs', 'product-filter-sedans', 'product-filter-hatchbacks',
-        'product-filter-forsale', 'product-filter-forrent', 'product-filter-commercial',
-        'product-filter-hotmeals', 'product-filter-groceries', 'product-filter-beverages',
-        'product-filter-fiction', 'product-filter-nonfiction', 'product-filter-spirituality', 'product-filter-heritage', 'product-filter-children', 'product-filter-education', 'product-filter-practical'
-    ];
-    
-    formFilterIds.forEach(id => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        el.addEventListener('change', (e) => {
-            if (e.target.checked) {
-                formFilterIds.forEach(otherId => {
-                    if (otherId === id) return;
-                    const other = document.getElementById(otherId);
-                    if (other) other.checked = false;
-                });
-            }
-        });
-    });
-
     const saveBtn = document.getElementById('product-save-btn');
     let formInteracted = false; 
     const updateSaveButtonState = () => {
         if (!saveBtn) return;
         const anyCurated = allCuratedIds.some(id => document.getElementById(id)?.checked);
-        const anyFilter = formFilterIds.some(id => document.getElementById(id)?.checked);
         const validationMsg = document.getElementById('product-validation-msg');
         
         const mainAdminCheck = isMainAdmin === true;
@@ -3785,19 +3916,13 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
                     }
                 }
             } else {
-                saveBtn.disabled = !(anyCurated && anyFilter);
+                saveBtn.disabled = !anyCurated;
                 if (validationMsg) {
                     if (!formInteracted) {
                         validationMsg.textContent = '';
                         validationMsg.style.display = 'none';
-                    } else if (!anyCurated && !anyFilter) {
-                        validationMsg.textContent = 'Please select a curated page and a filter before saving the product.';
-                        validationMsg.style.display = 'block';
                     } else if (!anyCurated) {
                         validationMsg.textContent = 'Please select a curated page before saving the product.';
-                        validationMsg.style.display = 'block';
-                    } else if (!anyFilter) {
-                        validationMsg.textContent = 'Please select a filter category before saving the product.';
                         validationMsg.style.display = 'block';
                     } else {
                         validationMsg.textContent = '';
@@ -3815,7 +3940,6 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
     };
 
     allCuratedIds.forEach(id => { const el = document.getElementById(id); if (el) el.addEventListener('change', () => { formInteracted = true; updateSaveButtonState(); }); });
-    formFilterIds.forEach(id => { const el = document.getElementById(id); if (el) el.addEventListener('change', () => { formInteracted = true; updateSaveButtonState(); }); });
 
     updateSaveButtonState();
     document.getElementById('clear-form-btn')?.addEventListener('click', updateSaveButtonState);
@@ -4079,7 +4203,7 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
     const giftCardTypeSelect = document.getElementById('product-giftCardType');
     const giftCardValueLabel = document.getElementById('gift-card-value-label');
     
-    if (isMainAdmin && giftCardToggle && giftCardConfigSection && giftCardTypeSelect && giftCardValueLabel) {
+    if (giftCardToggle && giftCardConfigSection && giftCardTypeSelect && giftCardValueLabel) {
         giftCardToggle.addEventListener('change', (e) => {
             giftCardConfigSection.style.display = e.target.checked ? 'block' : 'none';
         });
@@ -4172,6 +4296,21 @@ const initAdminViewers = () => {
 export const initMobileNav = () => {
     const navItems = document.querySelectorAll('.mobile-nav-item');
     const navLinks = document.querySelectorAll('.mobile-nav-link');
+    const scrollContainer = document.getElementById('mobile-bottom-nav-scroll');
+    const arrowLeft = document.getElementById('mobile-nav-arrow-left');
+    const arrowRight = document.getElementById('mobile-nav-arrow-right');
+
+    // Horizontal Scrolling arrow configuration
+    if (arrowLeft && arrowRight && scrollContainer) {
+        arrowLeft.addEventListener('click', (e) => {
+            e.preventDefault();
+            scrollContainer.scrollBy({ left: -160, behavior: 'smooth' });
+        });
+        arrowRight.addEventListener('click', (e) => {
+            e.preventDefault();
+            scrollContainer.scrollBy({ left: 160, behavior: 'smooth' });
+        });
+    }
 
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
@@ -4179,26 +4318,83 @@ export const initMobileNav = () => {
             e.stopPropagation(); 
 
             const parentItem = link.parentElement;
+            const dropupMenu = parentItem.querySelector('.mobile-dropup-menu');
             const isOpen = parentItem.classList.contains('open');
 
-            navItems.forEach(item => item.classList.remove('open'));
+            // Close other open dropups
+            navItems.forEach(item => {
+                if (item !== parentItem) {
+                    item.classList.remove('open');
+                }
+            });
 
             if (!isOpen) {
                 parentItem.classList.add('open');
+                
+                // Dynamically calculate view-safe bounds for fixed positioning
+                if (dropupMenu) {
+                    const rect = link.getBoundingClientRect();
+                    const menuWidth = 230; // Matches standard width in CSS
+                    let leftPos = rect.left + (rect.width / 2) - (menuWidth / 2);
+
+                    if (leftPos < 10) {
+                        leftPos = 10;
+                    }
+                    if (leftPos + menuWidth > window.innerWidth - 10) {
+                        leftPos = window.innerWidth - menuWidth - 10;
+                    }
+
+                    dropupMenu.style.left = `${leftPos}px`;
+                    dropupMenu.style.bottom = `${window.innerHeight - rect.top + 8}px`;
+                }
+            } else {
+                parentItem.classList.remove('open');
             }
         });
     });
 
-    const dropUpLinks = document.querySelectorAll('.mobile-dropup-menu a');
-    dropUpLinks.forEach(link => {
-        link.addEventListener('click', () => {
-            navItems.forEach(item => item.classList.remove('open'));
+    // Sub-dropup accordions listener
+    const subToggles = document.querySelectorAll('.mobile-submenu-toggle');
+    subToggles.forEach(toggle => {
+        toggle.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const parentSubItem = toggle.closest('.mobile-submenu-item');
+            const isSubOpen = parentSubItem.classList.contains('open');
+            
+            // Close sibling items inside the active dropup menu
+            const parentMenu = toggle.closest('.mobile-dropup-menu');
+            if (parentMenu) {
+                parentMenu.querySelectorAll('.mobile-submenu-item').forEach(el => {
+                    if (el !== parentSubItem) {
+                        el.classList.remove('open');
+                    }
+                });
+            }
+
+            // Correctly toggle active state
+            if (!isSubOpen) {
+                parentSubItem.classList.add('open');
+            } else {
+                parentSubItem.classList.remove('open');
+            }
         });
     });
 
+    // Close menus on clicking an actual route link
+    const dropUpLinks = document.querySelectorAll('.mobile-dropup-menu a:not(.mobile-submenu-toggle)');
+    dropUpLinks.forEach(link => {
+        link.addEventListener('click', () => {
+            navItems.forEach(item => item.classList.remove('open'));
+            document.querySelectorAll('.mobile-submenu-item').forEach(el => el.classList.remove('open'));
+        });
+    });
+
+    // Global click-out container handler
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.mobile-bottom-nav')) {
             navItems.forEach(item => item.classList.remove('open'));
+            document.querySelectorAll('.mobile-submenu-item').forEach(el => el.classList.remove('open'));
         }
     });
 };
@@ -4239,7 +4435,7 @@ export const initHamburgerMenu = () => {
     });
 };
 
-export const populateProductForm = (productToEdit) => {
+export const populateProductForm = (productToEdit, allProducts) => {
     document.getElementById('product-id-hidden').value = productToEdit._id || '';
     document.getElementById('product-id').value = productToEdit.productId || '';
     document.getElementById('product-title').value = productToEdit.title || '';
@@ -4288,32 +4484,6 @@ export const populateProductForm = (productToEdit) => {
         if(saleDatesSection) saleDatesSection.style.display = 'none';
     }
 
-    const filters = productToEdit.clothingFilters || [];
-    const mapSet = (id, key) => { const el = document.getElementById(id); if (el) el.checked = filters.includes(key); };
-    mapSet('product-filter-tops','tops');
-    mapSet('product-filter-bottoms','bottoms');
-    mapSet('product-filter-official','official');
-    mapSet('product-filter-traditional','traditional');
-    mapSet('product-filter-shoes','shoes');
-    mapSet('product-filter-accessories','accessories');
-    mapSet('product-filter-furniture','furniture');
-    mapSet('product-filter-appliances','appliances');
-    mapSet('product-filter-bakkies','bakkies');
-    mapSet('product-filter-suvs','suvs');
-    mapSet('product-filter-sedans','sedans');
-    mapSet('product-filter-hatchbacks','hatchbacks');
-    mapSet('product-filter-houses','houses');
-    mapSet('product-filter-apartments','apartments');
-    mapSet('product-filter-meals','meals');
-    mapSet('product-filter-biltong','biltong');
-    mapSet('product-filter-fiction','fiction');
-    mapSet('product-filter-nonfiction','nonfiction');
-    mapSet('product-filter-spirituality','spirituality');
-    mapSet('product-filter-heritage','heritage');
-    mapSet('product-filter-children','children');
-    mapSet('product-filter-education','education');
-    mapSet('product-filter-practical','practical');
-
     const enableColorsToggle = document.getElementById('enable-product-colors');
     const colorsSection = document.getElementById('product-colors-section');
     if (productToEdit.colorsEnabled) {
@@ -4359,6 +4529,7 @@ export const populateProductForm = (productToEdit) => {
     if (productToEdit.thumbnails) {
         [1, 2, 3, 4].forEach(i => {
             const urlInput = document.getElementById(`carousel-url-${i}`);
+
             if (urlInput) {
                 const val = productToEdit.thumbnails[i] || '';
                 urlInput.value = val;
@@ -4402,9 +4573,28 @@ export const populateProductForm = (productToEdit) => {
         }
     }
 
+    // UPDATE AND SYNC THE NEW DYNAMIC FILTER TAGS FIELD ON EDIT POPULATE
+    const filtersContainer = document.getElementById('product-filter-tags-container');
+    const filtersHidden = document.getElementById('product-clothing-filters-hidden');
+    if (filtersContainer && filtersHidden) {
+        filtersContainer.innerHTML = '';
+        const tags = productToEdit.clothingFilters || [];
+        filtersHidden.value = JSON.stringify(tags);
+        if (tags.length === 0) {
+            filtersContainer.innerHTML = '<span style="color:#999; font-size:12px;">No active tags</span>';
+        } else {
+            tags.forEach(tag => {
+                const tagEl = document.createElement('span');
+                tagEl.style.cssText = 'display:inline-flex; align-items:center; gap:6px; background:var(--corporate-blue); color:white; padding:4px 10px; border-radius:15px; font-size:12px; font-weight:600; margin-right:5px; margin-bottom:5px;';
+                tagEl.innerHTML = `${tag} <button type="button" class="remove-tag-btn" data-tag="${tag}" style="border:none; background:none; color:white; cursor:pointer; font-weight:bold; font-size:12px; padding:0 0 0 4px; line-height:1;">&times;</button>`;
+                filtersContainer.appendChild(tagEl);
+            });
+        }
+    }
+
     // Curated checkboxes population
     const curatedPages = productToEdit.curatedPages || [];
-    const isMainAdmin = sellerType === 'admin';
+    const isMainAdmin = getSellerType() === 'admin';
 
     if (isMainAdmin) {
         const curateTrending = document.getElementById('product-curate-trending');
@@ -4419,6 +4609,13 @@ export const populateProductForm = (productToEdit) => {
             curateCombos.dispatchEvent(new Event('change'));
         }
     } else {
+        const st = getSellerType();
+        const map = { 
+            'electronics': 'electronics', 'solar': 'solar', 'fashion': 'fashion',
+            'groceries': 'groceries', 'appliances': 'appliances', 'vehicles': 'vehicles',
+            'crafts': 'crafts', 'farm': 'farm', 'fuel': 'fuel', 'other': 'other'
+        };
+        const mappedSellerCategory = map[st] || st || '';
         const isKidsAdmin = mappedSellerCategory === 'electronics' || mappedSellerCategory === 'kids';
         if (isKidsAdmin) {
             const curateKidsElec = document.getElementById('product-curate-kids-electronics');
@@ -4465,7 +4662,6 @@ export const populateProductForm = (productToEdit) => {
             comboSalePriceInput.value = productToEdit.currentPrice || '';
         }
 
-        // Populate combo list checkboxes
         selectedComboProducts = [];
         if (productToEdit.comboProductIds) {
             const ids = Array.isArray(productToEdit.comboProductIds) ? productToEdit.comboProductIds : [];
@@ -4479,7 +4675,7 @@ export const populateProductForm = (productToEdit) => {
     }
 
     // If gift card reward enabled
-    if (isMainAdmin) {
+    if (isMainAdmin || (getSellerType() && getSellerType() !== 'customer')) {
         const giftCardToggle = document.getElementById('product-giftCardEnabled');
         if (giftCardToggle) {
             giftCardToggle.checked = !!productToEdit.giftCardEnabled;
@@ -4495,6 +4691,14 @@ export const populateProductForm = (productToEdit) => {
             giftCardValueInput.value = productToEdit.giftCardValue || 5;
         }
     }
+
+    // Populate visibility checkboxes
+    document.getElementById('product-showTradeIn').checked = productToEdit.showTradeIn !== false;
+    document.getElementById('product-showLayBye').checked = productToEdit.showLayBye !== false;
+    document.getElementById('product-showDeposit').checked = productToEdit.showDeposit !== false;
+    document.getElementById('product-showDeliveryNationwide').checked = productToEdit.showDeliveryNationwide !== false;
+    document.getElementById('product-showOneYearWarranty').checked = productToEdit.showOneYearWarranty !== false;
+    document.getElementById('product-showFifteenDayReturns').checked = productToEdit.showFifteenDayReturns !== false;
 
     const productsTabBtn = document.querySelector('.admin-tab-btn[data-tab="products"]');
     if (productsTabBtn) productsTabBtn.click();
@@ -4514,11 +4718,23 @@ export const showTransactionDetailsPopup = (transaction) => {
                 <button class="popup-close" id="popup-close-transaction">&times;</button>
                 <h2>Transaction Details</h2>
                 <div class="transaction-details-content">
-                    <p><strong>Customer:</strong> ${transaction.customerName}</p>
-                    <p><strong>Email:</strong> ${transaction.customerEmail}</p>
-                    <p><strong>Address:</strong> ${transaction.customerAddress}</p>
+                    <p><strong>Customer Name:</strong> ${transaction.customerName}</p>
+                    <p><strong>Customer Email:</strong> ${transaction.customerEmail}</p>
+                    <p><strong>Customer Address:</strong> ${transaction.customerAddress}</p>
+                    <p><strong>Total Amount:</strong> ${formatCurrency(transaction.totalAmount)}</p>
                     <p><strong>Payment Method:</strong> ${transaction.paymentMethod}</p>
-                    <p><strong>Total:</strong> ${formatCurrency(transaction.totalAmount)}</p>
+                    <p><strong>Gift Card Earned:</strong> ${formatCurrency(transaction.giftCardEarned)}</p>
+                    <p><strong>Transaction Date:</strong> ${new Date(transaction.createdAt).toLocaleString()}</p>
+                    <h4>Ordered Items:</h4>
+                    <ul>
+                        ${transaction.items.map(item => `
+                            <li>
+                                <strong>${item.title}</strong><br>
+                                Quantity: ${item.quantity} | Price: ${formatCurrency(item.price)}
+                                ${item.selectedColor ? `| Color: ${item.selectedColor}` : ''}
+                            </li>
+                        `).join('')}
+                    </ul>
                 </div>
             </div>
         </div>

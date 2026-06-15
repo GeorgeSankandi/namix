@@ -115,9 +115,9 @@ export const sessionLogin = async (email, password) => {
   return await response.json();
 };
 
-export const sessionSignup = async (name, email, password, sellerType = 'customer', sellerIdNumber = '', businessRegistrationNumber = '', physicalAddress = '', businessRegistrationDocument = null) => {
+export const sessionSignup = async (name, email, password, sellerType = 'customer', sellerIdNumber = '', businessRegistrationNumber = '', physicalAddress = '', businessRegistrationDocument = null, sellerIdImage = null) => {
   let response;
-  if (businessRegistrationDocument) {
+  if (businessRegistrationDocument || sellerIdImage) {
     const formData = new FormData();
     formData.append('name', name);
     formData.append('email', email);
@@ -126,7 +126,12 @@ export const sessionSignup = async (name, email, password, sellerType = 'custome
     formData.append('sellerIdNumber', sellerIdNumber);
     formData.append('businessRegistrationNumber', businessRegistrationNumber);
     formData.append('physicalAddress', physicalAddress);
-    formData.append('businessRegistrationDocument', businessRegistrationDocument);
+    if (businessRegistrationDocument) {
+        formData.append('businessRegistrationDocument', businessRegistrationDocument);
+    }
+    if (sellerIdImage) {
+        formData.append('sellerIdImage', sellerIdImage);
+    }
 
     response = await fetch('/auth/signup', {
       method: 'POST',
@@ -316,6 +321,112 @@ export const fetchFAQs = async () => {
         console.error('Failed to fetch FAQs:', error);
         return [];
     }
+};
+
+export const createFAQ = async (faqData) => {
+    const token = getToken();
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const response = await fetch('/api/faqs', {
+        method: 'POST',
+        headers,
+        credentials: 'same-origin',
+        body: JSON.stringify(faqData)
+    });
+    if (!response.ok) throw new Error('Failed to create FAQ');
+    return await response.json();
+};
+
+export const updateFAQ = async (id, faqData) => {
+    const token = getToken();
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const response = await fetch(`/api/faqs/${id}`, {
+        method: 'PUT',
+        headers,
+        credentials: 'same-origin',
+        body: JSON.stringify(faqData)
+    });
+    if (!response.ok) throw new Error('Failed to update FAQ');
+    return await response.json();
+};
+
+export const deleteFAQ = async (id) => {
+    const token = getToken();
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const response = await fetch(`/api/faqs/${id}`, {
+        method: 'DELETE',
+        headers,
+        credentials: 'same-origin'
+    });
+    if (!response.ok) throw new Error('Failed to delete FAQ');
+    return await response.json();
+};
+
+// --- Brands ---
+export const fetchBrands = async () => {
+  try {
+    const response = await fetch('/api/brands');
+    if (!response.ok) throw new Error('Network response was not ok');
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to fetch brands:', error);
+    return [];
+  }
+};
+
+export const createBrand = async (brandData) => {
+  const token = getToken();
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const response = await fetch('/api/brands', {
+    method: 'POST',
+    headers,
+    credentials: 'same-origin',
+    body: JSON.stringify(brandData)
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.message || 'Failed to create brand');
+  }
+  return await response.json();
+};
+
+export const updateBrand = async (id, brandData) => {
+  const token = getToken();
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const response = await fetch(`/api/brands/${id}`, {
+    method: 'PUT',
+    headers,
+    credentials: 'same-origin',
+    body: JSON.stringify(brandData)
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.message || 'Failed to update brand');
+  }
+  return await response.json();
+};
+
+export const deleteBrand = async (id) => {
+  const token = getToken();
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const response = await fetch(`/api/brands/${id}`, {
+    method: 'DELETE',
+    headers,
+    credentials: 'same-origin'
+  });
+  if (!response.ok) throw new Error('Failed to delete brand');
+  return await response.json();
 };
 
 // --- Settings ---

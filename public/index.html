@@ -18,7 +18,7 @@
     <!-- CROPPER.JS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
     <!-- LEAFLET (maps) -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-sA+e2k8kG6k9qGkJ9Y6bQv0bqv1K8M+Y1m/6b9g8y+M=" crossorigin=""/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 </head>
 <body>
 
@@ -251,62 +251,190 @@
 
     <!-- ======== MOBILE BOTTOM NAVIGATION ======== -->
     <nav class="mobile-bottom-nav">
-        <ul>
-            <li class="mobile-nav-item">
-                <a href="javascript:void(0)" class="mobile-nav-link" data-menu="electronics-menu">
-                    <i class="fas fa-mobile-alt"></i><span>Electronics</span>
-                </a>
-                <ul class="mobile-dropup-menu" id="electronics-menu">
-                    <li><a href="#category/electronics"><strong>All Tech</strong></a></li>
-                    <li><a href="#category/phones">Phones</a></li>
-                    <li><a href="#category/computers">Computers</a></li>
-                </ul>
-            </li>
-            
-            <li class="mobile-nav-item">
-                <a href="javascript:void(0)" class="mobile-nav-link" data-menu="solar-menu">
-                    <i class="fas fa-sun"></i><span>Solar</span>
-                </a>
-                <ul class="mobile-dropup-menu" id="solar-menu">
-                    <li><a href="#category/solar"><strong>All Solar</strong></a></li>
-                    <li><a href="#category/solar-panels">Solar Panels</a></li>
-                    <li><a href="#category/solar-lights">Solar Lights</a></li>
-                </ul>
-            </li>
+        <div class="mobile-bottom-nav-container">
+            <button type="button" class="mobile-nav-arrow mobile-nav-arrow-left" id="mobile-nav-arrow-left" aria-label="Scroll Left">&lt;</button>
+            <div class="mobile-bottom-nav-scroll" id="mobile-bottom-nav-scroll">
+                <ul>
+                    <!-- 1. Electronics Dropup -->
+                    <li class="mobile-nav-item">
+                        <a href="javascript:void(0)" class="mobile-nav-link" data-menu="electronics-menu">
+                            <i class="fas fa-mobile-alt"></i><span>Electronics</span>
+                        </a>
+                        <ul class="mobile-dropup-menu" id="electronics-menu">
+                            <li><a href="#category/electronics"><strong>All Electronics</strong></a></li>
+                            <li class="mobile-submenu-item">
+                                <a href="javascript:void(0)" class="mobile-submenu-toggle">Phones & Accessories</a>
+                                <ul class="mobile-nested-dropup">
+                                    <li><a href="#category/iphones">iPhones</a></li>
+                                    <li><a href="#category/samsung-phones">Samsung Phones</a></li>
+                                    <li><a href="#category/android-phones">Android Phones</a></li>
+                                </ul>
+                            </li>
+                            <li class="mobile-submenu-item">
+                                <a href="javascript:void(0)" class="mobile-submenu-toggle">Tablets</a>
+                                <ul class="mobile-nested-dropup">
+                                    <li><a href="#category/ipads">iPads</a></li>
+                                    <li><a href="#category/samsung-tabs">Samsung Tabs</a></li>
+                                    <li><a href="#category/lenovo-tabs">Lenovo/Android</a></li>
+                                </ul>
+                            </li>
+                            <li class="mobile-submenu-item">
+                                <a href="javascript:void(0)" class="mobile-submenu-toggle">Computers & Laptops</a>
+                                <ul class="mobile-nested-dropup">
+                                    <li><a href="#category/macbooks">MacBooks</a></li>
+                                    <li><a href="#category/hp-laptops">HP Laptops</a></li>
+                                    <li><a href="#category/dell-laptops">Dell Laptops</a></li>
+                                    <li><a href="#category/imacs">iMacs</a></li>
+                                    <li><a href="#category/hp-aio">HP All-in-One</a></li>
+                                </ul>
+                            </li>
+                            <li><a href="#category/tvs-audio">TVs & Audio</a></li>
+                            <li><a href="#category/chargers-power">Chargers & Power</a></li>
+                            <li><a href="#category/other-electronics">Other Electronics</a></li>
+                        </ul>
+                    </li>
 
-            <li class="mobile-nav-item">
-                <a href="javascript:void(0)" class="mobile-nav-link" data-menu="fashion-menu">
-                    <i class="fas fa-shirt"></i><span>Fashion</span>
-                </a>
-                <ul class="mobile-dropup-menu" id="fashion-menu">
-                    <li><a href="#category/fashion"><strong>All Fashion</strong></a></li>
-                    <li><a href="#category/clothes-shoes">Clothing</a></li>
-                    <li><a href="#category/traditional-attire">Traditional</a></li>
-                </ul>
-            </li>
+                    <!-- 2. Solar Energy Dropup -->
+                    <li class="mobile-nav-item">
+                        <a href="javascript:void(0)" class="mobile-nav-link" data-menu="solar-menu">
+                            <i class="fas fa-sun"></i><span>Solar</span>
+                        </a>
+                        <ul class="mobile-dropup-menu" id="solar-menu">
+                            <li><a href="#category/solar"><strong>All Solar Energy</strong></a></li>
+                            <li><a href="#category/solar-panels">Solar Panels</a></li>
+                            <li><a href="#category/solar-lights">Lights & Lamps</a></li>
+                            <li><a href="#category/inverters-batteries">Inverters & Batteries</a></li>
+                            <li><a href="#category/solar-kits">Kits & Accessories</a></li>
+                        </ul>
+                    </li>
 
-            <li class="mobile-nav-item">
-                <a href="javascript:void(0)" class="mobile-nav-link" data-menu="groceries-menu">
-                    <i class="fas fa-basket-shopping"></i><span>Groceries</span>
-                </a>
-                <ul class="mobile-dropup-menu" id="groceries-menu">
-                    <li><a href="#category/groceries"><strong>All Groceries</strong></a></li>
-                    <li><a href="#category/food-items">Food Items</a></li>
-                    <li><a href="#category/drinks-beverages">Drinks</a></li>
-                </ul>
-            </li>
+                    <!-- 3. Fashion & Beauty Dropup -->
+                    <li class="mobile-nav-item">
+                        <a href="javascript:void(0)" class="mobile-nav-link" data-menu="fashion-menu">
+                            <i class="fas fa-shirt"></i><span>Fashion</span>
+                        </a>
+                        <ul class="mobile-dropup-menu" id="fashion-menu">
+                            <li><a href="#category/fashion"><strong>All Fashion & Beauty</strong></a></li>
+                            <li class="mobile-submenu-item">
+                                <a href="javascript:void(0)" class="mobile-submenu-toggle">Clothes & Shoes</a>
+                                <ul class="mobile-nested-dropup">
+                                    <li><a href="#category/mens-clothing">Men's Clothing</a></li>
+                                    <li><a href="#category/womens-clothing">Women's Clothing</a></li>
+                                    <li><a href="#category/kids-clothing">Children's Clothing</a></li>
+                                </ul>
+                            </li>
+                            <li><a href="#category/traditional-attire">Traditional Attire</a></li>
+                            <li><a href="#category/beauty-products">Beauty Products</a></li>
+                            <li><a href="#category/jewellery-accessories">Jewellery & Acc.</a></li>
+                        </ul>
+                    </li>
 
-            <li class="mobile-nav-item">
-                <a href="javascript:void(0)" class="mobile-nav-link" data-menu="appliances-menu">
-                    <i class="fas fa-couch"></i><span>Home</span>
-                </a>
-                <ul class="mobile-dropup-menu" id="appliances-menu">
-                    <li><a href="#category/appliances"><strong>All Appliances</strong></a></li>
-                    <li><a href="#category/fridges-freezers">Refrigerators</a></li>
-                    <li><a href="#category/furniture">Furniture</a></li>
+                    <!-- 4. Groceries Dropup -->
+                    <li class="mobile-nav-item">
+                        <a href="javascript:void(0)" class="mobile-nav-link" data-menu="groceries-menu">
+                            <i class="fas fa-basket-shopping"></i><span>Groceries</span>
+                        </a>
+                        <ul class="mobile-dropup-menu" id="groceries-menu">
+                            <li><a href="#category/groceries"><strong>All Groceries</strong></a></li>
+                            <li><a href="#category/food-items">Food & Cooking</a></li>
+                            <li><a href="#category/drinks-beverages">Drinks & Beverages</a></li>
+                            <li><a href="#category/household-essentials">Household Essentials</a></li>
+                        </ul>
+                    </li>
+
+                    <!-- 5. Home Appliances Dropup -->
+                    <li class="mobile-nav-item">
+                        <a href="javascript:void(0)" class="mobile-nav-link" data-menu="appliances-menu">
+                            <i class="fas fa-couch"></i><span>Home</span>
+                        </a>
+                        <ul class="mobile-dropup-menu" id="appliances-menu">
+                            <li><a href="#category/appliances"><strong>All Home Appliances</strong></a></li>
+                            <li><a href="#category/fridges-freezers">Fridges & Freezers</a></li>
+                            <li><a href="#category/stoves-cookers">Stoves & Cookers</a></li>
+                            <li class="mobile-submenu-item">
+                                <a href="javascript:void(0)" class="mobile-submenu-toggle">Furniture</a>
+                                <ul class="mobile-nested-dropup">
+                                    <li><a href="#category/beds">Beds</a></li>
+                                    <li><a href="#category/tables">Tables</a></li>
+                                    <li><a href="#category/chairs">Chairs</a></li>
+                                    <li><a href="#category/sofas">Sofas</a></li>
+                                    <li><a href="#category/wardrobes">Wardrobes</a></li>
+                                </ul>
+                            </li>
+                            <li><a href="#category/kitchen-tools">Kitchen Tools</a></li>
+                        </ul>
+                    </li>
+
+                    <!-- 6. Vehicles & Parts Dropup -->
+                    <li class="mobile-nav-item">
+                        <a href="javascript:void(0)" class="mobile-nav-link" data-menu="vehicles-menu">
+                            <i class="fas fa-car"></i><span>Vehicles</span>
+                        </a>
+                        <ul class="mobile-dropup-menu" id="vehicles-menu">
+                            <li><a href="#category/vehicles"><strong>All Vehicles & Parts</strong></a></li>
+                            <li><a href="#category/cars-bakkies">Cars & Bakkies</a></li>
+                            <li><a href="#category/motorcycles">Motorcycles</a></li>
+                            <li><a href="#category/vehicle-parts">Parts & Tyres</a></li>
+                            <li><a href="#category/bicycles">Bicycles</a></li>
+                        </ul>
+                    </li>
+
+                    <!-- 7. Local Crafts Dropup -->
+                    <li class="mobile-nav-item">
+                        <a href="javascript:void(0)" class="mobile-nav-link" data-menu="crafts-menu">
+                            <i class="fas fa-paint-brush"></i><span>Crafts</span>
+                        </a>
+                        <ul class="mobile-dropup-menu" id="crafts-menu">
+                            <li><a href="#category/crafts"><strong>All Local Crafts</strong></a></li>
+                            <li><a href="#category/handmade-crafts">Handmade Crafts</a></li>
+                            <li><a href="#category/traditional-items">Traditional Items</a></li>
+                            <li><a href="#category/art-decor">Art & Decor</a></li>
+                        </ul>
+                    </li>
+
+                    <!-- 8. Farm Products Dropup -->
+                    <li class="mobile-nav-item">
+                        <a href="javascript:void(0)" class="mobile-nav-link" data-menu="farm-menu">
+                            <i class="fas fa-tractor"></i><span>Farm</span>
+                        </a>
+                        <ul class="mobile-dropup-menu" id="farm-menu">
+                            <li><a href="#category/farm"><strong>All Farm Products</strong></a></li>
+                            <li><a href="#category/fresh-produce">Fresh Produce</a></li>
+                            <li><a href="#category/meat-poultry">Meat & Poultry</a></li>
+                            <li><a href="#category/farm-tools">Farm Tools</a></li>
+                        </ul>
+                    </li>
+
+                    <!-- 9. Charcoal & Fuel Dropup -->
+                    <li class="mobile-nav-item">
+                        <a href="javascript:void(0)" class="mobile-nav-link" data-menu="fuel-menu">
+                            <i class="fas fa-fire"></i><span>Charcoal</span>
+                        </a>
+                        <ul class="mobile-dropup-menu" id="fuel-menu">
+                            <li><a href="#category/fuel"><strong>All Charcoal & Fuel</strong></a></li>
+                            <li><a href="#category/charcoal">Charcoal</a></li>
+                            <li><a href="#category/firewood">Firewood</a></li>
+                            <li><a href="#category/other-fuel">Other Fuel</a></li>
+                        </ul>
+                    </li>
+
+                    <!-- 10. Other / Misc Dropup -->
+                    <li class="mobile-nav-item">
+                        <a href="javascript:void(0)" class="mobile-nav-link" data-menu="other-menu">
+                            <i class="fas fa-ellipsis-h"></i><span>Other</span>
+                        </a>
+                        <ul class="mobile-dropup-menu" id="other-menu">
+                            <li><a href="#category/other"><strong>All Other / Misc</strong></a></li>
+                            <li><a href="#category/books-stationery">Books & Stationery</a></li>
+                            <li><a href="#category/sports-toys">Sports & Toys</a></li>
+                            <li><a href="#category/services">Services</a></li>
+                            <li><a href="#category/anything-else">Anything Else</a></li>
+                        </ul>
+                    </li>
                 </ul>
-            </li>
-        </ul>
+            </div>
+            <button type="button" class="mobile-nav-arrow mobile-nav-arrow-right" id="mobile-nav-arrow-right" aria-label="Scroll Right">&gt;</button>
+        </div>
     </nav>
     
     <!-- ======== GLOBAL FOOTER ======== -->
@@ -363,6 +491,7 @@
             <div class="chat-input-container">
                 <form id="chat-form">
                     <input type="text" id="chat-input" placeholder="Ask about products..." autocomplete="off">
+                    <button type="button" id="chat-voice-search" aria-label="Voice search" title="Voice search" style="width: 40px; height: 40px; border-radius: 50%; border: none; background-color: var(--corporate-blue); color: white; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; margin-right: 5px;"><i class="fas fa-microphone"></i></button>
                     <button type="submit"><i class="fas fa-paper-plane"></i></button>
                 </form>
             </div>
@@ -385,7 +514,7 @@
 
     <!-- CROPPER.JS LIBRARY -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-o9N1j7k3W2a3z6a1b6y1x3Y0f4x5Y6a7b8c9d0e1f2g=" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     
     <!-- JAVASCRIPT MODULES -->
