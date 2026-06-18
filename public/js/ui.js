@@ -108,7 +108,29 @@ const createSellerChatModal = ({ sellerId, sellerName }) => {
                 </div>
                 <button id="seller-chat-close" style="border:none;background:none;font-size:1.3rem;cursor:pointer;color:#333;">&times;</button>
             </div>
+            
+            <!-- In-App Negotiation Shield Notice -->
+            <div style="background:#eef3ff; padding:10px 15px; border-bottom:1px solid #d2e3fe; color:var(--corporate-blue); font-size:0.85rem; display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-shield-alt" style="font-size:1.1rem;"></i>
+                <strong>Negotiate inside chat for full protection and proof of agreement.</strong>
+            </div>
+
             <div id="seller-chat-messages" style="flex:1; padding: 14px; overflow-y:auto; background:#fbfbfb;"></div>
+            
+            <!-- In-Chat Negotiation Save Agreement Panel -->
+            <div id="negotiation-panel" style="background:#f5f7fa; border-top:1px solid #eef1f6; padding:15px; display:flex; flex-direction:column; gap:8px;">
+                <div style="font-weight:700; font-size:0.85rem; color:#333; display:flex; align-items:center; gap:6px;"><i class="fas fa-handshake"></i> Propose Chat Agreement Terms:</div>
+                <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px;">
+                    <input type="number" id="negotiate-price" placeholder="Price (N$)" style="padding:8px; border:1px solid #ccc; border-radius:6px; font-size:0.8rem;">
+                    <input type="number" id="negotiate-deposit" placeholder="Deposit (N$)" style="padding:8px; border:1px solid #ccc; border-radius:6px; font-size:0.8rem;">
+                    <input type="number" id="negotiate-layby" placeholder="Lay-by Months" style="padding:8px; border:1px solid #ccc; border-radius:6px; font-size:0.8rem;">
+                </div>
+                <div style="display:grid; grid-template-columns:1.5fr 1fr; gap:8px;">
+                    <input type="date" id="negotiate-date" style="padding:8px; border:1px solid #ccc; border-radius:6px; font-size:0.8rem;">
+                    <button type="button" id="btn-save-agreement" style="background:var(--corporate-blue); color:white; font-weight:700; border:none; border-radius:6px; font-size:0.8rem; cursor:pointer;">Save Agreement</button>
+                </div>
+            </div>
+
             <div style="display:flex; gap: 8px; padding: 14px; border-top:1px solid #eee; background:#fff;">
                 <input id="seller-chat-input" type="text" placeholder="Write a message to the seller..." style="flex:1; padding:12px 14px; border:1px solid #ddd; border-radius:10px; outline:none;" />
                 <button id="seller-chat-send" class="btn-primary" style="padding: 0 18px;">Send</button>
@@ -135,6 +157,7 @@ const createSellerChatModal = ({ sellerId, sellerName }) => {
     const messagesEl = modal.querySelector('#seller-chat-messages');
     const inputEl = modal.querySelector('#seller-chat-input');
     const sendBtn = modal.querySelector('#seller-chat-send');
+    const saveAgreementBtn = modal.querySelector('#btn-save-agreement');
 
     const addChatMessage = (text, fromMe) => {
         if (!messagesEl) return;
@@ -207,11 +230,37 @@ const createSellerChatModal = ({ sellerId, sellerName }) => {
         }
     });
 
+    saveAgreementBtn.addEventListener('click', async () => {
+        const agreedPrice = parseFloat(document.getElementById('negotiate-price').value);
+        const deposit = parseFloat(document.getElementById('negotiate-deposit').value) || 0;
+        const laybyMonths = parseInt(document.getElementById('negotiate-layby').value, 10) || 0;
+        const deliveryDate = document.getElementById('negotiate-date').value;
+
+        if (!agreedPrice) {
+            return alert('Please enter an agreed price to negotiate.');
+        }
+
+        try {
+            await api.saveChatAgreement({
+                roomId,
+                sellerId,
+                buyerId,
+                agreedPrice,
+                deposit,
+                laybyMonths,
+                deliveryDate: deliveryDate ? new Date(deliveryDate) : undefined
+            });
+            alert('Negotiated parameters recorded successfully!');
+            sendMessage();
+        } catch (err) {
+            alert('Failed to save agreement terms.');
+        }
+    });
+
     return modal;
 };
 
 export let categoryData = {
-    // 1. Electronics
     'electronics': { name: 'Electronics', heroImage: 'https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=1350&q=80', subcategories: ['phones', 'computers', 'tvs-audio', 'chargers-power', 'other-electronics'] },
     'phones': { name: 'Phones & Accessories', parent: 'electronics', heroImage: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=1350&q=80' },
     'computers': { name: 'Computers & Laptops', parent: 'electronics', heroImage: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=1350&q=80' },
@@ -219,14 +268,12 @@ export let categoryData = {
     'chargers-power': { name: 'Chargers & Power Banks', parent: 'electronics', heroImage: 'https://images.unsplash.com/photo-1609592424109-dd9892f1b17c?auto=format&fit=crop&w=1350&q=80' },
     'other-electronics': { name: 'Other Electronics', parent: 'electronics', heroImage: 'https://images.unsplash.com/photo-1550745165-9bc0b252726a?auto=format&fit=crop&w=1350&q=80' },
 
-    // 2. Solar Energy
     'solar': { name: 'Solar Energy', heroImage: 'https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=1350&q=80', subcategories: ['solar-panels', 'solar-lights', 'inverters-batteries', 'solar-kits'] },
     'solar-panels': { name: 'Solar Panels', parent: 'solar', heroImage: 'https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?auto=format&fit=crop&w=1350&q=80' },
     'solar-lights': { name: 'Solar Lights & Lamps', parent: 'solar', heroImage: 'https://images.unsplash.com/photo-1550985543-f47f38aee64e?auto=format&fit=crop&w=1350&q=80' },
     'inverters-batteries': { name: 'Inverters & Batteries', parent: 'solar', heroImage: 'https://images.unsplash.com/photo-1620714223084-8fcacc6dfd8d?auto=format&fit=crop&w=1350&q=80' },
     'solar-kits': { name: 'Solar Kits & Accessories', parent: 'solar', heroImage: 'https://images.unsplash.com/photo-1581092921461-eab62e97a780?auto=format&fit=crop&w=1350&q=80' },
 
-    // 3. Fashion & Beauty
     'fashion': { name: 'Fashion & Beauty', heroImage: 'https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&w=1350&q=80', subcategories: ['clothes-shoes', 'traditional-attire', 'beauty-products', 'jewellery-accessories'] },
     'clothes-shoes': { name: 'Clothes & Shoes', parent: 'fashion', heroImage: 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&w=1350&q=80', subcategories: ['mens-clothing', 'womens-clothing', 'kids-clothing'] },
     'mens-clothing': { name: "Men's Clothing", parent: 'clothes-shoes', heroImage: 'https://images.unsplash.com/photo-1490367532201-b9bc1dc483f6?auto=format&fit=crop&w=1350&q=80' },
@@ -236,13 +283,11 @@ export let categoryData = {
     'beauty-products': { name: 'Beauty Products', parent: 'fashion', heroImage: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=1350&q=80' },
     'jewellery-accessories': { name: 'Jewellery & Accessories', parent: 'fashion', heroImage: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=1350&q=80' },
 
-    // 4. Groceries
     'groceries': { name: 'Groceries', heroImage: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1350&q=80', subcategories: ['food-items', 'drinks-beverages', 'household-essentials'] },
     'food-items': { name: 'Food & Cooking Items', parent: 'groceries', heroImage: 'https://images.unsplash.com/photo-1506084868230-bb9d95c24759?auto=format&fit=crop&w=1350&q=80' },
     'drinks-beverages': { name: 'Drinks & Beverages', parent: 'groceries', heroImage: 'https://images.unsplash.com/photo-1527960656366-ee2a69d9e5c8?auto=format&fit=crop&w=1350&q=80' },
     'household-essentials': { name: 'Household Essentials', parent: 'groceries', heroImage: 'https://images.unsplash.com/photo-1583947215259-38e31be8751f?auto=format&fit=crop&w=1350&q=80' },
 
-    // 5. Home Appliances
     'appliances': { name: 'Home Appliances', heroImage: 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=1350&q=80', subcategories: ['fridges-freezers', 'stoves-cookers', 'furniture', 'kitchen-tools'] },
     'fridges-freezers': { name: 'Fridges & Freezers', parent: 'appliances', heroImage: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1350&q=80' },
     'stoves-cookers': { name: 'Stoves & Cookers', parent: 'appliances', heroImage: 'https://images.unsplash.com/photo-1525699078109-90605a3ee341?auto=format&fit=crop&w=1350&q=80' },
@@ -254,32 +299,27 @@ export let categoryData = {
     'wardrobes': { name: 'Wardrobes', parent: 'furniture', heroImage: 'https://images.unsplash.com/photo-1558882224-cca166733360?auto=format&fit=crop&w=1350&q=80' },
     'kitchen-tools': { name: 'Kitchen Tools', parent: 'appliances', heroImage: 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=1350&q=80' },
 
-    // 6. Vehicles & Parts
     'vehicles': { name: 'Vehicles & Parts', heroImage: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=1350&q=80', subcategories: ['cars-bakkies', 'motorcycles', 'vehicle-parts', 'bicycles'] },
     'cars-bakkies': { name: 'Cars & Bakkies', parent: 'vehicles', heroImage: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=1350&q=80' },
     'motorcycles': { name: 'Motorcycles', parent: 'vehicles', heroImage: 'https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=1350&q=80' },
     'vehicle-parts': { name: 'Vehicle Parts & Tyres', parent: 'vehicles', heroImage: 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?auto=format&fit=crop&w=1350&q=80' },
     'bicycles': { name: 'Bicycles', parent: 'vehicles', heroImage: 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=1350&q=80' },
 
-    // 7. Local Crafts & Handmade
     'crafts': { name: 'Local Crafts & Handmade', heroImage: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=1350&q=80', subcategories: ['handmade-crafts', 'traditional-items', 'art-decor'] },
     'handmade-crafts': { name: 'Handmade Crafts', parent: 'crafts', heroImage: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=1350&q=80' },
     'traditional-items': { name: 'Traditional Items', parent: 'crafts', heroImage: 'https://images.unsplash.com/photo-1561542320-9a18cd340469?auto=format&fit=crop&w=1350&q=80' },
     'art-decor': { name: 'Art & Decor', parent: 'crafts', heroImage: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=1350&q=80' },
 
-    // 8. Farm & Food Products
     'farm': { name: 'Farm & Food Products', heroImage: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1350&q=80', subcategories: ['fresh-produce', 'meat-poultry', 'farm-tools'] },
     'fresh-produce': { name: 'Fresh Produce', parent: 'farm', heroImage: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1350&q=80' },
     'meat-poultry': { name: 'Meat & Poultry', parent: 'farm', heroImage: 'https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?auto=format&fit=crop&w=1350&q=80' },
     'farm-tools': { name: 'Farm Tools & Equipment', parent: 'farm', heroImage: 'https://images.unsplash.com/photo-1589923188900-85dae440342b?auto=format&fit=crop&w=1350&q=80' },
 
-    // 9. Charcoal & Fuel
     'fuel': { name: 'Charcoal & Fuel', heroImage: 'https://images.unsplash.com/photo-1524491989244-1f40317fe6f0?auto=format&fit=crop&w=1350&q=80', subcategories: ['charcoal', 'firewood', 'other-fuel'] },
     'charcoal': { name: 'Charcoal', parent: 'fuel', heroImage: 'https://images.unsplash.com/photo-1524491989244-1f40317fe6f0?auto=format&fit=crop&w=1350&q=80' },
     'firewood': { name: 'Firewood', parent: 'fuel', heroImage: 'https://images.unsplash.com/photo-1549400829-54c345333b29?auto=format&fit=crop&w=1350&q=80' },
     'other-fuel': { name: 'Other Fuel', parent: 'fuel', heroImage: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=1350&q=80' },
 
-    // 10. Other / Miscellaneous
     'other': { name: 'Other / Miscellaneous', heroImage: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=1350&q=80', subcategories: ['books-stationery', 'sports-toys', 'services', 'anything-else'] },
     'books-stationery': { name: 'Books & Stationery', parent: 'other', heroImage: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=1350&q=80' },
     'sports-toys': { name: 'Sports & Toys', parent: 'other', heroImage: 'https://images.unsplash.com/photo-1531525645387-7f14be1bdbbd?auto=format&fit=crop&w=1350&q=80' },
@@ -447,23 +487,40 @@ const createProductCard = (product) => {
     } else if (comboTimeLeft) {
         timerHTML += `<div class="product-timer sale-timer" style="background: linear-gradient(135deg, var(--corporate-blue), #2a7fec); border: 2px solid #4dabf7;"><span class="timer-label">Combo Ends:</span> <span class="timer-countdown">${comboTimeLeft}</span></div>`;
     }
+
+    let promotionBannerHTML = '';
+    if (product.promotionStatus && product.promotionStatus !== 'None') {
+        promotionBannerHTML = `<div style="background: linear-gradient(135deg, #ff9800, #ff5722); color: white; padding: 4px 10px; font-weight: bold; font-size: 0.8rem; position: absolute; top: 12px; left: 12px; border-radius: 4px; z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.15);">${product.promotionStatus}</div>`;
+    }
+
+    const isVerifiedSeller = product.seller && product.seller.isVerified;
+    const showBestSellerBadge = product.seller && product.seller.showBestSellerBadge;
+
+    const badgesHTML = `
+        <div style="display:flex; align-items:center; gap:6px; margin-top:4px;">
+            ${isVerifiedSeller ? `<span style="color:#0084ff; font-weight:700; font-size:0.85rem;" title="Verified Reseller"><i class="fas fa-check-circle"></i> Verified</span>` : ''}
+            ${showBestSellerBadge ? `<span style="background:#eacc52; color:#1d1d1f; padding:2px 6px; border-radius:4px; font-weight:700; font-size:0.75rem;" title="Top Performing Merchant">Best Seller</span>` : ''}
+        </div>
+    `;
     
     const viewerLinkedReviews = (product.reviews || []).filter(r => r.viewerId);
     return `
         <a href="#product/${product.productId}" class="product-card" data-id="${product.productId}" data-sale-end-date="${product.saleEndDate || ''}" data-combo-end-date="${product.comboEndDate || ''}">
-            <div class="product-image">
+            <div class="product-image" style="position:relative;">
+                ${promotionBannerHTML}
                 ${createProductTags(product, 'card')}
                 ${timerHTML}
                 <img src="${product.image}" alt="${product.title}" onerror="this.onerror=null; this.src='https://via.placeholder.com/250x250.png?text=Image+Not+Found';">
             </div>
             <div class="product-details">
                 <h3 class="product-title">${product.title}</h3>
-                ${viewerLinkedReviews.length > 0 ? `<div class="product-rating">${renderStars(product.rating, product.reviewCount)}</div>` : ''}
+                ${badgesHTML}
+                ${viewerLinkedReviews.length > 0 ? `<div class="product-rating" style="margin-top:6px;">${renderStars(product.rating, product.reviewCount)}</div>` : ''}
                 <div class="product-price">
                     ${formatCurrency(product.currentPrice)}
                     ${(savedAmount > 0) ? `<span class="original-price">${formatCurrency(product.oldPrice)}</span>` : ''}
                 </div>
-                ${(savedAmount > 0) ? `<div class="product-save-amount">You save ${formatCurrency(savedAmount)}!</div>` : ''}
+                ${(savedAmount > 0) ? `<div class="product-save-amount" style="color:var(--corporate-green); font-weight:700;">You save ${formatCurrency(savedAmount)}!</div>` : ''}
                 <button class="add-to-cart-btn"${isLoggedIn() ? '' : ' data-guest="true"'} data-id="${product.productId}" ${isSoldOut ? 'disabled' : ''}>
                     ${isSoldOut ? 'Sold Out' : 'Add to Cart'}
                 </button>
@@ -703,7 +760,7 @@ export const renderShippingInfoPage = () => {
     getAppRoot().innerHTML = `
         ${renderDynamicHero('shipping', 'Delivery & Shipping')}
         <div class="page-container static-page-container">
-            <p>At NAMIX, we strive to deliver your products as quickly and safely as possible. We offer free express shipping on all orders nationwide.</p>
+            <p>At Namkuku, we strive to deliver your products as quickly and safely as possible. We offer free express shipping on all orders nationwide.</p>
             <h3>Delivery Times</h3>
             <ul>
                 <li><strong>Windhoek:</strong> Same day or next day delivery.</li>
@@ -724,7 +781,7 @@ export const renderReturnsPage = () => {
             <p>If you are not completely satisfied with your purchase, you can return it within 15 days of receipt for a full refund or exchange, provided the item is in its original condition.</p>
             <h3>Warranty</h3>
             <p>All new products come with a standard 1-year warranty. Pre-owned items include a 6-month warranty covering mechanical defects.</p>
-            <p>To initiate a return, please contact <a href="mailto:support@namix.com">support@namix.com</a>.</p>
+            <p>To initiate a return, please contact support@namkuku.com.</p>
         </div>
     `;
 };
@@ -733,9 +790,9 @@ export const renderTermsAndConditionsPage = () => {
     getAppRoot().innerHTML = `
         ${renderDynamicHero('terms', 'Terms & Conditions')}
         <div class="page-container static-page-container">
-            <p>Welcome to NAMIX. By using our website, you agree to these terms.</p>
+            <p>Welcome to Namkuku. By using our website, you agree to these terms.</p>
             <h3>1. General</h3>
-            <p>These terms apply to all purchases made on the NAMIX online store.</p>
+            <p>These terms apply to all purchases made on the Namkuku online store.</p>
             <h3>2. Pricing</h3>
             <p>All prices are in Namibian Dollars (NAD) and include VAT where applicable. Prices are subject to change without notice.</p>
             <h3>3. Privacy</h3>
@@ -763,7 +820,7 @@ export const renderContactPage = () => {
         <div class="page-container static-page-container">
             <p>Have questions? We're here to help!</p>
             <ul>
-                <li><strong>Email:</strong> support@namix.com</li>
+                <li><strong>Email:</strong> support@namkuku.com</li>
                 <li><strong>Phone:</strong> +264 81 123 4567</li>
                 <li><strong>Address:</strong> 12 Independence Ave, Windhoek, Namibia</li>
             </ul>
@@ -774,7 +831,7 @@ export const renderContactPage = () => {
 export const renderHowToSellPage = () => {
     getAppRoot().innerHTML = `
         <div class="amazon-layout-wrapper">
-            ${renderDynamicHero('how-to-sell', 'Become a NAMIX Seller')}
+            ${renderDynamicHero('how-to-sell', 'Become a Namkuku Seller')}
 
             <div class="amazon-stats-bar">
                 <div class="amazon-stat">
@@ -793,7 +850,7 @@ export const renderHowToSellPage = () => {
 
             <div class="amazon-section">
                 <div class="amazon-section-header">
-                    <h2>Why Sell on NAMIX?</h2>
+                    <h2>Why Sell on Namkuku?</h2>
                     <p>We provide the platform, the traffic, and the tools. You provide the products.</p>
                 </div>
                 
@@ -843,7 +900,7 @@ export const renderHowToSellPage = () => {
 
             <div class="amazon-final-cta">
                 <h2 style="font-size: 2.5rem; margin-bottom: 20px;">Ready to start selling?</h2>
-                <p style="margin-bottom: 30px; font-size: 1.1rem; color: #565959;">Join the NAMIX marketplace today.</p>
+                <p style="margin-bottom: 30px; font-size: 1.1rem; color: #565959;">Join the Namkuku marketplace today.</p>
                 <a href="#register" class="amazon-cta-btn">Create Your Seller Account</a>
             </div>
         </div>
@@ -904,13 +961,13 @@ export const renderFaqsPage = async () => {
 export const renderAboutPage = async () => {
     getAppRoot().innerHTML = `
         <div class="minimal-about-wrapper">
-            ${renderDynamicHero('about', 'We Are NAMIX')}
+            ${renderDynamicHero('about', 'We Are Namkuku')}
 
             <div class="minimal-content-container" style="margin-top: 50px;">
                 <div class="minimal-section">
                     <h2>Our Philosophy</h2>
                     <p class="minimal-text">
-                        At NAMIX, we believe that technology and lifestyle products should be accessible, reliable, and premium. Founded with a singular vision to bridge the gap between global innovation and local accessibility, we have established ourselves as Namibia's premier digital marketplace. We do not merely sell products; we curate experiences that enhance the daily lives of our clientele.
+                        At Namkuku, we believe that technology and lifestyle products should be accessible, reliable, and premium. Founded with a singular vision to bridge the gap between global innovation and local accessibility, we have established ourselves as Namibia's premier digital marketplace. We do not merely sell products; we curate experiences that enhance the daily lives of our clientele.
                     </p>
                 </div>
 
@@ -1660,6 +1717,17 @@ export const renderProductPage = async (product) => {
     const trustBar1HTML = trustBar1Items.length > 0 ? `<div class="trust-info-bar">${trustBar1Items.join('')}</div>` : '';
     const trustBar2HTML = trustBar2Items.length > 0 ? `<div class="trust-info-bar">${trustBar2Items.join('')}</div>` : '';
 
+    // Transport configuration banner
+    let transportHTML = '';
+    if (product.freeTransport) {
+        transportHTML = `<div style="background:#e6ffed; border:1px solid #b7eb8f; color:#2e7d32; padding:12px; border-radius:8px; margin-top:10px; font-weight:700;"><i class="fas fa-truck"></i> Free Delivery Eligible!</div>`;
+    } else {
+        transportHTML = `<div style="background:#f5f5f7; border:1px solid #d2d2d7; color:#1d1d1f; padding:12px; border-radius:8px; margin-top:10px; font-size:0.9rem;"><i class="fas fa-truck-pickup"></i> Delivery rates calculated based on region</div>`;
+    }
+
+    const isVerifiedSeller = product.seller && product.seller.isVerified;
+    const showBestSellerBadge = product.seller && product.seller.showBestSellerBadge;
+
     getAppRoot().innerHTML = `
     <div class="page-container product-page-container" data-sale-end-date="${product.saleEndDate || ''}" data-combo-end-date="${product.comboEndDate || ''}">
         <div class="product-page-top-bar">
@@ -1683,7 +1751,8 @@ export const renderProductPage = async (product) => {
                     <div class="seller-meta" style="flex:1;">
                         <div style="display:flex;align-items:center;gap:8px;">
                             <div style="font-weight:700;font-size:1rem;">${product.seller.businessName || product.seller.name}</div>
-                            ${product.seller.isVerified ? '<div class="verified-badge" title="Verified seller" style="color:var(--corporate-blue);display:flex;align-items:center;gap:6px;"><i class="fas fa-check-circle"></i> Verified</div>' : ''}
+                            ${isVerifiedSeller ? '<div class="verified-badge" title="Verified seller" style="color:var(--corporate-blue);display:flex;align-items:center;gap:6px;"><i class="fas fa-check-circle"></i> Verified</div>' : ''}
+                            ${showBestSellerBadge ? `<span style="background:#eacc52; color:#1d1d1f; padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 0.75rem;" title="Top Performing Merchant">Best Seller</span>` : ''}
                         </div>
                         <div style="font-size:0.9rem;color:#666;margin-top:4px;">${product.seller.location || ''} ${product.seller.sellerRating ? `· ${renderStars(product.seller.sellerRating)} (${Number(product.seller.sellerRating).toFixed(1)})` : ''}</div>
                     </div>
@@ -1700,8 +1769,14 @@ export const renderProductPage = async (product) => {
                     ${isActuallyOnSale ? `<span class="original-price">${formatCurrency(product.oldPrice)}</span><span class="save-badge">Save ${formatCurrency(savedAmount)}</span>` : ''}
                 </div>
                 
+                <!-- Display Warranty details -->
+                <div style="background:#f9f9fb; padding:15px; border-radius:10px; margin: 15px 0;">
+                    <div style="font-weight:700;"><i class="fas fa-shield-alt"></i> Warranty:</div>
+                    <div style="font-size:1.1rem; color:var(--corporate-blue); margin-top:4px;">${product.warrantyDuration || 'No Warranty'}</div>
+                </div>
+
                 ${giftRewardHTML}
-                
+                ${transportHTML}
                 ${colorOptionsHTML}
                 ${sizeOptionsHTML}
 
@@ -1936,6 +2011,9 @@ export const renderCartPage = (detailedCartItems) => {
         : [];
 
     let subtotal = 0;
+    let shippingFee = 0;
+    let insuranceFee = 0;
+
     const itemsHTML = validItems.length > 0 ? validItems.map(item => {
         const itemTotal = item.currentPrice * item.quantity;
         subtotal += itemTotal;
@@ -1954,7 +2032,7 @@ export const renderCartPage = (detailedCartItems) => {
                 <div class="cart-item-details">
                     <div class="cart-item-title">${item.title} ${isActuallyOnSale ? `<span class="item-save-badge">Save ${formatCurrency(savedPerUnit)}</span>` : ''} ${stockInfo}</div>
                     <div>${formatCurrency(item.currentPrice)} x ${item.quantity} = <strong>${formatCurrency(itemTotal)}</strong></div>
-                    ${isActuallyOnSale ? `<div class="item-saved-amount">You saved ${formatCurrency(savedAmount)}!</div>` : ''}
+                    ${isActuallyOnSale ? `<div class="item-saved-amount" style="color:var(--corporate-green); font-weight:700;">You saved ${formatCurrency(savedAmount)}!</div>` : ''}
                     ${colorDisplay}
                     ${sizeDisplay}
                 </div>
@@ -1974,21 +2052,211 @@ export const renderCartPage = (detailedCartItems) => {
             <div class="cart-header"><h1>Shopping Cart</h1></div>
             <div class="cart-section">
                 ${itemsHTML}
-                ${subtotal > 0 ? `
+
+                ${validItems.length > 0 ? `
+                <!-- STEP 2: Delivery Address Form -->
+                <div style="background:#fff; border:1px solid #ddd; border-radius:12px; padding:25px; margin:30px 0; box-shadow:var(--shadow-soft);">
+                    <h3 style="color:var(--corporate-blue); margin-top:0; margin-bottom:15px;"><i class="fas fa-map-marker-alt"></i> Where should we send your order?</h3>
+                    <form id="delivery-address-form">
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-bottom:15px;">
+                            <div class="form-group">
+                                <label>Full Name</label>
+                                <input type="text" id="delivery-name" required style="padding:10px; border-radius:8px; border:1px solid #ddd; width:100%;">
+                            </div>
+                            <div class="form-group">
+                                <label>Phone Number</label>
+                                <input type="tel" id="delivery-phone" required style="padding:10px; border-radius:8px; border:1px solid #ddd; width:100%;">
+                            </div>
+                        </div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-bottom:15px;">
+                            <div class="form-group">
+                                <label>Location / Region</label>
+                                <select id="delivery-location" required style="padding:10px; border-radius:8px; border:1px solid #ddd; width:100%;">
+                                    <option value="" disabled selected>Select location...</option>
+                                    <option value="Windhoek">Windhoek</option>
+                                    <option value="Ongwediva">Ongwediva</option>
+                                    <option value="Swakopmund">Swakopmund</option>
+                                    <option value="Walvis Bay">Walvis Bay</option>
+                                    <option value="Rundu">Rundu</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Landmark / Directions (Optional)</label>
+                                <input type="text" id="delivery-landmark" style="padding:10px; border-radius:8px; border:1px solid #ddd; width:100%;">
+                            </div>
+                        </div>
+                        <button type="button" id="save-address-btn" style="background:var(--corporate-blue); color:white; border:none; padding:12px 25px; border-radius:8px; font-weight:700; cursor:pointer;">Save Address & Continue</button>
+                    </form>
+                </div>
+
+                <!-- STEP 3: Dynamic Transport Form (Hidden until address saved) -->
+                <div id="transport-form-wrapper" style="display:none; background:#fff; border:1px solid #ddd; border-radius:12px; padding:25px; margin: 30px 0; box-shadow:var(--shadow-soft);">
+                    <h3 style="color:var(--corporate-blue); margin-top:0; margin-bottom:15px;"><i class="fas fa-truck"></i> Choose Transport Option</h3>
+                    <div id="transport-options-container" style="display:flex; flex-direction:column; gap:10px;">
+                        <!-- Injected dynamically based on location -->
+                    </div>
+                    
+                    <div style="margin-top:20px; border-top:1px solid #eee; padding-top:15px;">
+                        <label style="display:flex; align-items:center; gap:10px; font-weight:700; cursor:pointer;">
+                            <input type="checkbox" id="safe-insurance-toggle" style="width:20px; height:20px;">
+                            Add Safe Delivery Insurance (+N$49.00)
+                        </label>
+                    </div>
+                </div>
+
                 <div class="gift-reward" style="margin-top: 20px; text-align: center; padding: 15px; background: #eaf5ff; border-radius: 8px;"><h4><i class="fas fa-gift"></i> Your Gift Reward</h4><p>Complete this order to earn <strong>${formatCurrency(giftAmount)}</strong> for your next purchase!</p></div>
+                
                 <div class="order-summary">
                     <h3>Order Summary</h3>
                     <div class="summary-row" style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>Subtotal:</span> <span>${formatCurrency(subtotal)}</span></div>
-                    <div class="summary-row" style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>Delivery:</span> <span class="free-shipping" style="color: var(--success-green);">FREE</span></div>
-                    <div class="summary-row total-row" style="display: flex; justify-content: space-between; font-weight: bold; margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;"><span>Total:</span> <span>${formatCurrency(subtotal)}</span></div>
+                    <div class="summary-row" style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>Delivery:</span> <span id="summary-delivery-fee">${formatCurrency(shippingFee)}</span></div>
+                    <div class="summary-row" style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>Insurance:</span> <span id="summary-insurance-fee">${formatCurrency(insuranceFee)}</span></div>
+                    <div class="summary-row total-row" style="display: flex; justify-content: space-between; font-weight: bold; margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;"><span>Total:</span> <span id="summary-total-fee" style="color:var(--corporate-green);">${formatCurrency(subtotal)}</span></div>
                 </div>` : ''}
+
                 <div class="action-buttons">
                     <a href="#home" class="btn btn-outline">← Continue Shopping</a>
-                    ${validItems.length > 0 ? `<a href="#checkout" class="btn btn-primary">Proceed to Checkout →</a>` : ''}
+                    ${validItems.length > 0 ? `<button type="button" id="proceed-checkout-btn" disabled class="btn btn-primary" style="background:#ccc; color:#666; cursor:not-allowed;">Proceed to Checkout →</button>` : ''}
                 </div>
             </div>
         </div>`;
     
+    const saveAddressBtn = document.getElementById('save-address-btn');
+    const transportWrapper = document.getElementById('transport-form-wrapper');
+    const optionsContainer = document.getElementById('transport-options-container');
+    const insuranceToggle = document.getElementById('safe-insurance-toggle');
+    const proceedBtn = document.getElementById('proceed-checkout-btn');
+
+    let chosenTransport = '';
+    let selectedLocation = '';
+
+    const updateTotals = () => {
+        if (insuranceToggle && insuranceToggle.checked) {
+            insuranceFee = 49;
+        } else {
+            insuranceFee = 0;
+        }
+
+        const deliveryFeeEl = document.getElementById('summary-delivery-fee');
+        const insuranceFeeEl = document.getElementById('summary-insurance-fee');
+        const totalFeeEl = document.getElementById('summary-total-fee');
+
+        if (deliveryFeeEl) deliveryFeeEl.textContent = formatCurrency(shippingFee);
+        if (insuranceFeeEl) insuranceFeeEl.textContent = formatCurrency(insuranceFee);
+        if (totalFeeEl) totalFeeEl.textContent = formatCurrency(subtotal + shippingFee + insuranceFee);
+    };
+
+    saveAddressBtn?.addEventListener('click', () => {
+        const name = document.getElementById('delivery-name').value.trim();
+        const phone = document.getElementById('delivery-phone').value.trim();
+        selectedLocation = document.getElementById('delivery-location').value;
+
+        if (!name || !phone || !selectedLocation) {
+            return alert('Please fill in your Delivery Address fields.');
+        }
+
+        if (transportWrapper) transportWrapper.style.display = 'block';
+
+        const hasFreeTransport = validItems.some(i => i.freeTransport === true);
+        const codAllowed = validItems.every(i => i.cashOnDelivery === true);
+
+        shippingFee = hasFreeTransport ? 0 : 79;
+        if (selectedLocation === 'Windhoek' && !hasFreeTransport) {
+            shippingFee = 49;
+        }
+
+        if (optionsContainer) {
+            optionsContainer.innerHTML = `
+                <label style="border:1px solid #ddd; padding:15px; border-radius:8px; display:flex; justify-content:space-between; cursor:pointer; align-items:center;">
+                    <div>
+                        <input type="radio" name="transport-opt" value="standard" checked>
+                        <strong>Standard Company Delivery</strong> <span style="font-size:0.85rem; color:#666;">(2-3 Business Days)</span>
+                    </div>
+                    <div style="font-weight:700;">${formatCurrency(shippingFee)}</div>
+                </label>
+                <label style="border:1px solid #ddd; padding:15px; border-radius:8px; display:flex; justify-content:space-between; cursor:pointer; align-items:center;">
+                    <div>
+                        <input type="radio" name="transport-opt" value="fast">
+                        <strong>Yango Fast Delivery</strong> <span style="font-size:0.85rem; color:#666;">(Same Day Express)</span>
+                    </div>
+                    <div style="font-weight:700;">${formatCurrency(shippingFee + 50)}</div>
+                </label>
+                ${codAllowed ? `
+                <label style="border:1px solid #ddd; padding:15px; border-radius:8px; display:flex; justify-content:space-between; cursor:pointer; align-items:center;">
+                    <div>
+                        <input type="radio" name="transport-opt" value="cod">
+                        <strong>Seller Own Transport + COD (Cash on Delivery)</strong>
+                    </div>
+                    <div style="font-weight:700;">${formatCurrency(shippingFee)}</div>
+                </label>
+                ` : ''}
+            `;
+        }
+
+        chosenTransport = 'Standard Company Delivery';
+        if (proceedBtn) {
+            proceedBtn.removeAttribute('disabled');
+            proceedBtn.style.background = 'var(--corporate-blue)';
+            proceedBtn.style.color = '#fff';
+            proceedBtn.style.cursor = 'pointer';
+        }
+
+        updateTotals();
+    });
+
+    optionsContainer?.addEventListener('change', (e) => {
+        const val = e.target.value;
+        const hasFreeTransport = validItems.some(i => i.freeTransport === true);
+        let baseFee = hasFreeTransport ? 0 : 79;
+        if (selectedLocation === 'Windhoek' && !hasFreeTransport) baseFee = 49;
+
+        if (val === 'fast') {
+            shippingFee = baseFee + 50;
+            chosenTransport = 'Yango Fast Delivery';
+        } else if (val === 'cod') {
+            shippingFee = baseFee;
+            chosenTransport = 'COD (Cash on Delivery)';
+        } else {
+            shippingFee = baseFee;
+            chosenTransport = 'Standard Company Delivery';
+        }
+
+        updateTotals();
+    });
+
+    insuranceToggle?.addEventListener('change', updateTotals);
+
+    proceedBtn?.addEventListener('click', () => {
+        const name = document.getElementById('delivery-name').value.trim();
+        const phone = document.getElementById('delivery-phone').value.trim();
+        const landmark = document.getElementById('delivery-landmark').value.trim();
+
+        const pendingOrder = {
+            customerName: name,
+            customerEmail: getCurrentUser()?.email || 'N/A',
+            customerAddress: selectedLocation,
+            phoneNumber: phone,
+            landmark: landmark,
+            locationRegion: selectedLocation,
+            transportMethod: chosenTransport,
+            deliveryFee: shippingFee,
+            insuranceSelected: insuranceToggle.checked,
+            insuranceFee: insuranceFee,
+            items: validItems.map(item => ({
+                productId: item.productId,
+                title: item.title,
+                quantity: item.quantity,
+                price: item.currentPrice,
+                selectedColor: item.selectedColor || null,
+            })),
+            totalAmount: subtotal + shippingFee + insuranceFee,
+            giftCardEarned: subtotal * 0.05,
+        };
+
+        sessionStorage.setItem('pendingOrder', JSON.stringify(pendingOrder));
+        location.hash = '#payment';
+    });
+
     getAppRoot().addEventListener('click', async (e) => {
         const quantityBtn = e.target.closest('.quantity-change');
         if (quantityBtn) {
@@ -2055,81 +2323,161 @@ export const renderCartPage = (detailedCartItems) => {
     });
 };
 
-const updateCartSummary = (items) => {
-    const subtotal = items.reduce((acc, item) => acc + item.currentPrice * item.quantity, 0);
-    const giftAmount = subtotal * 0.05;
-    
-    const summaryRow = document.querySelector('.summary-row');
-    if (summaryRow) {
-        const parentDiv = summaryRow.closest('.order-summary');
-        if (parentDiv) {
-            parentDiv.innerHTML = `
-                <div class="summary-row" style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>Subtotal:</span> <span>${formatCurrency(subtotal)}</span></div>
-                <div class="summary-row" style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>Delivery:</span> <span class="free-shipping" style="color: var(--success-green);">FREE</span></div>
-                <div class="summary-row total-row" style="display: flex; justify-content: space-between; font-weight: bold; margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;"><span>Total:</span> <span>${formatCurrency(subtotal)}</span></div>
-            `;
-        }
-    }
-    
-    const giftReward = document.querySelector('.gift-reward');
-    if (giftReward && items.length > 0) {
-        giftReward.innerHTML = `<h4><i class="fas fa-gift"></i> Your Gift Reward</h4><p>Complete this order to earn <strong>${formatCurrency(giftAmount)}</strong> for your next purchase!</p>`;
-    }
+export const renderCheckoutPage = () => {
+    location.hash = '#cart';
 };
 
-export const renderCheckoutPage = (detailedCartItems) => {
-    const subtotal = detailedCartItems.reduce((acc, item) => acc + item.currentPrice * item.quantity, 0);
-    const giftAmount = subtotal * 0.05;
+export const renderCompetitionsPage = async () => {
+    let comps = [];
+    try {
+        comps = await api.fetchCompetitions();
+    } catch (e) {
+        console.error(e);
+    }
+
+    const cards = comps.map(c => `
+        <div style="background:white; border:1px solid #ddd; border-radius:12px; padding:25px; margin-bottom:20px; box-shadow:var(--shadow-soft);">
+            <h2 style="color:var(--corporate-blue); margin-top:0;">🏆 ${c.title}</h2>
+            <p style="color:#555;">${c.description}</p>
+            <div style="background:#eef3ff; padding:12px; border-radius:6px; margin: 15px 0;">
+                <strong>Gift Reward / Prizes to be Won:</strong> ${c.prizeDetails}
+            </div>
+            
+            <h4>Enter Competition</h4>
+            <form class="comp-entry-form" data-comp-id="${c._id}" style="margin-top:10px;">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+                    <input type="text" name="userName" required placeholder="Full Name" style="padding:10px; border-radius:6px; border:1px solid #ccc; width:100%;">
+                    <input type="email" name="userEmail" required placeholder="Email Address" style="padding:10px; border-radius:6px; border:1px solid #ccc; width:100%;">
+                </div>
+                <div class="form-group" style="margin-bottom:10px;">
+                    <label style="display:block; margin-bottom:4px; font-weight:700;">Upload Proof of Purchase (JPG/PNG/Video):</label>
+                    <input type="file" name="proofFile" accept="image/*,video/*" required style="width:100%;">
+                </div>
+                <button type="submit" style="background:var(--corporate-blue); color:white; border:none; padding:10px 20px; border-radius:6px; font-weight:bold; cursor:pointer;">Submit Entry</button>
+            </form>
+
+            <div style="margin-top:20px;">
+                <strong>Winners:</strong>
+                <ul style="margin:10px 0 0 0; padding-left:20px;">
+                    ${c.winners && c.winners.length > 0 ? c.winners.map(w => `
+                        <li><strong>${w.userName}</strong> won ${w.prizeWon} on ${new Date(w.dateWon).toLocaleDateString()}</li>
+                    `).join('') : '<li>No winners declared yet. Upload your proof to be the first!</li>'}
+                </ul>
+            </div>
+        </div>
+    `).join('');
 
     getAppRoot().innerHTML = `
-        <div class="checkout-page-container">
-            <div class="cart-header"><h1>Checkout</h1></div>
-            <div class="checkout-form">
-                <h2>Customer Information</h2>
-                <form id="checkout-form">
-                    <div class="form-group"><label for="name">Full Name</label><input type="text" id="name" required></div>
-                    <div class="form-group"><label for="phone">Phone Number</label><input type="tel" id="phone" placeholder="+264 or 081..." required></div>
-                    <div class="form-group"><label for="email">Email</label><input type="email" id="email" required></div>
-                </form>
-                <button id="place-order-btn" class="btn btn-primary" style="width: 100%; margin-top: 20px;">Place Order</button>
-            </div>
-        </div>`;
-    
-    document.getElementById('place-order-btn').addEventListener('click', async () => {
-        const customerName = document.getElementById('name').value;
-        const customerEmail = document.getElementById('email').value;
-        const phoneNumber = document.getElementById('phone').value;
+        ${renderDynamicHero('home', 'Win with Namkuku')}
+        <div class="page-container" style="max-width:800px; margin-top:2rem;">
+            <p style="text-align:center; font-size:1.1rem; color:#666; margin-bottom:30px;">Upload your proof of purchase (photos or videos) to enter current active Namkuku competitions and win spectacular prizes!</p>
+            ${cards || '<p style="text-align:center;">No active competitions right now. Check back soon!</p>'}
+        </div>
+    `;
 
-        if (!customerName || !customerEmail || !phoneNumber) {
-            alert('Please fill in all information.');
-            return;
-        }
+    document.querySelectorAll('.comp-entry-form').forEach(form => {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const compId = form.dataset.compId;
+            const formData = new FormData();
+            formData.append('userName', form.querySelector('[name="userName"]').value);
+            formData.append('userEmail', form.querySelector('[name="userEmail"]').value);
+            formData.append('proofFile', form.querySelector('[name="proofFile"]').files[0]);
 
-        const pendingOrder = {
-            customerName,
-            customerEmail,
-            customerAddress: 'N/A',
-            physicalAddress: 'N/A',
-            phoneNumber,
-            items: detailedCartItems.map(item => ({
-                productId: item.productId,
-                title: item.title,
-                quantity: item.quantity,
-                price: item.currentPrice,
-                selectedColor: item.selectedColor || null,
-            })),
-            totalAmount: subtotal,
-            giftCardEarned: giftAmount,
-        };
-
-        try {
-            sessionStorage.setItem('pendingOrder', JSON.stringify(pendingOrder));
-            location.hash = '#payment';
-        } catch (err) {
-            console.error('Could not prepare payment options:', err);
-            alert('Could not proceed to payment. Please try again.');
-        }
+            try {
+                await api.submitCompetitionEntry(compId, formData);
+                alert('Entry uploaded successfully! Good luck!');
+                location.reload();
+            } catch (err) {
+                alert('Submission failed: ' + err.message);
+            }
+        });
     });
+};
+
+export const renderOrderConfirmationPage = async (txnId) => {
+    let transaction = null;
+    try {
+        const txns = await api.getAllTransactions();
+        transaction = txns.find(t => t._id === txnId);
+    } catch (e) {
+        console.error(e);
+    }
+
+    if (!transaction) {
+        getAppRoot().innerHTML = '<h2 style="text-align:center; margin-top:3rem;">Invoice / Order not found.</h2>';
+        return;
+    }
+
+    getAppRoot().innerHTML = `
+        <div class="page-container" style="max-width:750px; margin-top:2rem; background:white; border:1px solid #ddd; border-radius:12px; padding:35px; box-shadow:var(--shadow-soft);">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid var(--corporate-blue); padding-bottom:15px; margin-bottom:25px;">
+                <div>
+                    <h1 style="color:var(--corporate-blue); margin:0;">NAMKUKU INVOICE</h1>
+                    <span style="color:#666;">Order ID: #${transaction._id}</span>
+                </div>
+                <div style="text-align:right;">
+                    <strong>Date:</strong> ${new Date(transaction.createdAt).toLocaleDateString()}
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:25px;">
+                <div>
+                    <h3 style="margin-top:0; color:var(--corporate-blue);">Buyer Details</h3>
+                    <p style="margin:4px 0;"><strong>Name:</strong> ${transaction.customerName}</p>
+                    <p style="margin:4px 0;"><strong>Phone:</strong> ${transaction.phoneNumber || 'N/A'}</p>
+                    <p style="margin:4px 0;"><strong>Location:</strong> ${transaction.locationRegion || 'N/A'}</p>
+                    ${transaction.landmark ? `<p style="margin:4px 0;"><strong>Landmark:</strong> ${transaction.landmark}</p>` : ''}
+                </div>
+                <div>
+                    <h3 style="margin-top:0; color:var(--corporate-blue);">Delivery Instructions</h3>
+                    <p style="margin:4px 0;"><strong>Method:</strong> ${transaction.transportMethod}</p>
+                    <p style="margin:4px 0;"><strong>Payment:</strong> ${transaction.paymentMethod.toUpperCase()}</p>
+                </div>
+            </div>
+
+            <h3 style="color:var(--corporate-blue); border-bottom:1px solid #eee; padding-bottom:5px;">Ordered Items</h3>
+            <table style="width:100%; border-collapse:collapse; margin-bottom:25px;">
+                <thead>
+                    <tr style="background:#fafafa; border-bottom:1px solid #eee;">
+                        <th style="padding:10px; text-align:left;">Item Description</th>
+                        <th style="padding:10px; text-align:center;">Qty</th>
+                        <th style="padding:10px; text-align:right;">Price</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${transaction.items.map(item => `
+                        <tr style="border-bottom:1px solid #eee;">
+                            <td style="padding:10px;">${item.title}</td>
+                            <td style="padding:10px; text-align:center;">${item.quantity}</td>
+                            <td style="padding:10px; text-align:right;">${formatCurrency(item.price)}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+
+            <div style="width:100%; border-top:2px solid #eee; padding-top:15px; display:flex; flex-direction:column; align-items:flex-end;">
+                <div style="width:250px; display:flex; justify-content:space-between; margin-bottom:6px;">
+                    <span>Delivery Fee:</span>
+                    <span>${formatCurrency(transaction.deliveryFee)}</span>
+                </div>
+                ${transaction.insuranceSelected ? `
+                <div style="width:250px; display:flex; justify-content:space-between; margin-bottom:6px;">
+                    <span>Insurance Fee:</span>
+                    <span>${formatCurrency(transaction.insuranceFee)}</span>
+                </div>` : ''}
+                <div style="width:250px; display:flex; justify-content:space-between; font-weight:bold; font-size:1.25rem; border-top:1px solid #ddd; padding-top:8px; margin-top:8px;">
+                    <span>Total Cost:</span>
+                    <span style="color:var(--corporate-green);">${formatCurrency(transaction.totalAmount)}</span>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:35px;" class="desktop-only">
+                <button onclick="window.print()" style="background:var(--corporate-blue); color:white; border:none; padding:12px 25px; border-radius:8px; font-weight:700; cursor:pointer;"><i class="fas fa-print"></i> Print Invoice</button>
+                <a href="#home" style="background:#fafafa; border:1px solid #ddd; color:#333; padding:12px 25px; border-radius:8px; text-decoration:none; font-weight:700;">Continue Shopping</a>
+            </div>
+        </div>
+    `;
 };
 
 export const renderPaymentOptionsPage = () => {
@@ -2194,7 +2542,6 @@ export const renderPaymentMethodPage = async (method) => {
                 <li><strong>Account Number:</strong> <span class="monospaced">62201234567</span></li>
                 <li><strong>Reference:</strong> <span class="highlight-ref">${order.customerName}</span></li>
             </ul>
-            <p class="note-text">Once payment is confirmed we'll dispatch your order. usually takes 1-2 business days.</p>
         `;
     } else if (method === 'ewallet') {
         instructionsHTML = `
@@ -2204,7 +2551,6 @@ export const renderPaymentMethodPage = async (method) => {
                 <li><strong>Number:</strong> <span class="monospaced">081 123 4567</span></li>
                 <li><strong>Ref:</strong> <span>${order.customerName}</span></li>
             </ul>
-            <p class="note-text">Send a screenshot of the successful transfer to payments@namix.com to speed up processing.</p>
         `;
     } else if (method === 'layby') {
         instructionsHTML = `
@@ -2214,66 +2560,11 @@ export const renderPaymentMethodPage = async (method) => {
                 <li><strong>Deposit:</strong> <span>${formatCurrency(order.totalAmount * 0.2)}</span></li>
                 <li><strong>Balance:</strong> <span>${formatCurrency(order.totalAmount * 0.8)}</span></li>
             </ul>
-            <p class="note-text">Contact sales@namix.com or call us to finalize your payment plan.</p>
         `;
     } else if (method === 'tradein') {
         instructionsHTML = `
             <h4>Apply Trade-in Credit</h4>
             <p>Use our Trade-in flow to value your old device. Once accepted, credit is applied.</p>
-            <p class="note-text">Complete the trade-in submission and then press Complete Order to confirm.</p>
-        `;
-    } else {
-        instructionsHTML = `<p>Instructions for ${info.title} will be provided here.</p>`;
-    }
-
-    let carouselHTML = '';
-    const defaultPaymentCarouselImages = [
-        'https://images.unsplash.com/photo-1542223616-4a4b2f9b4b9f?auto=format&fit=crop&w=400&q=80',
-        'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=400&q=80',
-        'https://images.unsplash.com/photo-1523206489230-c012c64b2b48?auto=format&fit=crop&w=400&q=80',
-        'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=400&q=80'
-    ];
-
-    try {
-        const settingsArr = await api.fetchSettings();
-        const settingsMap = {};
-        if (Array.isArray(settingsArr)) {
-            settingsArr.forEach(s => settingsMap[s.key] = s.value);
-        }
-
-        const uploadedImages = [1, 2, 3, 4]
-            .map(i => settingsMap[`payment_carousel_${i}`])
-            .filter(url => url && url.length > 0);
-
-        const displayImages = uploadedImages.length > 0 ? uploadedImages : defaultPaymentCarouselImages;
-
-        if (displayImages.length > 0) {
-            carouselHTML = `
-                <div class="payment-carousel-container" style="margin-top: 3rem; border-top: 1px solid #eee; padding-top: 2rem;">
-                    <h3 style="text-align: center; color: var(--corporate-blue); margin-bottom: 1.5rem;">See What Others Bought</h3>
-                    <div class="carousel-wrapper">
-                        <div class="home-category-carousel" style="justify-content: center; flex-wrap: wrap; gap: 15px; padding: 0;">
-                            ${displayImages.map(img => `
-                                <div class="item" style="background-image: url('${img}'); flex: 0 0 200px; height: 150px; background-size: cover; background-position: center; border-radius: 8px; box-shadow: var(--shadow-soft);"></div>
-                            `).join('')}
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-    } catch (err) {
-        console.warn("Failed to load payment carousel images", err);
-        carouselHTML = `
-            <div class="payment-carousel-container" style="margin-top: 3rem; border-top: 1px solid #eee; padding-top: 2rem;">
-                <h3 style="text-align: center; color: var(--corporate-blue); margin-bottom: 1.5rem;">See What Others Bought</h3>
-                <div class="carousel-wrapper">
-                    <div class="home-category-carousel" style="justify-content: center; flex-wrap: wrap; gap: 15px; padding: 0;">
-                        ${defaultPaymentCarouselImages.map(img => `
-                            <div class="item" style="background-image: url('${img}'); flex: 0 0 200px; height: 150px; background-size: cover; background-position: center; border-radius: 8px; box-shadow: var(--shadow-soft);"></div>
-                        `).join('')}
-                    </div>
-                </div>
-            </div>
         `;
     }
 
@@ -2294,42 +2585,43 @@ export const renderPaymentMethodPage = async (method) => {
                     <button id="complete-order-btn" class="btn btn-primary">Complete Order</button>
                     <a href="#payment" class="btn btn-outline">Back</a>
                 </div>
-
-                ${carouselHTML}
             </div>
         </div>
     `;
 
     document.getElementById('complete-order-btn').addEventListener('click', async () => {
-        const transactionData = {
-            customerName: order.customerName,
-            customerEmail: order.customerEmail,
-            customerAddress: order.customerAddress,
-            items: order.items,
-            totalAmount: order.totalAmount,
-            giftCardEarned: order.giftCardEarned,
-            paymentMethod: method,
-        };
-
         try {
             const response = await fetch('/api/transactions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(transactionData),
+                body: JSON.stringify({
+                    customerName: order.customerName,
+                    customerEmail: order.customerEmail,
+                    customerAddress: order.customerAddress,
+                    phoneNumber: order.phoneNumber,
+                    landmark: order.landmark,
+                    locationRegion: order.locationRegion,
+                    transportMethod: order.transportMethod,
+                    deliveryFee: order.deliveryFee,
+                    insuranceSelected: order.insuranceSelected,
+                    insuranceFee: order.insuranceFee,
+                    items: order.items,
+                    totalAmount: order.totalAmount,
+                    giftCardEarned: order.giftCardEarned,
+                    paymentMethod: method,
+                }),
             });
 
             if (response.ok) {
+                const completedTxn = await response.json();
                 CartManager.clearCart();
                 sessionStorage.removeItem('pendingOrder');
-                alert('Payment recorded and order completed. Thank you!');
-                location.hash = '#home';
+                location.hash = `#order-confirmation/${completedTxn._id}`;
             } else {
-                const err = await response.json().catch(()=>({message:'Unknown'}));
-                alert('Failed to complete order: ' + (err.message || 'Unknown error'));
+                alert('Failed to record transaction payment.');
             }
         } catch (err) {
             console.error('Error completing transaction', err);
-            alert('Failed to complete order. Please try again.');
         }
     });
 };
@@ -2354,10 +2646,6 @@ export const renderAdminLoginPage = () => {
             </div>
         </div>
     `;
-    const msgEl = document.getElementById('admin-login-message');
-    if (msgEl) {
-        msgEl.textContent = '';
-    }
 };
 
 export const renderLoginPage = () => {
@@ -2383,10 +2671,6 @@ export const renderLoginPage = () => {
             </div>
         </div>
     `;
-    const msgEl = document.getElementById('login-message');
-    if (msgEl) {
-        msgEl.textContent = '';
-    }
 };
 
 export const renderRegisterPage = () => {
@@ -2406,14 +2690,6 @@ export const renderRegisterPage = () => {
                     <div class="form-group">
                         <label for="password">Password</label>
                         <input type="password" id="password" name="password" required autocomplete="new-password" minlength="6">
-                        <div style="margin-top: 0.5rem; padding: 0.75rem; background-color: #f5f5f5; border-radius: 4px; font-size: 0.85rem; color: #555;">
-                            <strong>Password Requirements:</strong>
-                            <ul style="margin: 0.5rem 0 0 1.5rem; padding: 0;">
-                                <li>At least 8 characters</li>
-                                <li>At least 1 capital letter (A-Z)</li>
-                                <li>At least 2 numbers (0-9)</li>
-                            </ul>
-                        </div>
                     </div>
                     <div class="form-group">
                         <label for="sellerType">Account Type</label>
@@ -2433,66 +2709,44 @@ export const renderRegisterPage = () => {
                     </div>
                     <div id="seller-verification-fields" style="display:none;">
                         <div class="form-group">
-                            <label for="sellerIdNumber">Seller ID Number</label>
-                            <input type="text" id="sellerIdNumber" name="sellerIdNumber" autocomplete="off">
+                            <label for="businessName">Business Name / Brand Name</label>
+                            <input type="text" id="businessName" name="businessName">
                         </div>
-                        
                         <div class="form-group">
-                            <label for="sellerIdImage">Upload Picture of ID (JPG/PNG/WEBP, max 25MB)</label>
+                            <label for="sellerIdNumber">Seller ID Number</label>
+                            <input type="text" id="sellerIdNumber" name="sellerIdNumber">
+                        </div>
+                        <div class="form-group">
+                            <label for="sellerIdImage">Upload Picture of ID</label>
                             <input type="file" id="sellerIdImage" name="sellerIdImage" accept="image/*">
                         </div>
-
                         <div class="form-group">
                             <label for="businessRegistrationNumber">Business Registration Number</label>
-                            <input type="text" id="businessRegistrationNumber" name="businessRegistrationNumber" autocomplete="off">
+                            <input type="text" id="businessRegistrationNumber" name="businessRegistrationNumber">
                         </div>
                         <div class="form-group">
-                            <label for="businessRegistrationDocument">Business Registration Document (PDF, max 25MB)</label>
+                            <label for="businessRegistrationDocument">Business Registration Document (PDF)</label>
                             <input type="file" id="businessRegistrationDocument" name="businessRegistrationDocument" accept="application/pdf">
                         </div>
                         <div class="form-group">
                             <label for="physicalAddress">Physical Address</label>
-                            <input type="text" id="physicalAddress" name="physicalAddress" autocomplete="street-address">
-                        </div>
-                        <div style="margin-top: 0.5rem; padding: 0.75rem; background-color: #eef7ff; border-radius: 4px; font-size: 0.85rem; color: #333;">
-                            <strong>Reseller accounts require strong verification.</strong>
-                            Please enter your physical address, upload a picture of your ID, and upload a PDF copy of your business registration document.
+                            <input type="text" id="physicalAddress" name="physicalAddress">
                         </div>
                     </div>
                     <div id="register-message" class="form-message" style="text-align: center;"></div>
                     <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem; padding: 15px;">Create Account</button>
                 </form>
-                <div style="text-align: center; margin-top: 1.5rem;">
-                    <p>Already have an account? <a href="#login" style="color: var(--corporate-blue); text-decoration: underline;">Sign In</a></p>
-                </div>
             </div>
         </div>
     `;
-    const msgEl = document.getElementById('register-message');
-    if (msgEl) {
-        msgEl.textContent = '';
-    }
 
-    const sellerTypeSelect = document.getElementById('sellerType');
-    const sellerVerificationFields = document.getElementById('seller-verification-fields');
-
-    const toggleSellerVerificationFields = () => {
-        const isSeller = sellerTypeSelect && sellerTypeSelect.value !== 'customer';
-        if (sellerVerificationFields) {
-            sellerVerificationFields.style.display = isSeller ? 'block' : 'none';
-            sellerVerificationFields.querySelectorAll('input').forEach((input) => {
-                input.required = isSeller;
-            });
-        }
-    };
-
-    if (sellerTypeSelect) {
-        sellerTypeSelect.addEventListener('change', toggleSellerVerificationFields);
-        toggleSellerVerificationFields();
-    }
+    document.getElementById('sellerType')?.addEventListener('change', (e) => {
+        const isSeller = e.target.value !== 'customer';
+        document.getElementById('seller-verification-fields').style.display = isSeller ? 'block' : 'none';
+    });
 };
 
-export const renderAdminPage = async (allProducts, allUsers, allViewers, allTransactions, allFAQs, settings, sellerType) => {
+export const renderAdminPage = async (allProducts, allUsers, allViewers, allTransactions, allFAQs, settings, sellerType, allComps) => {
     sellerType = sellerType || 'admin';
     allProducts = Array.isArray(allProducts) ? allProducts : (allProducts ? Array.from(allProducts) : []);
     allUsers = Array.isArray(allUsers) ? allUsers : [];
@@ -2535,10 +2789,11 @@ export const renderAdminPage = async (allProducts, allUsers, allViewers, allTran
         <button class="admin-tab-btn active" data-tab="products">Products</button>
         <button class="admin-tab-btn" data-tab="transactions">Transactions</button>
         ${isMainAdmin ? `
+            <button class="admin-tab-btn" data-tab="sellers">Resellers</button>
+            <button class="admin-tab-btn" data-tab="competitions-manager">Competitions</button>
             <button class="admin-tab-btn" data-tab="add-viewer">Add Viewer</button>
             <button class="admin-tab-btn" data-tab="manage-viewers">Manage Viewers</button>
             <button class="admin-tab-btn" data-tab="users">Users</button>
-            <button class="admin-tab-btn" data-tab="sellers">Seller Accounts</button>
             <button class="admin-tab-btn" data-tab="faqs">FAQs</button>
             <button class="admin-tab-btn" data-tab="brands">Brands Manager</button>
             <button class="admin-tab-btn" data-tab="site-settings">Site Settings</button>
@@ -2562,40 +2817,41 @@ export const renderAdminPage = async (allProducts, allUsers, allViewers, allTran
     } else {
         sellerListHTML = sellerAccounts.map(u => {
             const isApproved = u.isApproved === true;
-            const isPending = u.isApproved === false;
+            const showBestSellerBadge = u.showBestSellerBadge === true;
             let statusBadge;
 
             if (isApproved) {
                 statusBadge = `<span class="status-badge" style="background: #e6ffed; color: #065f46; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold;">Active</span>`;
-            } else if (isPending) {
-                statusBadge = `<span class="status-badge" style="background: #fff5f5; color: #c53030; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold;">Pending Approval</span>`;
             } else {
                 statusBadge = `<span class="status-badge" style="background: #e0e0e0; color: #333; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold;">Deactivated</span>`;
             }
-
-            const approvalControl = `
-                <label class="verify-switch switch" title="${isApproved ? 'Deactivate' : 'Approve'} Account">
-                    <input type="checkbox" class="seller-approve-toggle" data-user-id="${u._id}" ${isApproved ? 'checked' : ''}>
-                    <span class="slider round"></span>
-                </label>
-            `;
 
             return `<li style="padding: 15px; border-bottom: 1px solid #eee; display:flex; justify-content:space-between; align-items:center;" class="seller-account-item">
                 <div class="user-info">
                     <div style="font-weight: 600; display:flex; align-items:center; gap:10px;">${u.name} ${statusBadge}</div>
                     <span style="font-size: 0.9rem; color: #666;">${u.email} | Type: <strong>${u.sellerType}</strong></span>
-                    ${u.sellerIdImage ? `<div style="margin-top:6px;"><a href="${u.sellerIdImage}" target="_blank" style="font-size:0.85rem; color:var(--corporate-blue); font-weight:600;"><i class="fas fa-id-card"></i> View ID Picture</a></div>` : ''}
-                    ${u.businessRegistrationDocument ? `<div style="margin-top:4px;"><a href="${u.businessRegistrationDocument}" target="_blank" style="font-size:0.85rem; color:var(--corporate-blue); font-weight:600;"><i class="fas fa-file-pdf"></i> View Business Registration PDF</a></div>` : ''}
                 </div>
                 <div class="actions" style="display:flex; gap:20px; align-items:center;">
-                    ${approvalControl}
-                    <button type="button" class="view-seller-btn" data-seller-email="${u.email}" style="background: none; border: none; color: var(--corporate-blue); cursor: pointer;" title="Impersonate Seller"><i class="fas fa-sign-in-alt"></i></button>
-                    <a class="seller-dashboard-link" href="#admin/seller/${encodeURIComponent(u.email)}" target="_blank" rel="noopener noreferrer" style="color:var(--corporate-blue); text-decoration:none;" title="Open in New Tab"><i class="fas fa-external-link-alt"></i></a>
-                    <button class="delete-user-btn" data-user-id="${u._id}" style="color: var(--danger-red); background:none; border:none; cursor:pointer;" title="Delete User"><i class="fas fa-trash"></i></button>
+                    <label class="verify-switch switch" title="Toggle Approval">
+                        <input type="checkbox" class="seller-approve-toggle" data-user-id="${u._id}" ${isApproved ? 'checked' : ''}>
+                        <span class="slider round"></span>
+                    </label>
+                    <label class="bestseller-switch" title="Toggle Bestseller Badge" style="margin-left: 10px;">
+                        <input type="checkbox" class="seller-bestseller-toggle" data-user-id="${u._id}" ${showBestSellerBadge ? 'checked' : ''}>
+                        Best Seller Badge
+                    </label>
+                    <button class="delete-user-btn" data-user-id="${u._id}" style="color: var(--danger-red); background:none; border:none; cursor:pointer;"><i class="fas fa-trash"></i></button>
                 </div>
             </li>`;
         }).join('');
     }
+
+    const activeCompsListHTML = allComps ? allComps.map(c => `
+        <li style="padding:10px; border-bottom:1px solid #eee;">
+            <strong>${c.title}</strong> - Prize: ${c.prizeDetails}
+            <div style="font-size:0.85rem; color:#666; margin-top:4px;">Total entries: ${c.entries ? c.entries.length : 0}</div>
+        </li>
+    `).join('') : '';
 
     const viewerListHTML = (allViewers || []).flatMap(p => {
         const reviewsByViewerId = {};
@@ -2735,6 +2991,42 @@ export const renderAdminPage = async (allProducts, allUsers, allViewers, allTran
                             <small style="display:block; margin-top:5px; color:#666;">Hold Ctrl (Windows) or Cmd (Mac) to select multiple sizes.</small>
                         </div>
                         ` : ''}
+
+                        <!-- Transport & COD Toggles -->
+                        <div class="form-group full-width" style="margin-top:1.5rem; padding:1rem; background:#fafafa; border-radius:8px; display:flex; gap:20px; align-items:center;">
+                            <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                                <input type="checkbox" id="product-freeTransport" style="width:18px; height:18px;">
+                                Offer Free Transport / Delivery
+                            </label>
+                            <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                                <input type="checkbox" id="product-cashOnDelivery" style="width:18px; height:18px;">
+                                Offer Cash on Delivery (COD)
+                            </label>
+                        </div>
+
+                        <!-- Warranty Selector dropdown -->
+                        <div class="form-group full-width" style="margin-top:1.5rem;">
+                            <label for="product-warrantyDuration">Warranty Duration Selection</label>
+                            <select id="product-warrantyDuration" style="padding:10px; border-radius:8px; border:1px solid var(--border-color); width:100%;">
+                                <option value="No Warranty">No Warranty</option>
+                                <option value="3 Months Warranty">3 Months Warranty</option>
+                                <option value="6 Months Warranty">6 Months Warranty</option>
+                                <option value="1 Year Warranty">1 Year Warranty</option>
+                                <option value="2 Years Warranty">2 Years Warranty</option>
+                            </select>
+                        </div>
+
+                        <!-- Promotion status advertising dropdown -->
+                        <div class="form-group full-width" style="margin-top:1.5rem;">
+                            <label for="product-promotionStatus">Status Advertising ribbon (Pro Package)</label>
+                            <select id="product-promotionStatus" style="padding:10px; border-radius:8px; border:1px solid var(--border-color); width:100%;">
+                                <option value="None">None</option>
+                                <option value="Hot Deal">Hot Deal</option>
+                                <option value="Limited Offer">Limited Offer</option>
+                                <option value="WhatsApp Promo">WhatsApp Promo</option>
+                                <option value="Countdown Special">Countdown Special</option>
+                            </select>
+                        </div>
 
                         ${isMainAdmin ? `
                         <div id="ai-features-section" style="margin-top:1.5rem; padding:1rem; background-color:#f0f7ff; border-radius:8px; border-left:4px solid var(--primary-blue);">
@@ -2896,16 +3188,28 @@ export const renderAdminPage = async (allProducts, allUsers, allViewers, allTran
         </div>
 
         ${isMainAdmin ? `
+            <div id="sellers" class="admin-tab-content">
+                <section class="admin-section">
+                    <h2>Manage Resellers</h2>
+                    <ul>${sellerListHTML || '<li>No resellers accounts found.</li>'}</ul>
+                </section>
+            </div>
+            <div id="competitions-manager" class="admin-tab-content">
+                <section class="admin-section">
+                    <h2>Competitions Manager</h2>
+                    <form id="create-comp-form" style="margin-bottom:20px; background:#f9f9f9; padding:20px; border-radius:8px;">
+                        <div class="form-group"><label>Title</label><input type="text" id="comp-title" required style="width:100%; padding:8px;"></div>
+                        <div class="form-group"><label>Description</label><textarea id="comp-desc" required style="width:100%; padding:8px;"></textarea></div>
+                        <div class="form-group"><label>Prizes to be Won</label><input type="text" id="comp-prize" required style="width:100%; padding:8px;"></div>
+                        <div class="form-group"><label>End Date</label><input type="date" id="comp-end" required style="width:100%; padding:8px;"></div>
+                        <button type="submit" class="btn btn-primary" style="margin-top:10px;">Launch Competition</button>
+                    </form>
+                    <ul>${activeCompsListHTML || '<li>No competitions launched yet.</li>'}</ul>
+                </section>
+            </div>
             <div id="add-viewer" class="admin-tab-content"><section class="admin-section"><h3>Add New Viewer</h3><div id="viewers-message" style="display: none;"></div><form id="add-viewers-form"><div class="form-group"><label for="viewers-product">Select Product</label><select id="viewers-product" required>${productOptions}</select></div><div class="form-group"><label for="viewer-name">Viewer Name (optional)</label><input type="text" id="viewer-name" placeholder="e.g. John Doe"></div><div class="form-group"><label>Also add a review for this viewer <input type="checkbox" id="add-review-now" class="product-curate-toggle"></label></div><div id="add-review-fields" style="display:none; margin-top:8px;"><div class="form-group"><label for="review-rating">Rating</label><select id="review-rating"><option value="5">5</option><option value="4">4</option><option value="3">3</option><option value="2">2</option><option value="1">1</option></select></div><div class="form-group"><label for="review-text">Review Text</label><input type="text" id="review-text" placeholder="Write the review here"></div></div><div class="form-group"><label>Select Peak Time</label><div id="peak-times-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px;"></div></div><button type="submit" class="btn btn-primary">Add Viewer</button></form></section></div>
             <div id="manage-viewers" class="admin-tab-content"><section class="admin-section"><h2>Manage Viewers</h2><div id="viewer-list-admin"><ul>${viewerListHTML}</ul></div></section></div>
             <div id="users" class="admin-tab-content"><section class="admin-section"><h2>Manage Users</h2><div id="user-list-admin"><ul>${userListHTML}</ul></div></section></div>
-            <div id="sellers" class="admin-tab-content">
-                <section class="admin-section">
-                    <h2>Manage Seller Accounts</h2>
-                    <p>Click on a seller account to view their dashboard in this tab, or use the <strong>Open Dashboard</strong> links to open a reseller's dashboard directly in a new tab.</p>
-                    <div id="seller-list-admin"><ul>${sellerListHTML}</ul></div>
-                </section>
-            </div>
             <div id="faqs" class="admin-tab-content">
                 <section class="admin-section">
                     <h2>Add / Edit FAQ</h2>
@@ -3039,13 +3343,13 @@ export const renderAdminPage = async (allProducts, allUsers, allViewers, allTran
         ` : ''}
     </div>`;
     
-    attachAdminEventListeners(isMainAdmin, isFashionAdmin, allProducts, relevantTransactions, allFAQs);
+    attachAdminEventListeners(isMainAdmin, isFashionAdmin, allProducts, relevantTransactions, allFAQs, allComps);
     if (isMainAdmin) {
         initAdminViewers();
     }
 };
 
-const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, relevantTransactions, allFAQs) => {
+const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, relevantTransactions, allFAQs, allComps) => {
     const adminContainer = document.querySelector('.admin-container');
     if (!adminContainer) return;
 
@@ -3262,6 +3566,54 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
             }
         });
     }
+
+    // Attach verify & bestseller dashboard listeners
+    document.querySelectorAll('.seller-approve-toggle').forEach(chk => {
+        chk.addEventListener('change', async (e) => {
+            const userId = chk.dataset.userId;
+            try {
+                await api.approveUser(userId, { isApproved: e.target.checked });
+                alert('Verification / Approval updated.');
+            } catch (err) {
+                alert('Update failed');
+            }
+        });
+    });
+
+    document.querySelectorAll('.seller-bestseller-toggle').forEach(chk => {
+        chk.addEventListener('change', async (e) => {
+            const userId = chk.dataset.userId;
+            try {
+                await api.approveUser(userId, { showBestSellerBadge: e.target.checked });
+                alert('Best seller badge preference saved.');
+            } catch (err) {
+                alert('Update failed');
+            }
+        });
+    });
+
+    // Create Competition action listener
+    document.getElementById('create-comp-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const payload = {
+            title: document.getElementById('comp-title').value,
+            description: document.getElementById('comp-desc').value,
+            prizeDetails: document.getElementById('comp-prize').value,
+            endDate: new Date(document.getElementById('comp-end').value)
+        };
+
+        try {
+            await fetch('/api/competitions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            alert('Active Competition launched!');
+            location.reload();
+        } catch (err) {
+            alert('Failed to launch competition.');
+        }
+    });
 
     const productForm = document.getElementById('product-form');
 
@@ -3811,7 +4163,10 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
                         }
                     } catch (err) {
                         console.error('AI Description Error:', err);
-                        if(aiDescStatus) aiDescStatus.textContent = '❌ Generation failed';
+                        if(aiDescStatus) {
+                            aiDescStatus.textContent = '❌ Generation failed';
+                            aiDescStatus.style.color = '#d32f2f';
+                        }
                     }
                 }
 
@@ -4300,7 +4655,6 @@ export const initMobileNav = () => {
     const arrowLeft = document.getElementById('mobile-nav-arrow-left');
     const arrowRight = document.getElementById('mobile-nav-arrow-right');
 
-    // Horizontal Scrolling arrow configuration
     if (arrowLeft && arrowRight && scrollContainer) {
         arrowLeft.addEventListener('click', (e) => {
             e.preventDefault();
@@ -4321,7 +4675,6 @@ export const initMobileNav = () => {
             const dropupMenu = parentItem.querySelector('.mobile-dropup-menu');
             const isOpen = parentItem.classList.contains('open');
 
-            // Close other open dropups
             navItems.forEach(item => {
                 if (item !== parentItem) {
                     item.classList.remove('open');
@@ -4331,10 +4684,9 @@ export const initMobileNav = () => {
             if (!isOpen) {
                 parentItem.classList.add('open');
                 
-                // Dynamically calculate view-safe bounds for fixed positioning
                 if (dropupMenu) {
                     const rect = link.getBoundingClientRect();
-                    const menuWidth = 230; // Matches standard width in CSS
+                    const menuWidth = 230; 
                     let leftPos = rect.left + (rect.width / 2) - (menuWidth / 2);
 
                     if (leftPos < 10) {
@@ -4353,7 +4705,6 @@ export const initMobileNav = () => {
         });
     });
 
-    // Sub-dropup accordions listener
     const subToggles = document.querySelectorAll('.mobile-submenu-toggle');
     subToggles.forEach(toggle => {
         toggle.addEventListener('click', (e) => {
@@ -4362,7 +4713,6 @@ export const initMobileNav = () => {
             const parentSubItem = toggle.closest('.mobile-submenu-item');
             const isSubOpen = parentSubItem.classList.contains('open');
             
-            // Close sibling items inside the active dropup menu
             const parentMenu = toggle.closest('.mobile-dropup-menu');
             if (parentMenu) {
                 parentMenu.querySelectorAll('.mobile-submenu-item').forEach(el => {
@@ -4372,7 +4722,6 @@ export const initMobileNav = () => {
                 });
             }
 
-            // Correctly toggle active state
             if (!isSubOpen) {
                 parentSubItem.classList.add('open');
             } else {
@@ -4381,7 +4730,6 @@ export const initMobileNav = () => {
         });
     });
 
-    // Close menus on clicking an actual route link
     const dropUpLinks = document.querySelectorAll('.mobile-dropup-menu a:not(.mobile-submenu-toggle)');
     dropUpLinks.forEach(link => {
         link.addEventListener('click', () => {
@@ -4390,7 +4738,6 @@ export const initMobileNav = () => {
         });
     });
 
-    // Global click-out container handler
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.mobile-bottom-nav')) {
             navItems.forEach(item => item.classList.remove('open'));
@@ -4573,7 +4920,6 @@ export const populateProductForm = (productToEdit, allProducts) => {
         }
     }
 
-    // UPDATE AND SYNC THE NEW DYNAMIC FILTER TAGS FIELD ON EDIT POPULATE
     const filtersContainer = document.getElementById('product-filter-tags-container');
     const filtersHidden = document.getElementById('product-clothing-filters-hidden');
     if (filtersContainer && filtersHidden) {
@@ -4592,7 +4938,6 @@ export const populateProductForm = (productToEdit, allProducts) => {
         }
     }
 
-    // Curated checkboxes population
     const curatedPages = productToEdit.curatedPages || [];
     const isMainAdmin = getSellerType() === 'admin';
 
@@ -4647,7 +4992,6 @@ export const populateProductForm = (productToEdit, allProducts) => {
         }
     }
 
-    // If combo product, populate selection and build
     if (productToEdit.curatedPages && productToEdit.curatedPages.includes('combos')) {
         const comboToggle = document.getElementById('product-curate-combos');
         if (comboToggle) comboToggle.checked = true;
@@ -4674,7 +5018,6 @@ export const populateProductForm = (productToEdit, allProducts) => {
         generateAndDisplayComboImage();
     }
 
-    // If gift card reward enabled
     if (isMainAdmin || (getSellerType() && getSellerType() !== 'customer')) {
         const giftCardToggle = document.getElementById('product-giftCardEnabled');
         if (giftCardToggle) {
@@ -4692,13 +5035,18 @@ export const populateProductForm = (productToEdit, allProducts) => {
         }
     }
 
-    // Populate visibility checkboxes
     document.getElementById('product-showTradeIn').checked = productToEdit.showTradeIn !== false;
     document.getElementById('product-showLayBye').checked = productToEdit.showLayBye !== false;
     document.getElementById('product-showDeposit').checked = productToEdit.showDeposit !== false;
     document.getElementById('product-showDeliveryNationwide').checked = productToEdit.showDeliveryNationwide !== false;
     document.getElementById('product-showOneYearWarranty').checked = productToEdit.showOneYearWarranty !== false;
     document.getElementById('product-showFifteenDayReturns').checked = productToEdit.showFifteenDayReturns !== false;
+
+    // Load new dashboard input structures
+    document.getElementById('product-freeTransport').checked = !!productToEdit.freeTransport;
+    document.getElementById('product-cashOnDelivery').checked = !!productToEdit.cashOnDelivery;
+    document.getElementById('product-warrantyDuration').value = productToEdit.warrantyDuration || 'No Warranty';
+    document.getElementById('product-promotionStatus').value = productToEdit.promotionStatus || 'None';
 
     const productsTabBtn = document.querySelector('.admin-tab-btn[data-tab="products"]');
     if (productsTabBtn) productsTabBtn.click();

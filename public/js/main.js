@@ -93,7 +93,7 @@ document.body.addEventListener('click', async (e) => {
         if (confirm('Are you sure you want to delete this product?')) {
             try {
                 await api.deleteProduct(mongoId);
-                alert('Product deleted');
+                alert('Product deleted successfully.');
                 location.reload();
             } catch (err) {
                 if (err.message.includes('401')) {
@@ -184,7 +184,6 @@ document.body.addEventListener('click', async (e) => {
         return;
     }
 
-    // --- Admin Brands Event Delegation ---
     const editBrandBtn = e.target.closest('.edit-brand-btn');
     if (editBrandBtn) {
         e.preventDefault();
@@ -370,7 +369,7 @@ document.body.addEventListener('change', async (e) => {
 
         if (confirm(confirmationMessage)) {
             try {
-                await api.approveUser(userId, isApproved);
+                await api.approveUser(userId, { isApproved });
                 alert(`Seller account has been ${isApproved ? 'approved' : 'deactivated'}.`);
                 const listItem = checkbox.closest('.seller-account-item') || checkbox.closest('li');
                 const statusBadge = listItem.querySelector('.status-badge');
@@ -391,6 +390,21 @@ document.body.addEventListener('change', async (e) => {
             }
         } else {
             checkbox.checked = !isApproved; 
+        }
+    }
+
+    // Best Seller Badge administrative toggle
+    if (e.target.classList.contains('seller-bestseller-toggle')) {
+        const checkbox = e.target;
+        const userId = checkbox.dataset.userId;
+        const showBestSellerBadge = checkbox.checked;
+
+        try {
+            await api.approveUser(userId, { showBestSellerBadge });
+            alert('Seller bestseller badge successfully updated.');
+        } catch (error) {
+            alert('Failed to update bestseller badge.');
+            checkbox.checked = !showBestSellerBadge;
         }
     }
     
@@ -498,7 +512,6 @@ document.body.addEventListener('submit', async e => {
     if (e.target.id === 'site-settings-form') {
         e.preventDefault();
         const form = e.target;
-        // Ignore specific cards manager text inputs from being updated dynamically as standard key-value
         const inputs = form.querySelectorAll('input[type="text"]:not(.card-title-input):not(.card-link-input):not(.card-image-url-input)');
         const fileInputs = form.querySelectorAll('input[type="file"]:not(.dynamic-hero-file-input):not(.card-image-file-input)');
         
@@ -613,6 +626,7 @@ document.body.addEventListener('submit', async e => {
         const sellerIdNumber = e.target.elements.sellerIdNumber ? e.target.elements.sellerIdNumber.value.trim() : '';
         const businessRegistrationNumber = e.target.elements.businessRegistrationNumber ? e.target.elements.businessRegistrationNumber.value.trim() : '';
         const physicalAddress = e.target.elements.physicalAddress ? e.target.elements.physicalAddress.value.trim() : '';
+        const businessName = e.target.elements.businessName ? e.target.elements.businessName.value.trim() : '';
         
         const registrationDocumentInput = e.target.elements.businessRegistrationDocument;
         const businessRegistrationDocument = registrationDocumentInput && registrationDocumentInput.files.length ? registrationDocumentInput.files[0] : null;
@@ -661,7 +675,7 @@ document.body.addEventListener('submit', async e => {
         }
         
         try {
-            const res = await api.sessionSignup(name, email, password, sellerType, sellerIdNumber, businessRegistrationNumber, physicalAddress, businessRegistrationDocument, sellerIdImage);
+            const res = await api.sessionSignup(name, email, password, sellerType, sellerIdNumber, businessRegistrationNumber, physicalAddress, businessRegistrationDocument, sellerIdImage, businessName);
             
             if (res.pendingApproval) {
                 if (msgEl) {
@@ -785,7 +799,6 @@ async function handleProductFormSubmit(e) {
         return map[id];
     });
 
-    // RETRIEVE FILTER TAGS FROM THE NEW DYNAMIC TAG MANAGER FIELD INSTEAD OF CHECKBOXES
     const dynamicFiltersInput = document.getElementById('product-clothing-filters-hidden');
     let clothingFilters = [];
     if (dynamicFiltersInput && dynamicFiltersInput.value) {
@@ -838,13 +851,12 @@ async function handleProductFormSubmit(e) {
         sizes: sizes,
         thumbnails: carouselUrls,
         exploreMoreReseller: form.elements['product-exploreMoreReseller']?.value || undefined,
-        // Added trust visibility configurations:
-        showTradeIn: form.elements['product-showTradeIn']?.checked,
-        showLayBye: form.elements['product-showLayBye']?.checked,
-        showDeposit: form.elements['product-showDeposit']?.checked,
-        showDeliveryNationwide: form.elements['product-showDeliveryNationwide']?.checked,
-        showOneYearWarranty: form.elements['product-showOneYearWarranty']?.checked,
-        showFifteenDayReturns: form.elements['product-showFifteenDayReturns']?.checked
+        
+        // Dynamic newly added transport & promo values
+        freeTransport: document.getElementById('product-freeTransport')?.checked || false,
+        cashOnDelivery: document.getElementById('product-cashOnDelivery')?.checked || false,
+        warrantyDuration: document.getElementById('product-warrantyDuration')?.value || 'No Warranty',
+        promotionStatus: document.getElementById('product-promotionStatus')?.value || 'None'
     };
     
     if (productData.image && !productData.thumbnails.includes(productData.image)) {

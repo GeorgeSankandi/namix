@@ -4,7 +4,6 @@ import { CartManager } from './cart.js';
 import { isLoggedIn as isAdminLoggedIn, getSellerType, getToken } from './adminAuth.js';
 import { updateAuthUI } from './auth.js';
 
-// Special curated categories
 const specialCategories = {
     trending: 'trending',
     'new-arrivals': 'new-arrivals',
@@ -38,7 +37,6 @@ export const handleRouteChange = async () => {
     const path = parts[0];
     const param = parts[1] || '';
 
-    // Theme Management
     document.body.classList.remove('theme-green', 'theme-red', 'theme-yellow', 'admin-mode');
     updateAuthUI();
     
@@ -49,11 +47,9 @@ export const handleRouteChange = async () => {
     ui.clearRoot();
     window.scrollTo(0, 0);
 
-    // Apply Site Settings (Hero Images)
     try {
         const settingsArr = await api.fetchSettings();
         if (Array.isArray(settingsArr)) {
-            // Convert array [{key, value}] to object {key: value}
             const settingsObj = settingsArr.reduce((acc, curr) => ({ ...acc, [curr.key]: curr.value }), {});
             ui.updateCategoryData(settingsObj);
         }
@@ -61,13 +57,11 @@ export const handleRouteChange = async () => {
         console.warn('Failed to load settings', e);
     }
 
-    // Handle Curated Pages
     if (specialCategories[path]) {
         const products = await api.fetchProducts('', '', path);
-        if (path === 'combos') ui.renderCombosPage(products); // Falls back to category page if not defined
+        if (path === 'combos') ui.renderCombosPage(products);
         else ui.renderCategoryPage(products, path);
         updateMobileNavActiveState(path, '');
-        // Initialize slideshow timers for any newly rendered dynamic heros
         ui.initDynamicHeros();
         return;
     }
@@ -90,11 +84,10 @@ export const handleRouteChange = async () => {
         case 'product':
             const product = await api.fetchProductById(param);
             if (product) ui.renderProductPage(product);
-            else ui.renderNotFound ? ui.renderNotFound() : (location.hash = '#home');
+            else location.hash = '#home';
             break;
 
         case 'seller':
-            // Fetch products belonging solely to this specific seller
             const sellerProducts = await api.fetchProducts('', '', '', param);
             ui.renderCategoryPage(sellerProducts, null, 'Reseller Products');
             break;
@@ -134,7 +127,6 @@ export const handleRouteChange = async () => {
             break;
 
         case 'chat':
-            // Optional: param may contain seller id
             ui.renderChatPage(param || sessionStorage.getItem('chatTargetSeller') || '');
             break;
 
@@ -147,6 +139,14 @@ export const handleRouteChange = async () => {
         case 'payment':
             if (!param) ui.renderPaymentOptionsPage();
             else ui.renderPaymentMethodPage(param);
+            break;
+
+        case 'order-confirmation':
+            ui.renderOrderConfirmationPage(param);
+            break;
+
+        case 'competitions':
+            await ui.renderCompetitionsPage();
             break;
 
         // Static Pages
@@ -174,15 +174,11 @@ export const handleRouteChange = async () => {
 
         // ADMIN ROUTE
         case 'admin':
-            console.log('router: admin route hit, isAdminLoggedIn=', isAdminLoggedIn());
             if (isAdminLoggedIn()) {
                 document.body.classList.add('admin-mode');
                 const sellerType = getSellerType();
                 const token = getToken();
 
-                console.log('router: admin authenticated, sellerType=', sellerType, 'token=', !!token);
-
-                // If user impersonates seller via URL
                 if (parts.length >= 3 && parts[1] === 'seller' && sellerType === 'admin') {
                     const sellerEmail = decodeURIComponent(parts.slice(2).join('/'));
                     const allUsersFetch = await api.fetchAllUsers().catch(() => []);
@@ -200,25 +196,23 @@ export const handleRouteChange = async () => {
                 }
 
                 try {
-                    console.log('router: loading admin dashboard data; sellerType=', sellerType, 'token present=', !!token);
-                    // Fetch ALL data required for dashboard in parallel
                     const [
                         productsResult, 
                         usersResult, 
                         viewersResult, 
                         transactionsResult, 
                         faqsResult, 
-                        settingsResult
+                        settingsResult,
+                        competitionsResult
                     ] = await Promise.allSettled([
-                        api.fetchProducts().catch(e => { console.error('fetchProducts failed:', e); return []; }),
-                        (sellerType === 'admin') ? api.fetchAllUsers().catch(e => { console.error('fetchAllUsers failed:', e); return []; }) : Promise.resolve([]),
-                        (sellerType === 'admin') ? api.fetchAllViewers().catch(e => { console.error('fetchAllViewers failed:', e); return []; }) : Promise.resolve([]),
-                        api.getAllTransactions().catch(e => { console.error('getAllTransactions failed:', e); return []; }),
-                        api.fetchFAQs().catch(e => { console.error('fetchFAQs failed:', e); return []; }),
-                        api.fetchSettings().catch(e => { console.error('fetchSettings failed:', e); return []; })
+                        api.fetchProducts().catch(() => []),
+                        (sellerType === 'admin') ? api.fetchAllUsers().catch(() => []) : Promise.resolve([]),
+                        (sellerType === 'admin') ? api.fetchAllViewers().catch(() => []) : Promise.resolve([]),
+                        api.getAllTransactions().catch(() => []),
+                        api.fetchFAQs().catch(() => []),
+                        api.fetchSettings().catch(() => []),
+                        api.fetchCompetitions().catch(() => [])
                     ]);
-
-                    console.log('router: admin data fetch results', { products: productsResult, users: usersResult, viewers: viewersResult, transactions: transactionsResult, faqs: faqsResult, settings: settingsResult });
 
                     const allProducts = productsResult.status === 'fulfilled' ? productsResult.value : [];
                     const allUsers = usersResult.status === 'fulfilled' ? usersResult.value : [];
@@ -226,18 +220,14 @@ export const handleRouteChange = async () => {
                     const allTransactions = transactionsResult.status === 'fulfilled' ? transactionsResult.value : [];
                     const allFAQs = faqsResult.status === 'fulfilled' ? faqsResult.value : [];
                     const settings = settingsResult.status === 'fulfilled' ? settingsResult.value : [];
-
-                    console.log('router: calling renderAdminPage with', { productsCount: allProducts.length, usersCount: allUsers.length, viewersCount: allViewers.length, transactionsCount: allTransactions.length, faqsCount: allFAQs.length, sellerType });
+                    const allComps = competitionsResult.status === 'fulfilled' ? competitionsResult.value : [];
                     
-                    await ui.renderAdminPage(allProducts, allUsers, allViewers, allTransactions, allFAQs, settings, sellerType);
-                    console.log('router: rendered admin page successfully');
+                    await ui.renderAdminPage(allProducts, allUsers, allViewers, allTransactions, allFAQs, settings, sellerType, allComps);
                 } catch (err) {
                     console.error('Error loading admin dashboard:', err);
-                    // Still render the page with empty data so user can see it
-                    await ui.renderAdminPage([], [], [], [], [], [], sellerType);
+                    await ui.renderAdminPage([], [], [], [], [], [], sellerType, []);
                 }
             } else {
-                console.log('router: not admin logged in, redirecting to admin-login');
                 location.hash = '#admin-login';
             }
             break;
@@ -252,6 +242,5 @@ export const handleRouteChange = async () => {
     }
     
     updateMobileNavActiveState(path, param);
-    // Initialize slideshow timers for any newly rendered dynamic heros
     ui.initDynamicHeros();
 };

@@ -1,4 +1,3 @@
-// Re-usable function to get token
 const getToken = () => {
     try {
         const userInfo = JSON.parse(localStorage.getItem('userInfo'));
@@ -115,7 +114,7 @@ export const sessionLogin = async (email, password) => {
   return await response.json();
 };
 
-export const sessionSignup = async (name, email, password, sellerType = 'customer', sellerIdNumber = '', businessRegistrationNumber = '', physicalAddress = '', businessRegistrationDocument = null, sellerIdImage = null) => {
+export const sessionSignup = async (name, email, password, sellerType = 'customer', sellerIdNumber = '', businessRegistrationNumber = '', physicalAddress = '', businessRegistrationDocument = null, sellerIdImage = null, businessName = '') => {
   let response;
   if (businessRegistrationDocument || sellerIdImage) {
     const formData = new FormData();
@@ -126,6 +125,7 @@ export const sessionSignup = async (name, email, password, sellerType = 'custome
     formData.append('sellerIdNumber', sellerIdNumber);
     formData.append('businessRegistrationNumber', businessRegistrationNumber);
     formData.append('physicalAddress', physicalAddress);
+    formData.append('businessName', businessName);
     if (businessRegistrationDocument) {
         formData.append('businessRegistrationDocument', businessRegistrationDocument);
     }
@@ -141,7 +141,7 @@ export const sessionSignup = async (name, email, password, sellerType = 'custome
     response = await fetch('/auth/signup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password, sellerType, sellerIdNumber, businessRegistrationNumber, physicalAddress })
+      body: JSON.stringify({ name, email, password, sellerType, sellerIdNumber, businessRegistrationNumber, physicalAddress, businessName })
     });
   }
 
@@ -169,8 +169,8 @@ export const forgotPassword = async (email) => {
 export const resetPassword = async (token, password) => {
   const response = await fetch(`/auth/reset/${token}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) });
   if (!response.ok) {
-    const { message } = await response.json().catch(() => ({}));
-    throw new Error(message || 'Failed');
+    const { message = 'Failed' } = await response.json().catch(() => ({}));
+    throw new Error(message);
   }
   return await response.json();
 };
@@ -195,7 +195,7 @@ export const deleteUser = async (userId) => {
     return await response.json();
 };
 
-export const approveUser = async (userId, isApproved) => {
+export const approveUser = async (userId, updateBody) => {
     const token = getToken();
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -204,13 +204,49 @@ export const approveUser = async (userId, isApproved) => {
         method: 'PUT',
         headers,
         credentials: 'same-origin',
-        body: JSON.stringify({ isApproved })
+        body: JSON.stringify(updateBody)
     });
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Failed to update approval status');
+        throw new Error(errorData.message || 'Failed to update user parameters');
     }
     return await response.json();
+};
+
+// --- Competitions ---
+export const fetchCompetitions = async () => {
+    const res = await fetch('/api/competitions');
+    if (!res.ok) throw new Error('Failed to load competitions');
+    return await res.json();
+};
+
+export const submitCompetitionEntry = async (compId, formData) => {
+    const res = await fetch(`/api/competitions/${compId}/enter`, {
+        method: 'POST',
+        body: formData
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Failed to submit entry');
+    }
+    return await res.json();
+};
+
+// --- Chat Agreements ---
+export const saveChatAgreement = async (agreementData) => {
+    const res = await fetch('/api/agreements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(agreementData)
+    });
+    if (!res.ok) throw new Error('Failed to record negotiation');
+    return await res.json();
+};
+
+export const fetchRoomAgreements = async (roomId) => {
+    const res = await fetch(`/api/agreements/${roomId}`);
+    if (!res.ok) throw new Error('Failed to retrieve agreements');
+    return await res.json();
 };
 
 // --- Gift Card ---

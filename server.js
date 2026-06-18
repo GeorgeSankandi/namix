@@ -5,18 +5,10 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { Server as SocketIOServer } from 'socket.io';
 
-// Get the directory of the current file
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load environment variables FIRST before any other imports
-// Explicitly specify the path to .env file
-const result = dotenv.config({ path: path.join(__dirname, '.env') });
-if (result.error) {
-  console.warn('Warning: Could not load .env file:', result.error.message);
-} else {
-  console.log('✓ .env file loaded successfully');
-}
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 import cors from 'cors';
 import { ApolloServer } from 'apollo-server-express';
@@ -37,22 +29,19 @@ import aiRoutes from './routes/aiRoutes.js';
 import faqRoutes from './routes/faqRoutes.js';
 import brandRoutes from './routes/brandRoutes.js';
 
-// --- Basic Setup ---
+// Schemas & Mutlers
+import Competition from './models/competitionModel.js';
+import Agreement from './models/agreementModel.js';
+import multer from 'multer';
+
 const app = express();
 
-// Allow CORS for the requesting origin and allow credentials so frontend
-// requests using cookies/sessions work from the same host or proxied hosts.
 app.use(cors({
-    origin: (origin, callback) => {
-        // Allow requests with no origin (e.g., mobile apps, curl)
-        if (!origin) return callback(null, true);
-        // Otherwise allow the requesting origin
-        return callback(null, true);
-    },
+    origin: true,
     credentials: true
 }));
 app.use(express.json());
-// --- Session & Passport setup ---
+
 const sessionStore = MongoStore.create({ mongoUrl: process.env.MONGO_URI, collectionName: 'sessions' });
 app.use(session({
     secret: process.env.SESSION_SECRET || 'keyboard cat',
@@ -63,15 +52,80 @@ app.use(session({
         maxAge: 1000 * 60 * 60 * 24 * 7,
         httpOnly: true,
         sameSite: 'lax',
-        secure: false // Set to false for localhost, true for HTTPS in production
+        secure: false
     }
 }));
 app.use(passport.initialize());
 app.use(passport.session());
 
-// --- API Routes ---
-// API routes must be defined after session and passport middleware so
-// handlers can rely on `req.session` and `req.login`/`req.logout`.
+// Multer Storage Configuration for Competitions Uploads
+const compStorage = multer.diskStorage({
+    destination(req, file, cb) {
+        cb(null, 'public/uploads/competitions/');
+    },
+    filename(req, file, cb) {
+        cb(null, `proof-${Date.now()}${path.extname(file.originalname)}`);
+    }
+});
+const uploadComp = multer({ storage: compStorage });
+
+// --- REST Endpoints for Competitions & Agreements ---
+app.get('/api/competitions', async (req, res) => {
+    try {
+        const comps = await Competition.find({});
+        res.json(comps);
+    } catch (err) {
+        res.status(500).json({ message: 'Error retrieving competitions' });
+    }
+});
+
+app.post('/api/competitions', async (req, res) => {
+    try {
+        const comp = new Competition(req.body);
+        await comp.save();
+        res.json(comp);
+    } catch (err) {
+        res.status(500).json({ message: 'Error launching competition' });
+    }
+});
+
+app.post('/api/competitions/:id/enter', uploadComp.single('proofFile'), async (req, res) => {
+    try {
+        const comp = await Competition.findById(req.params.id);
+        if (!comp) return res.status(404).json({ message: 'Competition not found' });
+        
+        comp.entries.push({
+            userName: req.body.userName,
+            userEmail: req.body.userEmail,
+            proofOfPurchaseUrl: `/uploads/competitions/${req.file.filename}`,
+            mediaType: req.file.mimetype.includes('video') ? 'video' : 'image'
+        });
+        await comp.save();
+        res.json({ message: 'Successful Submission' });
+    } catch (err) {
+        res.status(500).json({ message: 'Failed submission' });
+    }
+});
+
+app.post('/api/agreements', async (req, res) => {
+    try {
+        const agr = new Agreement(req.body);
+        await agr.save();
+        res.json(agr);
+    } catch (err) {
+        res.status(500).json({ message: 'Save failure' });
+    }
+});
+
+app.get('/api/agreements/:roomId', async (req, res) => {
+    try {
+        const agrs = await Agreement.find({ roomId: req.params.roomId });
+        res.json(agrs);
+    } catch (err) {
+        res.status(500).json({ message: 'Read failure' });
+    }
+});
+
 app.use('/api/products', productRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/upload', uploadRoutes);
@@ -80,23 +134,15 @@ app.use('/api/transactions', transactionRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/faqs', faqRoutes);
 app.use('/api/brands', brandRoutes);
-
-// Session-based auth routes
 app.use('/auth', authRoutes);
 
-// --- Static File Serving ---
-// Point Express to the 'public' folder to serve all frontend assets.
 const publicDirectoryPath = path.join(__dirname, 'public');
 app.use(express.static(publicDirectoryPath));
 
-// --- SPA Fallback Route ---
-// For any GET request that doesn't match an API route or an existing file in 'public',
-// send the main index.html file. This MUST be the last route.
 app.get('*', (req, res) => {
     res.sendFile(path.join(publicDirectoryPath, 'index.html'));
 });
 
-// --- Server Startup Function ---
 const startServer = async () => {
     try {
         await connectDB();
@@ -122,11 +168,6 @@ const startServer = async () => {
             socket.on('join_chat', ({ roomId, sellerId, buyerId, userName }) => {
                 if (!roomId) return;
                 socket.join(roomId);
-                socket.data.roomId = roomId;
-                socket.data.userName = userName;
-                socket.data.buyerId = buyerId;
-                socket.data.sellerId = sellerId;
-
                 const history = chatRooms.get(roomId) || [];
                 socket.emit('chat_history', history);
             });
@@ -142,13 +183,8 @@ const startServer = async () => {
                 if (!message.roomId) return;
                 const roomHistory = chatRooms.get(message.roomId) || [];
                 roomHistory.push(message);
-                if (roomHistory.length > 100) roomHistory.shift();
                 chatRooms.set(message.roomId, roomHistory);
                 io.to(message.roomId).emit('chat_message', message);
-            });
-
-            socket.on('disconnect', () => {
-                // No-op for now
             });
         });
 
