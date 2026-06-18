@@ -20,6 +20,8 @@ const authUser = async (req, res) => {
         email: user.email,
         isAdmin: user.isAdmin,
         sellerType: user.sellerType || 'customer',
+        isVerified: user.isVerified || false,
+        showBestSellerBadge: user.showBestSellerBadge || false,
         token: generateToken(user._id),
       });
     } else {
@@ -42,14 +44,15 @@ const registerUser = async (req, res) => {
 
     let userSellerType = 'customer';
     let isApproved = true;
+    let isVerified = false;
 
-    // Permit registration routing for streamlined reseller roles
     if (['electronics', 'solar', 'fashion', 'groceries', 'appliances', 'vehicles', 'crafts', 'farm', 'fuel', 'other'].includes(sellerType)) {
       userSellerType = sellerType;
       isApproved = false;
       if (!physicalAddress) {
         return res.status(400).json({ message: 'Physical address is required for reseller signup.' });
       }
+      isVerified = true; 
     }
 
     const user = await User.create({
@@ -58,7 +61,7 @@ const registerUser = async (req, res) => {
       password,
       sellerType: userSellerType,
       isApproved,
-      isVerified: false,
+      isVerified,
       sellerIdNumber: sellerIdNumber || '',
       businessRegistrationNumber: businessRegistrationNumber || '',
       businessRegistrationDocument: req.body.businessRegistrationDocument || '',
@@ -73,6 +76,7 @@ const registerUser = async (req, res) => {
         isAdmin: user.isAdmin,
         sellerType: user.sellerType,
         isApproved: user.isApproved,
+        isVerified: user.isVerified,
         token: generateToken(user._id),
       });
     } else {
@@ -115,16 +119,12 @@ const approveUser = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        const { isApproved } = req.body;
-        if (typeof isApproved !== 'boolean') {
-             return res.status(400).json({ message: 'A boolean `isApproved` status is required.' });
-        }
+        const { isApproved, showBestSellerBadge } = req.body;
+        if (isApproved !== undefined) user.isApproved = isApproved;
+        if (showBestSellerBadge !== undefined) user.showBestSellerBadge = showBestSellerBadge;
 
-        user.isApproved = isApproved;
         await user.save();
-
-        const message = isApproved ? 'User approved successfully' : 'User account has been deactivated.';
-        res.json({ message, user });
+        res.json({ message: 'Status updated successfully', user });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server Error' });

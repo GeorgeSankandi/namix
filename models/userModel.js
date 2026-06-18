@@ -33,6 +33,10 @@ const userSchema = mongoose.Schema({
     type: Boolean,
     default: false
   },
+  showBestSellerBadge: {
+    type: Boolean,
+    default: false
+  },
   sellerIdNumber: {
     type: String,
     default: ''
@@ -64,7 +68,7 @@ const userSchema = mongoose.Schema({
   isApproved: {
     type: Boolean,
     required: true,
-    default: true, // Customers are auto-approved
+    default: true,
   },
   resetPasswordToken: { type: String },
   resetPasswordExpires: { type: Date },
@@ -78,7 +82,7 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
 
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) {
-    next();
+    return next();
   }
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);

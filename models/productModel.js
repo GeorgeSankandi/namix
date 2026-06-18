@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
 
-// Peak human activity times for realistic viewer timestamps
 export const PEAK_ACTIVITY_TIMES = [
   { label: '6:00 AM', hour: 6, minute: 0 },
   { label: '8:00 AM', hour: 8, minute: 0 },
@@ -17,7 +16,7 @@ const reviewSchema = mongoose.Schema({
   author: { type: String, required: true },
   rating: { type: Number, required: true },
   text: { type: String, required: true },
-  viewerId: { type: mongoose.Schema.Types.ObjectId }, // Link to the viewer subdocument _id
+  viewerId: { type: mongoose.Schema.Types.ObjectId },
 }, {
   timestamps: true
 });
@@ -41,39 +40,40 @@ const productSchema = mongoose.Schema({
   thumbnails: [{ type: String }],
   reviews: [reviewSchema],
   features: [{ type: String }],
-  // Clothing-specific filters (e.g., 'tops','bottoms','shoes') used on clothes pages
   clothingFilters: [{ type: String }],
-  // New field for Clothing Sizes
   sizes: [{ type: String }], 
   stock: { type: Number },
   
-  // Sale & Promotion Fields
   onSale: { type: Boolean, default: false },
   saleStartDate: { type: Date },
   saleEndDate: { type: Date },
   
-  // Super Combo Specifics
   comboEndDate: { type: Date },
-  comboProductIds: [{ type: String }], // Store IDs of products in the combo
+  comboProductIds: [{ type: String }],
   
-  // Gift Card Reward Settings
   giftCardEnabled: { type: Boolean, default: false },
   giftCardType: { type: String, enum: ['percent', 'fixed'], default: 'percent' },
-  giftCardValue: { type: Number, default: 5 }, // Default 5%
+  giftCardValue: { type: Number, default: 5 },
 
   colors: [{ type: String }],
   colorsEnabled: { type: Boolean, default: true },
-  // Reference to the seller (User)
   seller: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  // Reference to the target reseller assigned to the "Explore More" filter button
   exploreMoreReseller: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  // Clothing gender classification: 'men', 'women', or 'unisex'
   genderCategory: { type: String, enum: ['men', 'women', 'unisex'], default: 'unisex' },
-  // list of special page slugs this product belongs to (e.g., 'new-arrivals', 'on-sale')
   curatedPages: [{ type: String }],
   purchaseCount: { type: Number, default: 0 },
   condition: { type: String, enum: ['new', 'second-hand'], default: 'new' },
   viewers: [viewerSchema],
+  
+  // Transport options
+  freeTransport: { type: Boolean, default: false },
+  cashOnDelivery: { type: Boolean, default: false },
+
+  // Flexible Warranty duration
+  warrantyDuration: { type: String, default: 'No Warranty' },
+
+  // Promotion Status Banners
+  promotionStatus: { type: String, enum: ['None', 'Hot Deal', 'Limited Offer', 'WhatsApp Promo', 'Countdown Special'], default: 'None' },
   
   // Trust Visibility Toggles
   showTradeIn: { type: Boolean, default: true },

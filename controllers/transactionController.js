@@ -1,13 +1,18 @@
 import Transaction from '../models/transactionModel.js';
 
-// @desc    Create a new transaction
-// @route   POST /api/transactions
 const createTransaction = async (req, res) => {
     try {
         const {
             customerName,
             customerEmail,
             customerAddress,
+            phoneNumber,
+            landmark,
+            locationRegion,
+            transportMethod,
+            deliveryFee,
+            insuranceSelected,
+            insuranceFee,
             items,
             totalAmount,
             giftCardEarned,
@@ -22,6 +27,13 @@ const createTransaction = async (req, res) => {
             customerName,
             customerEmail,
             customerAddress,
+            phoneNumber: phoneNumber || 'N/A',
+            landmark: landmark || '',
+            locationRegion: locationRegion || 'N/A',
+            transportMethod: transportMethod || 'Standard Delivery',
+            deliveryFee: deliveryFee || 0,
+            insuranceSelected: insuranceSelected || false,
+            insuranceFee: insuranceFee || 0,
             items,
             totalAmount,
             giftCardEarned,
@@ -37,8 +49,6 @@ const createTransaction = async (req, res) => {
     }
 };
 
-// @desc    Get all transactions
-// @route   GET /api/transactions
 const getAllTransactions = async (req, res) => {
     try {
         const transactions = await Transaction.find({}).sort({ createdAt: -1 });
@@ -49,8 +59,6 @@ const getAllTransactions = async (req, res) => {
     }
 };
 
-// @desc    Update a transaction (e.g., to verify it)
-// @route   PUT /api/transactions/:id
 const updateTransaction = async (req, res) => {
     try {
         const transaction = await Transaction.findById(req.params.id);

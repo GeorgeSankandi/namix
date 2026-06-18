@@ -2,8 +2,6 @@ import Product from '../models/productModel.js';
 import mongoose from 'mongoose';
 import { generateDescriptionWithGemini, generateFeaturesWithGemini } from '../utils/geminiService.js';
 
-// @desc    Fetch all products or search by keyword/category/curated page
-// @route   GET /api/products
 const getProducts = async (req, res) => {
   const { keyword, category, curated, seller } = req.query;
   let query = {};
@@ -64,25 +62,23 @@ const getProducts = async (req, res) => {
   if (curated) query.curatedPages = curated;
 
   try {
-    const products = await Product.find(query).populate('seller', 'name businessName isVerified location');
+    const products = await Product.find(query).populate('seller', 'name businessName isVerified showBestSellerBadge location');
     res.json(products);
   } catch (error) {
     res.status(500).json({ message: 'Server Error' });
   }
 };
 
-// @desc    Fetch a single product by its custom ID
-// @route   GET /api/products/:id
 const getProductById = async (req, res) => {
   try {
     let product = await Product.findOne({ productId: req.params.id })
-      .populate('seller', 'name businessName isVerified location sellerRating')
+      .populate('seller', 'name businessName isVerified showBestSellerBadge location sellerRating')
       .populate('exploreMoreReseller', 'name businessName');
       
     if (!product) {
        if (mongoose.Types.ObjectId.isValid(req.params.id)) {
          product = await Product.findById(req.params.id)
-           .populate('seller', 'name businessName isVerified location sellerRating')
+           .populate('seller', 'name businessName isVerified showBestSellerBadge location sellerRating')
            .populate('exploreMoreReseller', 'name businessName');
        }
     }
@@ -93,8 +89,6 @@ const getProductById = async (req, res) => {
   }
 };
 
-// @desc    Create a new product
-// @route   POST /api/products
 const createProduct = async (req, res) => {
     try {
         const isMainAdmin = req.user && req.user.isAdmin === true;
@@ -146,6 +140,13 @@ const createProduct = async (req, res) => {
             giftCardType: req.body.giftCardType,
             giftCardValue: req.body.giftCardValue,
             exploreMoreReseller: req.body.exploreMoreReseller || undefined,
+            
+            // Transport & Delivery Details
+            freeTransport: req.body.freeTransport !== undefined ? req.body.freeTransport : false,
+            cashOnDelivery: req.body.cashOnDelivery !== undefined ? req.body.cashOnDelivery : false,
+            warrantyDuration: req.body.warrantyDuration || 'No Warranty',
+            promotionStatus: req.body.promotionStatus || 'None',
+
             // Trust Visibility Badges
             showTradeIn: req.body.showTradeIn !== undefined ? req.body.showTradeIn : true,
             showLayBye: req.body.showLayBye !== undefined ? req.body.showLayBye : true,
@@ -165,15 +166,10 @@ const createProduct = async (req, res) => {
       if (error.name === 'ValidationError') {
         return res.status(400).json({ message: 'Validation failed', details: error.message });
       }
-      if (error.name === 'MongoServerError' && error.code === 11000) {
-        return res.status(400).json({ message: 'Duplicate productId', details: error.keyValue });
-      }
       return res.status(500).json({ message: 'Server error while creating product', error: error.message });
     }
 };
 
-// @desc    Update a product
-// @route   PUT /api/products/:id
 const updateProduct = async (req, res) => {
   try {
     const product = await Product.findByIdAndUpdate(req.params.id, req.body, {
@@ -189,8 +185,6 @@ const updateProduct = async (req, res) => {
   }
 };
 
-// @desc    Delete a product
-// @route   DELETE /api/products/:id
 const deleteProduct = async (req, res) => {
   try {
     const product = await Product.findByIdAndDelete(req.params.id);
@@ -202,8 +196,6 @@ const deleteProduct = async (req, res) => {
   }
 };
 
-// @desc    Add a viewer to a product
-// @route   POST /api/products/:productId/viewers
 const addViewer = async (req, res) => {
     try {
         const product = await Product.findOne({ productId: req.params.productId });
@@ -227,8 +219,6 @@ const addViewer = async (req, res) => {
     }
 };
 
-// @desc    Add a review to a product (admin)
-// @route   POST /api/products/:productId/reviews
 const addReview = async (req, res) => {
   try {
     const { author, rating, text, viewerId } = req.body || {};
@@ -250,8 +240,6 @@ const addReview = async (req, res) => {
   }
 };
 
-// @desc    Get all viewers for all products (admin only)
-// @route   GET /api/products/viewers/all
 const getAllViewers = async (req, res) => {
     try {
         const productsWithViewers = await Product.find({ 'viewers.0': { $exists: true } }).select('title viewers reviews');
@@ -261,8 +249,6 @@ const getAllViewers = async (req, res) => {
     }
 };
 
-// @desc    Get viewers for a specific product
-// @route   GET /api/products/:productId/viewers
 const getViewersByProductId = async (req, res) => {
     try {
         const product = await Product.findOne({ productId: req.params.productId });
@@ -273,8 +259,6 @@ const getViewersByProductId = async (req, res) => {
     }
 };
 
-// @desc    Delete a specific viewer entry (admin only)
-// @route   DELETE /api/products/:productId/viewers/:viewerId
 const deleteViewer = async (req, res) => {
     try {
         const product = await Product.findById(req.params.productId);

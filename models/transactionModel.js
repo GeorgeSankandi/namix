@@ -4,6 +4,13 @@ const transactionSchema = mongoose.Schema({
     customerName: { type: String, required: true },
     customerEmail: { type: String, required: true },
     customerAddress: { type: String, required: true },
+    phoneNumber: { type: String, default: '' },
+    landmark: { type: String, default: '' },
+    locationRegion: { type: String, default: '' },
+    transportMethod: { type: String, default: 'Standard Delivery' },
+    deliveryFee: { type: Number, default: 0 },
+    insuranceSelected: { type: Boolean, default: false },
+    insuranceFee: { type: Number, default: 0 },
     items: [{
         productId: { type: String, required: true },
         title: { type: String, required: true },
@@ -14,6 +21,7 @@ const transactionSchema = mongoose.Schema({
     totalAmount: { type: Number, required: true },
     giftCardEarned: { type: Number, required: true },
     paymentMethod: { type: String, enum: ['eft', 'ewallet', 'layby', 'tradein'], required: true },
+    verified: { type: Boolean, default: false }
 }, {
     timestamps: true,
 });

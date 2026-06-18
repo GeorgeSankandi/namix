@@ -33,7 +33,7 @@ const validatePassword = (password) => {
 };
 
 const signup = async (req, res) => {
-  const { name, email, password, sellerType, sellerIdNumber, businessRegistrationNumber, physicalAddress } = req.body;
+  const { name, email, password, sellerType, sellerIdNumber, businessRegistrationNumber, physicalAddress, businessName } = req.body;
   
   try {
     const passwordValidation = validatePassword(password);
@@ -46,6 +46,7 @@ const signup = async (req, res) => {
 
     let userSellerType = 'customer';
     let isApproved = true;
+    let isVerified = false;
 
     if (['electronics', 'solar', 'fashion', 'groceries', 'appliances', 'vehicles', 'crafts', 'farm', 'fuel', 'other'].includes(sellerType)) {
       userSellerType = sellerType;
@@ -59,6 +60,7 @@ const signup = async (req, res) => {
       if (!req.files['sellerIdImage']) {
         return res.status(400).json({ message: 'A picture of your ID is required for reseller signup.' });
       }
+      isVerified = true; 
     }
 
     let businessRegistrationDocumentPath = '';
@@ -77,9 +79,10 @@ const signup = async (req, res) => {
       name, 
       email, 
       password,
+      businessName: businessName || '',
       sellerType: userSellerType,
       isApproved: isApproved,
-      isVerified: false,
+      isVerified: isVerified,
       sellerIdNumber: sellerIdNumber || '',
       sellerIdImage: sellerIdImagePath,
       businessRegistrationNumber: businessRegistrationNumber || '',
@@ -97,7 +100,7 @@ const signup = async (req, res) => {
 
     req.login(user, (err) => {
       if (err) return res.status(500).json({ message: 'Signup error' });
-      return res.json({ message: 'Signed up', user: { _id: user._id, name: user.name, email: user.email, sellerType: user.sellerType } });
+      return res.json({ message: 'Signed up', user: { _id: user._id, name: user.name, email: user.email, sellerType: user.sellerType, isVerified: user.isVerified } });
     });
   } catch (err) {
     console.error(err);
