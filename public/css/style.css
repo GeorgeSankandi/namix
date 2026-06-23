@@ -502,7 +502,6 @@ main {
 .category-sidebar.minimized .category-tab.more { margin-top: auto; }
 .category-sidebar.minimized .category-tab.more .icon svg { transform: rotate(180deg); }
 .category-sidebar .category-tab.more .icon svg { transform: rotate(0deg); }
-.category-sidebar .category-tab.more { margin-top: auto; }
 .category-main { flex: 1; }
 @media (max-width: 900px) { .category-layout { flex-direction: column; } .category-sidebar { width: 100%; flex-direction: row; overflow-x: auto; padding: 6px; } .category-sidebar .category-tab { min-width: 72px; } }
 
@@ -3066,43 +3065,84 @@ input:checked + .slider:before {
 
     /* Smaller home page hero section on mobile */
     .hero {
-        height: 320px !important; /* Reduced from 550px for tight mobile view */
+        height: 360px !important; /* Strict fixed container bounding box limit */
     }
     
-    /* Push text content higher up to clear controls and CTA */
+    /* Dynamically size, clip, and prevent text overlapping */
     .hero .slide .content {
-        bottom: 120px !important;
+        position: absolute !important;
+        top: 20px !important;
+        bottom: auto !important;
         left: 5% !important;
         width: 90% !important;
-        text-align: center !important; /* Center aligned */
+        height: 170px !important; /* Fixed height container for text limits */
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        align-items: center !important;
+        text-align: center !important;
+        overflow: hidden !important; /* Prevents overflow into circles */
+        gap: 6px !important; /* Even responsive spacing */
     }
     
     .hero h1 {
-        font-size: 1.5rem !important;
-        margin-bottom: 0.5rem !important;
+        font-size: 1.4rem !important;
+        line-height: 1.2 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        font-weight: 700 !important;
     }
     
     .hero p {
-        font-size: 0.95rem !important;
-        margin-bottom: 1rem !important;
-    }
-    
-    /* Position the CTA button absolutely at the bottom of the slide */
-    .hero .slide .cta {
-        position: absolute !important;
-        margin-top: 20% !important;
-        left: 50% !important;
-        transform: translateX(-50%) !important;
-        z-index: 10 !important;
-        padding: 8px 18px !important;
-        font-size: 13px !important;
+        font-size: 0.9rem !important;
+        line-height: 1.4 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        opacity: 0.9 !important;
+        display: -webkit-box !important;
+        -webkit-line-clamp: 2 !important; /* Truncate description dynamically after 2 lines */
+        -webkit-box-orient: vertical !important;
+        overflow: hidden !important;
     }
 
-    /* Position the navigation controls securely above the CTA button */
+    .hero .hero-subtitle {
+        font-size: 0.95rem !important;
+        font-weight: 500 !important;
+        margin: 0 !important;
+        display: -webkit-box !important;
+        -webkit-line-clamp: 1 !important;
+        -webkit-box-orient: vertical !important;
+        overflow: hidden !important;
+    }
+    
+    /* Carousel Navigation circles/dots: positioned cleanly below the text content */
     .hero .carousel-controls {
-        bottom: 65px !important;
+        position: absolute !important;
+        bottom: 70px !important;
         left: 50% !important;
         transform: translateX(-50%) !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        height: 40px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        z-index: 15 !important;
+    }
+    
+    /* Position the CTA button securely at the bottom of the slide */
+    .hero .slide .cta {
+        position: absolute !important;
+        bottom: 15px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        padding: 8px 24px !important;
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        margin-top: 10% !important;
+        line-height: 1 !important;
+        display: inline-block !important;
+        white-space: nowrap !important;
     }
 
     /* --- Chatbot Mobile Layout Overrides --- */
@@ -3125,21 +3165,28 @@ input:checked + .slider:before {
 }
 
 /* Smartwatches and ultra-narrow screen configurations */
-@media (max-width: 320px) {
+@media (max-width: 350px) {
     .hero {
-        height: 250px !important; /* Extra small for smartwatch/tight viewports */
+        height: 310px !important; /* Compactor layout for micro devices */
     }
     .hero .slide .content {
-        bottom: 100px !important;
-    }
-    .hero .carousel-controls {
-        bottom: 55px !important;
-    }
-    .hero .slide .cta {
-        bottom: 10px !important;
+        top: 15px !important;
+        height: 130px !important;
     }
     .hero h1 {
-        font-size: 1.25rem !important;
+        font-size: 1rem !important;
+    }
+    .hero p {
+        font-size: 0.8rem !important;
+        -webkit-line-clamp: 1 !important; /* Cap at 1 line for narrow viewport constraints */
+    }
+    .hero .carousel-controls {
+        bottom: 60px !important;
+    }
+    .hero .slide .cta {
+        bottom: -2px !important;
+        padding: 6px 16px !important;
+        font-size: 11px !important;
     }
 }
 
