@@ -55,7 +55,7 @@ document.body.addEventListener('click', async (e) => {
                 togglePasswordIcon.classList.remove('fa-eye');
                 togglePasswordIcon.classList.add('fa-eye-slash');
             } else {
-                inputField.type = 'password';
+                inputField.type === 'password';
                 togglePasswordIcon.classList.remove('fa-eye-slash');
                 togglePasswordIcon.classList.add('fa-eye');
             }
@@ -120,6 +120,23 @@ document.body.addEventListener('click', async (e) => {
                 } else {
                     alert(`Delete failed: ${err.message}`);
                 }
+            }
+        }
+        return;
+    }
+
+    // Handle Viewer Deletion in Admin Dashboard
+    if (deleteBtn && deleteBtn.dataset.viewerId) {
+        e.preventDefault();
+        const productId = deleteBtn.dataset.productId;
+        const viewerId = deleteBtn.dataset.viewerId;
+        if (confirm('Are you sure you want to remove this viewer?')) {
+            try {
+                await api.deleteViewerById(productId, viewerId);
+                alert('Viewer removed successfully.');
+                location.reload();
+            } catch (err) {
+                alert(`Failed to delete viewer: ${err.message}`);
             }
         }
         return;
@@ -192,10 +209,10 @@ document.body.addEventListener('click', async (e) => {
         if (confirm('Are you sure you want to delete this FAQ?')) {
             try {
                 await api.deleteFAQ(faqId);
-                alert('FAQ deleted successfully.');
+                alert('FAQ removed successfully.');
                 location.reload();
             } catch (err) {
-                alert('Error deleting FAQ: ' + err.message);
+                alert(`Failed to delete FAQ: ${err.message}`);
             }
         }
         return;
@@ -205,13 +222,17 @@ document.body.addEventListener('click', async (e) => {
     if (editBrandBtn) {
         e.preventDefault();
         const brandId = editBrandBtn.dataset.brandId;
-        const allBrands = await api.fetchBrands();
-        const brandToEdit = allBrands.find(b => b._id === brandId);
-        if (brandToEdit) {
-            document.getElementById('brand-id-hidden').value = brandToEdit._id;
-            document.getElementById('brand-name').value = brandToEdit.name;
-            const brandSaveBtn = document.getElementById('brand-save-btn');
-            if (brandSaveBtn) brandSaveBtn.textContent = 'Update Brand';
+        try {
+            const allBrands = await api.getBrands();
+            const brandToEdit = allBrands.find(b => String(b._id) === String(brandId));
+            if (brandToEdit) {
+                document.getElementById('brand-id-hidden').value = brandToEdit._id;
+                document.getElementById('brand-name').value = brandToEdit.name;
+                const brandSaveBtn = document.getElementById('brand-save-btn');
+                if (brandSaveBtn) brandSaveBtn.textContent = 'Update Brand';
+            }
+        } catch (err) {
+            console.error('Failed to prepare brand update form:', err);
         }
         return;
     }
@@ -597,6 +618,11 @@ document.body.addEventListener('submit', async e => {
         formData.append('defaultWarranty', document.getElementById('profile-warranty').value);
         formData.append('defaultDeliveryOption', document.getElementById('profile-delivery').value);
         
+        // Append location, geocoded fields, and physicalAddress parameters to Form Data payload
+        formData.append('physicalAddress', document.getElementById('profile-physical-address').value);
+        formData.append('latitude', document.getElementById('profile-lat').value);
+        formData.append('longitude', document.getElementById('profile-lon').value);
+        
         const fileInput = document.getElementById('profile-image-file');
         if (fileInput && fileInput.files.length > 0) {
             formData.append('profileImage', fileInput.files[0]);
@@ -623,7 +649,7 @@ document.body.addEventListener('submit', async e => {
         try {
             const res = await api.sessionLogin(email, password);
             const userInfo = res.user || res;
-            localStorage.setItem('userInfo', JSON.stringify({ ...userInfo, token: null }));
+            localStorage.setItem('userInfo', JSON.stringify({ ...userInfo, token: userInfo.token || null }));
             updateAuthUI();
             if (msgEl) {
                 msgEl.textContent = 'Logged in';
@@ -704,7 +730,7 @@ document.body.addEventListener('submit', async e => {
                 e.target.reset();
             } else {
                 const userInfo = res.user || res;
-                localStorage.setItem('userInfo', JSON.stringify({ ...userInfo, token: null }));
+                localStorage.setItem('userInfo', JSON.stringify({ ...userInfo, token: userInfo.token || null }));
                 updateAuthUI();
                 if (msgEl) {
                     msgEl.textContent = 'Account created';
@@ -852,6 +878,10 @@ async function handleProductFormSubmit(e) {
         form.elements['carousel-url-4']?.value,
     ];
 
+    // Grab the current logged-in reseller ID
+    const currentUser = JSON.parse(localStorage.getItem('userInfo'));
+    const currentUserId = currentUser ? currentUser._id : undefined;
+
     const product = {
         productId: form.elements['product-id'].value,
         title: form.elements['product-title'].value,
@@ -874,6 +904,9 @@ async function handleProductFormSubmit(e) {
         thumbnails: carouselUrls,
         exploreMoreReseller: form.elements['product-exploreMoreReseller']?.value || undefined,
         
+        // Pass current logged-in user _id as owner/seller of the created product
+        seller: currentUserId,
+
         freeTransport: document.getElementById('product-freeTransport')?.checked || false,
         deliveryPriceWindhoek: parseFloat(document.getElementById('product-deliveryPriceWindhoek')?.value) || 0,
         deliveryPriceOutside: parseFloat(document.getElementById('product-deliveryPriceOutside')?.value) || 0,

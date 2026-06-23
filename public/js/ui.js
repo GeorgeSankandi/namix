@@ -4,32 +4,23 @@ import { CartManager, setCartUpdateCallback } from './cart.js';
 import * as api from './api.js';
 import { geocodeLocation, showLocationOnMap } from './map.js';
 
-// Global variables to track admin type (accessible to all event listeners)
 let isMainAdmin = false;
 let isFurnitureAdmin = false;
 let isClothesAdmin = false;
 let isKidsAdmin = false;
 let isFashionAdmin = false;
 
-// Dynamic check variables for streamlined modules
 let isVehiclesAdmin = false;
 let isPropertyAdmin = false;
 let isFoodAdmin = false;
 let isBooksAdmin = false;
 
-// Track intervals to clean them up on navigation
 let liveViewerInterval = null;
-
-// Global settings dictionary cached on runtime updates
 let globalSettingsMap = {};
-
-// Active list of products chosen for combo generation
 let selectedComboProducts = [];
 
-// Standard Clothing Sizes for Admin Dropdown
 const STANDARD_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', 'UK 4', 'UK 6', 'UK 8', 'UK 10', 'UK 12', 'UK 14', 'One Size'];
 
-// Peak human activity times for realistic viewer timestamps
 const PEAK_ACTIVITY_TIMES = [
   { label: '6:00 AM', hour: 6, minute: 0 },
   { label: '8:00 AM', hour: 8, minute: 0 },
@@ -42,7 +33,6 @@ const PEAK_ACTIVITY_TIMES = [
   { label: '10:00 PM', hour: 22, minute: 0 },
 ];
 
-// Set up cart update callback
 setCartUpdateCallback(() => {
     updateFloatingCartButton();
 });
@@ -55,7 +45,108 @@ const getCurrentUser = () => {
     }
 };
 
-// Robust Message Element (Requirement 2, 3)
+// --- COMBO PRODUCT BUILDER HELPERS ---
+
+const updateComboSelectionDisplay = () => {
+    const previewContainer = document.getElementById('combo-selected-preview');
+    const countSpan = document.getElementById('combo-selected-count');
+    const totalSpan = document.getElementById('combo-total-value');
+    const hiddenInput = document.getElementById('combo-product-ids-hidden');
+    
+    if (!previewContainer) return;
+
+    previewContainer.innerHTML = '';
+    let totalOldPrice = 0;
+    const ids = [];
+
+    selectedComboProducts.forEach((p, idx) => {
+        totalOldPrice += p.currentPrice || 0;
+        ids.push(p.productId);
+
+        const item = document.createElement('div');
+        item.style.cssText = 'background: white; border: 1px solid #ddd; padding: 5px 10px; border-radius: 6px; display: flex; align-items: center; gap: 8px; font-size: 0.85rem; margin-bottom: 5px;';
+        item.innerHTML = `
+            <img src="${p.image}" style="width: 30px; height: 30px; object-fit: cover; border-radius: 4px;">
+            <span>${p.title}</span>
+            <button type="button" class="remove-combo-item" data-index="${idx}" style="border: none; background: none; color: red; cursor: pointer; font-weight: bold; margin-left: auto;">✕</button>
+        `;
+        previewContainer.appendChild(item);
+    });
+
+    if (countSpan) countSpan.textContent = selectedComboProducts.length;
+    if (totalSpan) totalSpan.textContent = totalOldPrice.toFixed(2);
+    if (hiddenInput) hiddenInput.value = JSON.stringify(ids);
+
+    // Bind remove listeners
+    previewContainer.querySelectorAll('.remove-combo-item').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const index = parseInt(btn.dataset.index, 10);
+            selectedComboProducts.splice(index, 1);
+            updateComboSelectionDisplay();
+            generateAndDisplayComboImage();
+            
+            // Refresh selector list to re-enable "Add" button
+            const searchInput = document.getElementById('combo-product-search');
+            if (searchInput) searchInput.dispatchEvent(new Event('input'));
+        });
+    });
+};
+
+const generateAndDisplayComboImage = () => {
+    const canvas = document.getElementById('combo-image-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const count = selectedComboProducts.length;
+    if (count === 0) {
+        ctx.fillStyle = '#999999';
+        ctx.font = '14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Select products to build combo image', canvas.width / 2, canvas.height / 2);
+        return;
+    }
+
+    let cols = 1;
+    let rows = 1;
+    if (count > 1) cols = 2;
+    if (count > 2) rows = 2;
+    if (count > 4) cols = 3;
+
+    const cellW = canvas.width / cols;
+    const cellH = canvas.height / rows;
+
+    selectedComboProducts.forEach((p, idx) => {
+        const c = idx % cols;
+        const r = Math.floor(idx / cols);
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.src = p.image;
+        img.onload = () => {
+            ctx.drawImage(img, c * cellW + 10, r * cellH + 10, cellW - 20, cellH - 20);
+            
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+            ctx.fillRect(c * cellW + 10, r * cellH + cellH - 35, cellW - 20, 25);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '11px sans-serif';
+            ctx.textAlign = 'center';
+            const shortTitle = p.title.length > 20 ? p.title.slice(0, 17) + '...' : p.title;
+            ctx.fillText(shortTitle, c * cellW + cellW / 2, r * cellH + cellH - 18);
+        };
+        img.onerror = () => {
+            ctx.fillStyle = '#f0f0f0';
+            ctx.fillRect(c * cellW + 10, r * cellH + 10, cellW - 20, cellH - 20);
+            ctx.fillStyle = '#ff4444';
+            ctx.font = '11px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Failed to load', c * cellW + cellW / 2, r * cellH + cellH / 2);
+        };
+    });
+};
+
 const createChatMessageElement = (message, fromMe = false) => {
     const wrapper = document.createElement('div');
     wrapper.style.margin = '8px 0';
@@ -82,7 +173,6 @@ const createChatMessageElement = (message, fromMe = false) => {
     return wrapper;
 };
 
-// Seller chat with Voice Recording, File uploads & Trade sections replacing layby (Requirement 2, 3, 4)
 const createSellerChatModal = ({ sellerId, sellerName }) => {
     const currentUser = getCurrentUser();
     if (!currentUser) {
@@ -116,7 +206,6 @@ const createSellerChatModal = ({ sellerId, sellerName }) => {
 
             <div id="seller-chat-messages" style="flex:1; padding: 14px; overflow-y:auto; background:#fbfbfb;"></div>
             
-            <!-- Custom Trade Negotiation Panel replacing Lay-by options (Requirement 4) -->
             <div id="negotiation-panel" style="background:#f9f9fb; border-top:1px solid var(--border-color); padding:15px; display:flex; flex-direction:column; gap:10px;">
                 <h4 style="margin:0; font-size:0.9rem; color:var(--corporate-blue);">Trade & Price Agreement</h4>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
@@ -130,7 +219,6 @@ const createSellerChatModal = ({ sellerId, sellerName }) => {
                 <button type="button" id="btn-save-agreement" style="background:var(--corporate-blue); color:white; font-weight:700; border:none; border-radius:6px; font-size:0.8rem; cursor:pointer; padding:10px 14px; height:100%;">Save Agreement</button>
             </div>
 
-            <!-- Footer with Voice Note & Attachment Buttons (Requirement 2, 3) -->
             <div style="display:flex; flex-direction:column; border-top:1px solid #eee; background:#fff; padding: 12px; box-sizing:border-box; gap: 8px;">
                 <div id="voice-rec-status" style="display:none; align-items:center; gap:8px; color:var(--corporate-red); font-size:0.85rem; font-weight:bold;">
                     <i class="fas fa-microphone" style="animation: timerPulse 1s infinite;"></i> <span>Recording Audio...</span>
@@ -217,7 +305,6 @@ const createSellerChatModal = ({ sellerId, sellerName }) => {
     sendBtn.addEventListener('click', () => sendMessage());
     inputEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); sendMessage(); } });
 
-    // File attachments uploads (Requirement 3)
     fileAttachBtn.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', async () => {
         if (fileInput.files.length === 0) return;
@@ -239,7 +326,6 @@ const createSellerChatModal = ({ sellerId, sellerName }) => {
         fileInput.value = '';
     });
 
-    // Voice Message Recorder (Requirement 2)
     let mediaRecorder = null;
     let audioChunks = [];
     voiceRecBtn.addEventListener('click', async () => {
@@ -304,8 +390,24 @@ const createSellerChatModal = ({ sellerId, sellerName }) => {
 
 export let categoryData = {
     'electronics': { name: 'Electronics', heroImage: 'https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=1350&q=80', subcategories: ['phones', 'computers', 'tvs-audio', 'chargers-power', 'other-electronics'] },
-    'phones': { name: 'Phones & Accessories', parent: 'electronics', heroImage: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=1350&q=80' },
-    'computers': { name: 'Computers & Laptops', parent: 'electronics', heroImage: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=1350&q=80' },
+    'phones': { name: 'Phones & Accessories', parent: 'electronics', heroImage: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=1350&q=80', subcategories: ['iphones', 'samsung-phones', 'android-phones'] },
+    'iphones': { name: 'iPhones', parent: 'phones', heroImage: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=1350&q=80' },
+    'samsung-phones': { name: 'Samsung Phones', parent: 'phones', heroImage: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=1350&q=80' },
+    'android-phones': { name: 'Android Phones', parent: 'phones', heroImage: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=1350&q=80' },
+    
+    'tablets': { name: 'Tablets', parent: 'electronics', heroImage: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&w=1350&q=80', subcategories: ['ipads', 'samsung-tabs', 'lenovo-tabs'] },
+    'ipads': { name: 'iPads', parent: 'tablets', heroImage: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&w=1350&q=80' },
+    'samsung-tabs': { name: 'Samsung Tabs', parent: 'tablets', heroImage: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&w=1350&q=80' },
+    'lenovo-tabs': { name: 'Lenovo Tabs', parent: 'tablets', heroImage: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&w=1350&q=80' },
+    
+    'computers': { name: 'Computers & Laptops', parent: 'electronics', heroImage: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=1350&q=80', subcategories: ['macbooks', 'hp-laptops', 'dell-laptops', 'imacs', 'hp-aio'] },
+    'laptops': { name: 'Computers & Laptops', parent: 'electronics', heroImage: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=1350&q=80', subcategories: ['macbooks', 'hp-laptops', 'dell-laptops', 'imacs', 'hp-aio'] },
+    'macbooks': { name: 'MacBooks', parent: 'laptops', heroImage: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=1350&q=80' },
+    'hp-laptops': { name: 'HP Laptops', parent: 'laptops', heroImage: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=1350&q=80' },
+    'dell-laptops': { name: 'Dell Laptops', parent: 'laptops', heroImage: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=1350&q=80' },
+    'imacs': { name: 'iMacs', parent: 'laptops', heroImage: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=1350&q=80' },
+    'hp-aio': { name: 'HP All-In-One', parent: 'laptops', heroImage: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=1350&q=80' },
+
     'tvs-audio': { name: 'TVs & Audio', parent: 'electronics', heroImage: 'https://images.unsplash.com/photo-1593305841991-05c297ba4575?auto=format&fit=crop&w=1350&q=80' },
     'chargers-power': { name: 'Chargers & Power Banks', parent: 'electronics', heroImage: 'https://images.unsplash.com/photo-1609592424109-dd9892f1b17c?auto=format&fit=crop&w=1350&q=80' },
     'other-electronics': { name: 'Other Electronics', parent: 'electronics', heroImage: 'https://images.unsplash.com/photo-1550745165-9bc0b252726a?auto=format&fit=crop&w=1350&q=80' },
@@ -359,7 +461,7 @@ export let categoryData = {
 
     'fuel': { name: 'Charcoal & Fuel', heroImage: 'https://images.unsplash.com/photo-1524491989244-1f40317fe6f0?auto=format&fit=crop&w=1350&q=80', subcategories: ['charcoal', 'firewood', 'other-fuel'] },
     'charcoal': { name: 'Charcoal', parent: 'fuel', heroImage: 'https://images.unsplash.com/photo-1524491989244-1f40317fe6f0?auto=format&fit=crop&w=1350&q=80' },
-    'firewood': { name: 'Free firewood', parent: 'fuel', heroImage: 'https://images.unsplash.com/photo-1549400829-54c345333b29?auto=format&fit=crop&w=1350&q=80' },
+    'firewood': { name: 'Firewood', parent: 'fuel', heroImage: 'https://images.unsplash.com/photo-1549400829-54c345333b29?auto=format&fit=crop&w=1350&q=80' },
     'other-fuel': { name: 'Other Fuel', parent: 'fuel', heroImage: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=1350&q=80' },
 
     'other': { name: 'Other / Miscellaneous', heroImage: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=1350&q=80', subcategories: ['books-stationery', 'sports-toys', 'services', 'anything-else'] },
@@ -402,11 +504,26 @@ export const clearRoot = () => {
 };
 
 export const updateFloatingCartButton = () => {
-    const cartCount = CartManager.getCartCount();
+    let cartCount = 0;
+    try {
+        const cart = JSON.parse(localStorage.getItem('namixCart')) || [];
+        cartCount = cart.reduce((total, item) => total + (Number(item.quantity) || 0), 0);
+    } catch (e) {
+        cartCount = 0;
+    }
+    
+    if (cartCount < 0 || isNaN(cartCount)) {
+        cartCount = 0;
+    }
+
+    // Synchronize all badge elements on the page simultaneously
+    const badges = document.querySelectorAll('.cart-badge');
+    badges.forEach(badge => {
+        badge.textContent = cartCount;
+    });
+
     const headerCart = document.getElementById('header-cart-btn') || document.querySelector('.cart');
     if (headerCart) {
-        const hb = headerCart.querySelector('.cart-badge');
-        if (hb) hb.textContent = cartCount;
         headerCart.classList.remove('hidden');
     }
 };
@@ -548,12 +665,10 @@ const createProductCard = (product) => {
         </div>
     `;
 
-    // Verified Tick on bottom-left and Best Seller verified badge on bottom-right
     const verifiedTickBadgeHTML = isVerifiedSeller 
         ? `<div class="verified-tick-badge" style="position: absolute; bottom: 10px; left: 10px; color: #0084ff; background: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 10;" title="Verified Reseller"><i class="fas fa-check-circle"></i></div>` 
         : '';
 
-    // Free transport icon displaying next to the verified blue tick (Requirement 9 part B)
     const freeTransportBadgeHTML = (isVerifiedSeller && product.freeTransport)
         ? `<div class="free-transport-badge" style="position: absolute; bottom: 10px; left: 38px; color: #069a44; background: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 10;" title="Free Transport"><i class="fas fa-shipping-fast"></i></div>`
         : '';
@@ -759,7 +874,7 @@ export const initDynamicHeros = () => {
 
         const startAutoPlay = () => {
             if (autoPlayTimer) clearInterval(autoPlayTimer);
-            autoPlayTimer = setInterval(nextSlide, 8000); // Slowed speed to 8 seconds
+            autoPlayTimer = setInterval(nextSlide, 8000);
         };
 
         const resetAutoPlayWithDelay = () => {
@@ -907,17 +1022,61 @@ export const renderContactPage = () => {
 export const renderHowToSellPage = () => {
     getAppRoot().innerHTML = `
         <div class="amazon-layout-wrapper" style="margin-top: 2rem;">
+            <section class="amazon-hero">
+                <div class="amazon-hero-content">
+                    <h1>Start selling with NamKuku</h1>
+                    <p>Take your local business online. Reach thousands of active buyers across Windhoek, Swakopmund, Oshakati, and nationwide. Create an account, list your inventory, and watch your brand grow.</p>
+                    <a href="#register" class="amazon-cta-btn">Sign Up as a Reseller</a>
+                </div>
+                <div class="amazon-hero-img">
+                    <img src="https://images.unsplash.com/photo-1556742049-0cfed4f7a07d?auto=format&fit=crop&w=1350&q=80" alt="Sell on Namkuku" style="border-radius: var(--border-radius); box-shadow: var(--shadow-medium);">
+                </div>
+            </section>
+
+            <div class="amazon-stats-bar">
+                <div class="amazon-stat">
+                    <strong>0%</strong>
+                    <span>Upfront Listing Fees</span>
+                </div>
+                <div class="amazon-stat">
+                    <strong>100%</strong>
+                    <span>Proudly Namibian Platform</span>
+                </div>
+                <div class="amazon-stat">
+                    <strong>24/7</strong>
+                    <span>Reseller Operations Support</span>
+                </div>
+            </div>
+
             <div class="amazon-section">
                 <div class="amazon-section-header">
-                    <h2>Why Sell on Namkuku?</h2>
+                    <h2>Simple. Flexible. Profitable.</h2>
+                    <p>Our tailored reseller tools are custom-built for local merchants to maximize online conversion rates.</p>
                 </div>
                 <div class="amazon-card-grid">
                     <div class="amazon-card">
-                        <h3>Reach More Customers</h3>
-                        <p>Instantly access a growing database of tech-savvy Namibian shoppers.</p>
+                        <div class="amazon-card-icon"><i class="fas fa-truck"></i></div>
+                        <h3>Custom Pickup Points</h3>
+                        <p>Set up custom physical Cash-on-Delivery (COD) pickup and pay points. Customers can order online and securely pay cash when retrieving items directly from you.</p>
+                    </div>
+                    <div class="amazon-card">
+                        <div class="amazon-card-icon"><i class="fas fa-handshake"></i></div>
+                        <h3>Built-In Chat Agreements</h3>
+                        <p>Interact with shoppers in real-time. Negotiate prices, propose trade-in credit values, and record trade agreements directly inside our secure chat window.</p>
+                    </div>
+                    <div class="amazon-card">
+                        <div class="amazon-card-icon"><i class="fas fa-shield-alt"></i></div>
+                        <h3>Verification & Badging</h3>
+                        <p>Upload your ID and business registration documents to receive a blue "Verified Reseller" checkmark. Build immediate trust and unlock exclusive Best Seller visibility ribbons.</p>
                     </div>
                 </div>
             </div>
+
+            <section class="amazon-final-cta" style="background-color: var(--background-light); padding: 80px 5%; border-top: 1px solid var(--border-color);">
+                <h2 style="font-size: clamp(1.8rem, 5vw, 2.5rem); margin-bottom: 1.5rem; color: var(--text-dark);">Are you ready to grow your business?</h2>
+                <p style="color: var(--text-light); font-size: 1.1rem; max-width: 600px; margin: 0 auto 2.5rem auto;">Create your seller account in minutes. Join our community of local businesses today and start selling across Namibia.</p>
+                <a href="#register" class="amazon-cta-btn" style="background-color: var(--corporate-blue); color: var(--white);">Join the Reseller Network</a>
+            </section>
         </div>
     `;
 };
@@ -1170,7 +1329,6 @@ export const renderCategoryPage = async (products, categoryKey, searchTerm = '')
         </div>
     `;
 
-    // Dynamic icon lookup logic from custom admin uploads (Requirement 4)
     const getIconHTML = (itemKey, defaultSVG) => {
         const customUrl = globalSettingsMap[`clothes_sidebar_icon_${itemKey}`];
         if (customUrl) {
@@ -1648,7 +1806,6 @@ export const renderProductPage = async (product) => {
     const savedAmount = (product.oldPrice || 0) - (product.currentPrice || 0);
     const isActuallyOnSale = savedAmount > 0;
 
-    // Trust Toggles filtering logic: only display activated badges (Requirement 5)
     const warrantyText = product.seller?.defaultWarranty || product.warrantyDuration || '1-Year Warranty';
     const deliveryText = product.seller?.defaultDeliveryOption || 'Delivery Nationwide';
 
@@ -1658,7 +1815,6 @@ export const renderProductPage = async (product) => {
     if (product.showDeposit !== false) trustBar1Items.push(`<div class="trust-info-item"><i class="fas fa-percent"></i> Deposit</div>`);
 
     const trustBar2Items = [];
-    // Activated Delivery Nationwide when toggle in relevant reseller dashboard is checked (Requirement 5)
     if (product.showDeliveryNationwide !== false) {
         trustBar2Items.push(`<div class="trust-info-item"><i class="fas fa-truck"></i> ${deliveryText}</div>`);
     }
@@ -1675,7 +1831,6 @@ export const renderProductPage = async (product) => {
         `;
     }
 
-    // Dynamic safe delivery insurance info block
     let safeInsuranceBannerHTML = '';
     if (product.safeInsuranceEnabled && product.safeInsurancePrice > 0) {
         safeInsuranceBannerHTML = `
@@ -1687,7 +1842,7 @@ export const renderProductPage = async (product) => {
     getAppRoot().innerHTML = `
         <div class="page-container product-page-container" data-sale-end-date="${product.saleEndDate || ''}" data-combo-end-date="${product.comboEndDate || ''}">
             <div class="product-page-top-bar">
-                <a href="#category/${product.category}" class="back-to-products"><i class="fas fa-arrow-left"></i> Back to ${product.category}</a>
+                <a href="#category/${product.category}" class="back-to-products" id="back-to-products"><i class="fas fa-arrow-left"></i> Back to ${product.category}</a>
             </div>
             <div class="product-main">
                 <div class="gallery-section">
@@ -1722,12 +1877,6 @@ export const renderProductPage = async (product) => {
                         ${formatCurrency(product.currentPrice)}
                         ${isActuallyOnSale ? `<span class="original-price">${formatCurrency(product.oldPrice)}</span><span class="save-badge">Save ${formatCurrency(savedAmount)}</span>` : ''}
                     </div>
-                    
-                    <!-- Display Warranty details -->
-                    <div style="background:#f9f9fb; padding:15px; border-radius:10px; margin: 15px 0;">
-                        <div style="font-weight:700;"><i class="fas fa-shield-alt"></i> Warranty:</div>
-                        <div style="font-size:1.1rem; color:var(--corporate-blue); margin-top:4px;">${warrantyText}</div>
-                    </div>
 
                     ${giftRewardHTML}
                     ${transportHTML}
@@ -1758,7 +1907,6 @@ export const renderProductPage = async (product) => {
                         </div>
                     </div>
 
-                    <!-- Moved Buttons Segment: Positioned below description & reviews tab container (Requirement 6) -->
                     ${product.seller ? `
                     <div style="margin-top: 25px; padding: 20px; background: #fafafa; border: 1px solid var(--border-color); border-radius: 12px; display:flex; flex-direction:column; gap:12px;">
                         <h4 style="margin:0; font-size:1.1rem; color:var(--corporate-blue);">Interact with Reseller:</h4>
@@ -1773,8 +1921,6 @@ export const renderProductPage = async (product) => {
         </div>
         ${similarProductsHTML}
     `;
-    
-    // Floating action button toggle trigger setup removed as requested
 
     const backBtn = document.getElementById('back-to-products');
     if (backBtn) {
@@ -1869,7 +2015,6 @@ export const renderProductPage = async (product) => {
         });
     }
 
-    // Leaflet geolocating based on custom saved dashboard coordinates or reverse geocoding fallback (Requirement 7)
     const mapBtnDetail = document.getElementById('btn-show-seller-map');
     if (mapBtnDetail) {
         mapBtnDetail.addEventListener('click', async () => {
@@ -2026,7 +2171,6 @@ export const renderCartPage = (detailedCartItems) => {
                 ${itemsHTML}
 
                 ${validItems.length > 0 ? `
-                <!-- STEP 2: Delivery Address Form -->
                 <div style="background:#fff; border:1px solid #ddd; border-radius:12px; padding:25px; margin:30px 0; box-shadow:var(--shadow-soft);">
                     <h3 style="color:var(--corporate-blue); margin-top:0; margin-bottom:15px;"><i class="fas fa-map-marker-alt"></i> Where should we send your order?</h3>
                     <form id="delivery-address-form">
@@ -2061,14 +2205,11 @@ export const renderCartPage = (detailedCartItems) => {
                     </form>
                 </div>
 
-                <!-- STEP 3: Dynamic Transport Form (Hidden until address saved) -->
                 <div id="transport-form-wrapper" style="display:none; background:#fff; border:1px solid #ddd; border-radius:12px; padding:25px; margin: 30px 0; box-shadow:var(--shadow-soft);">
                     <h3 style="color:var(--corporate-blue); margin-top:0; margin-bottom:15px;"><i class="fas fa-truck"></i> Choose Transport Option</h3>
                     <div id="transport-options-container" style="display:flex; flex-direction:column; gap:10px;">
-                        <!-- Injected dynamically based on location -->
                     </div>
                     
-                    <!-- COD Pickup Point address dropdown selector (Requirement 9) -->
                     <div id="cod-pickup-selector-container" style="display:none; margin-top: 15px; background: #fbfbfb; border: 1px solid #eee; padding: 15px; border-radius: 8px;">
                         <label for="cod-pickup-select" style="font-weight:700; display:block; margin-bottom:6px;">Select Reseller Pickup & COD Payment Point:</label>
                         <select id="cod-pickup-select" style="width:100%; padding:10px; border-radius:6px; border: 1px solid #ccc;"></select>
@@ -2113,7 +2254,6 @@ export const renderCartPage = (detailedCartItems) => {
     let selectedLocation = '';
     let computedInsuranceCost = 0;
 
-    // Calculate dynamic safe insurance costs based on items in the cart
     let activeInsuranceEnabled = false;
     validItems.forEach(item => {
         if (item.safeInsuranceEnabled && item.safeInsurancePrice > 0) {
@@ -2149,7 +2289,6 @@ export const renderCartPage = (detailedCartItems) => {
 
         if (transportWrapper) transportWrapper.style.display = 'block';
 
-        // Display safe delivery insurance block if any product has it active
         if (insuranceFormWrapper) {
             if (activeInsuranceEnabled) {
                 insuranceFormWrapper.style.display = 'block';
@@ -2161,11 +2300,10 @@ export const renderCartPage = (detailedCartItems) => {
             }
         }
 
-        // Dynamically compute dynamic shipping price from individual products
         shippingFee = 0;
         validItems.forEach(item => {
             if (item.freeTransport === true) {
-                return; // Free delivery
+                return;
             }
             const windhoekPrice = item.deliveryPriceWindhoek !== undefined ? item.deliveryPriceWindhoek : 49;
             const outsidePrice = item.deliveryPriceOutside !== undefined ? item.deliveryPriceOutside : 79;
@@ -2177,7 +2315,6 @@ export const renderCartPage = (detailedCartItems) => {
 
         const codAllowed = validItems.every(i => i.cashOnDelivery === true);
 
-        // Fetch reseller COD pickup points array (Requirement 9)
         let pickupPointsHTML = '';
         if (codAllowed) {
             try {
@@ -2817,7 +2954,6 @@ export const renderAdminPage = async (allProducts, allUsers, allViewers, allTran
 
     const currentUser = getCurrentUser();
     
-    // SAFE FILTERING: Guarantees no TypeErrors if product.seller or currentUser is null
     const relevantProducts = isMainAdmin
         ? allProducts
         : allProducts.filter(p => {
@@ -2888,6 +3024,7 @@ export const renderAdminPage = async (allProducts, allUsers, allViewers, allTran
                     <span style="font-size: 0.9rem; color: #666;">${u.email} | Type: <strong>${u.sellerType}</strong></span>
                 </div>
                 <div class="actions" style="display:flex; gap:15px; align-items:center; flex-wrap:wrap;">
+                    <button class="view-seller-btn btn btn-outline" data-seller-email="${u.email}" style="padding: 6px 12px; font-size: 0.8rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 5px;"><i class="fas fa-user-shield"></i> View Dashboard</button>
                     <label class="verify-switch switch" title="Toggle Approval">
                         <input type="checkbox" class="seller-approve-toggle" data-user-id="${u._id}" ${isApproved ? 'checked' : ''}>
                         <span class="slider round"></span>
@@ -2927,7 +3064,6 @@ export const renderAdminPage = async (allProducts, allUsers, allViewers, allTran
         });
     }).join('') || "<li>No viewers found.</li>";
     
-    // SAFE TRANSACTION FILTERING: Fully protected from null fields or missing products
     const relevantTransactions = isMainAdmin 
         ? allTransactions 
         : allTransactions.filter(transaction => {
@@ -2948,7 +3084,7 @@ export const renderAdminPage = async (allProducts, allUsers, allViewers, allTran
             const allBrands = await api.fetchBrands();
             brandListHTML = allBrands.map(brand => `<li><div class="brand-info"><strong>Brand:</strong> ${brand.name}</div><div class="actions"><button class="edit-brand-btn" data-brand-id="${brand._id}"><i class="fas fa-edit"></i> Edit</button><button class="delete-brand-btn" data-brand-id="${brand._id}"><i class="fas fa-trash"></i> Delete</button></div></li>`).join('');
         } catch (err) {
-            console.error('Failed to load brands:', err);
+            console.error('Failed to load brands for filter dropdown:', err);
         }
     }
 
@@ -3059,7 +3195,6 @@ export const renderAdminPage = async (allProducts, allUsers, allViewers, allTran
                         </div>
                         ` : ''}
 
-                        <!-- Transport & Delivery Details with Region support -->
                         <div class="form-group full-width" style="margin-top:1.5rem; padding:1rem; background:#fafafa; border-radius:8px; display:flex; flex-direction:column; gap:10px;">
                             <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:700;">
                                 <input type="checkbox" id="product-freeTransport" style="width:18px; height:18px;">
@@ -3084,7 +3219,6 @@ export const renderAdminPage = async (allProducts, allUsers, allViewers, allTran
                             </label>
                         </div>
 
-                        <!-- Safe Delivery Insurance Config Panel -->
                         <div class="form-group full-width" style="margin-top:1rem; padding:1rem; background:#fafafa; border-radius:8px; display:flex; flex-direction:column; gap:10px;">
                             <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:700;">
                                 <input type="checkbox" id="product-safeInsuranceEnabled" style="width:18px; height:18px;">
@@ -3096,13 +3230,11 @@ export const renderAdminPage = async (allProducts, allUsers, allViewers, allTran
                             </div>
                         </div>
 
-                        <!-- Warranty Selector dynamically typed input -->
                         <div class="form-group full-width" style="margin-top:1.5rem;">
                             <label for="product-warrantyDuration">Warranty Duration Selection (Dynamically Typed)</label>
                             <input type="text" id="product-warrantyDuration" placeholder="e.g. 1 Year Brand Warranty" style="padding:10px; border-radius:8px; border:1px solid var(--border-color); width:100%;">
                         </div>
 
-                        <!-- Promotion status advertising dropdown -->
                         <div class="form-group full-width" style="margin-top:1.5rem;">
                             <label for="product-promotionStatus">Status Advertising ribbon (Pro Package)</label>
                             <select id="product-promotionStatus" style="padding:10px; border-radius:8px; border:1px solid var(--border-color); width:100%;">
@@ -3157,7 +3289,6 @@ export const renderAdminPage = async (allProducts, allUsers, allViewers, allTran
                         <div class="form-group"><label>On Sale?</label><input type="checkbox" id="product-onSale"></div>
                     </div>
                     
-                    <!-- Trust Visibility Config Panel -->
                     <h3 style="margin-top: 1.5rem; margin-bottom: 1rem;">Trust Section Badges Visibility</h3>
                     <div class="form-grid">
                         <div class="form-group"><label>Display Trade-In Badge <input type="checkbox" id="product-showTradeIn" class="product-curate-toggle" checked></label></div>
@@ -3302,7 +3433,7 @@ export const renderAdminPage = async (allProducts, allUsers, allViewers, allTran
                     <form id="faq-form" class="admin-form">
                         <input type="hidden" id="faq-id-hidden">
                         <div class="form-group full-width"><label for="faq-question">Question</label><input type="text" id="faq-question" required></div>
-                        <div class="form-group full-width"><label interpreter="faq-answer">Answer</label><textarea id="faq-answer" required></textarea></div>
+                        <div class="form-group full-width"><label>Answer</label><textarea id="faq-answer" required></textarea></div>
                         <button id="faq-save-btn" type="submit" class="btn btn-primary">Save FAQ</button>
                         <button type="reset" id="clear-faq-form-btn" class="btn btn-outline">Clear</button>
                     </form>
@@ -3368,7 +3499,6 @@ export const renderAdminPage = async (allProducts, allUsers, allViewers, allTran
                     <div id="page-hero-slides-editor" style="background:#fafafa; border:1px solid var(--border-color); border-radius:12px; padding:20px; margin-bottom: 2rem;">
                     </div>
                     
-                    <!-- Homepage Under-Hero custom page assignment lists dropdown (Requirement 8) -->
                     <h3 style="margin-top: 2rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem;">Home Page Under-Hero Category Cards</h3>
                     <p style="margin-bottom: 1rem; font-size: 0.9rem; color: #555;">Manage the items displayed directly under the home page hero section. You can add new cards, update their text, links, upload images, or delete cards entirely.</p>
                     <div id="under-hero-cards-manager-container" style="background: #fafafa; border: 1px solid var(--border-color); border-radius: 12px; padding: 25px; margin: 30px 0; box-shadow:var(--shadow-soft);"></div>
@@ -3470,7 +3600,6 @@ export const renderAdminPage = async (allProducts, allUsers, allViewers, allTran
             </div>
         ` : ''}
 
-        <!-- Reseller Profile setting Leaflet Geocoding integration (Requirement 10) -->
         ${!isMainAdmin ? `
         <div id="reseller-profile" class="admin-tab-content">
             <section class="admin-section">
@@ -3490,11 +3619,11 @@ export const renderAdminPage = async (allProducts, allUsers, allViewers, allTran
                             <input type="text" id="profile-phone" value="${currentUser.phone || ''}">
                         </div>
                         <div class="form-group">
-                            <label for="profile-warranty">Default Dynamic Warranty (Requirement 8)</label>
+                            <label for="profile-warranty">Default Dynamic Warranty</label>
                             <input type="text" id="profile-warranty" value="${currentUser.defaultWarranty || '1-Year Warranty'}">
                         </div>
                         <div class="form-group">
-                            <label for="profile-delivery">Default Dynamic Delivery Option (Requirement 8)</label>
+                            <label for="profile-delivery">Default Dynamic Delivery Option</label>
                             <input type="text" id="profile-delivery" value="${currentUser.defaultDeliveryOption || 'Delivery Nationwide'}">
                         </div>
                         <div class="form-group">
@@ -3503,7 +3632,6 @@ export const renderAdminPage = async (allProducts, allUsers, allViewers, allTran
                             ${currentUser.profileImage ? `<img src="${currentUser.profileImage}" style="width:80px; height:80px; border-radius:50%; object-fit:cover; margin-top:10px; display:block; border:1px solid #ddd;">` : ''}
                         </div>
                         
-                        <!-- Interactive map address pinpoint coordinates select picker -->
                         <div class="form-group full-width" style="margin-top: 1rem;">
                             <label><strong>Select Business Location on Map</strong></label>
                             <p style="font-size:0.85rem; color:#666;">Click on the map below to pinpoint your physical business address. A popup will confirm and automatically set the address and coordinates below.</p>
@@ -3529,7 +3657,6 @@ export const renderAdminPage = async (allProducts, allUsers, allViewers, allTran
             </section>
         </div>
 
-        <!-- Geocoded Pickup Points config manager tab interface (Requirement 9) -->
         <div id="reseller-pickup-points" class="admin-tab-content">
             <section class="admin-section">
                 <h2>Manage Custom Pickup Points (for COD Shipping)</h2>
@@ -3564,7 +3691,6 @@ export const renderAdminPage = async (allProducts, allUsers, allViewers, allTran
 };
 
 const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, relevantTransactions, allFAQs, allComps) => {
-    // Curated IDs moved to the top of scope to completely prevent the temporal dead zone reference errors (Fix C)
     const allCuratedIds = [
         'product-curate-womens', 'product-curate-mens',
         'product-curate-livingroom', 'product-curate-bedroom', 'product-curate-office', 'product-curate-kitchen',
@@ -3583,7 +3709,6 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
             adminContainer.querySelectorAll('.admin-tab-content').forEach(content => content.classList.remove('active'));
             document.getElementById(tab).classList.add('active');
 
-            // Dispatch map refresh event when tabs load
             if (tab === 'reseller-profile') {
                 setTimeout(() => { window.resellerProfileMapInstance?.invalidateSize(); }, 200);
             }
@@ -3604,7 +3729,6 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
         populateHeroSlidesEditor(pageSelect.value);
     }
 
-    // Homepage Category Cards Configuration with assigned existent page options (Requirement 8)
     const cardsContainer = document.getElementById('under-hero-cards-manager-container');
     const addCardBtn = document.getElementById('add-under-hero-card-btn');
 
@@ -3687,7 +3811,7 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
                     </div>
                     <div class="form-group">
                         <label>Image URL</label>
-                        <input type="text" class="card-image-url-input" id="card-img-url-${idx}" data-index="${idx}" value="${card.image || ''}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <input type="text" class="card-image-url-input" id="card-img-url-${idx}" value="${card.image || ''}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                     </div>
                     <div class="form-group">
                         <label>Or Upload Image</label>
@@ -3777,7 +3901,6 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
         });
     }
 
-    // Leaflet Maps for Reseller Business address config (Requirement 10)
     const currentUser = getCurrentUser();
     const mapProfileContainer = document.getElementById('reseller-profile-map');
     if (mapProfileContainer && currentUser) {
@@ -3850,7 +3973,6 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
         }, 300);
     }
 
-    // Geocoded Pickup Points config setup (Requirement 9)
     let resellerPickupPoints = (currentUser && currentUser.pickupPoints) || [];
     const desktopPickupList = document.getElementById('reseller-pickup-list');
     const mobilePickupList = document.getElementById('reseller-pickup-list-mobile');
@@ -3894,7 +4016,7 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
                 <div style="font-size:0.85rem; width:200px; max-width:90%;">
                     <strong>Address:</strong><br>${resolvedAddr}<br><br>
                     <label for="pickup-point-name-inp" style="font-weight:700; display:block; margin-bottom:4px;">Pickup Point Name:</label>
-                    <input type="text" id="pickup-point-name-inp" placeholder="e.g. Klein Windhoek Shell Station" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; margin-bottom:8px;">
+                    <input type="text" id="pickup-point-name-inp" placeholder="e.g. Klein Windhoek Shell" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; margin-bottom:8px;">
                     <button type="button" id="btn-save-pickup-point" style="width:100%; padding:6px 12px; background:var(--corporate-blue); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:700;">Save Pickup Location</button>
                 </div>
             `)
@@ -4064,7 +4186,6 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
         ];
         curatedIds.forEach(id => { const el = document.getElementById(id); if (el) el.checked = false; });
         
-        // Fix B: Safely resolve missing/undefined filtersHidden references
         const filtersHidden = document.getElementById('product-clothing-filters-hidden');
         if (filtersHidden) {
             filtersHidden.value = '[]';
@@ -4096,7 +4217,6 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
         const sizeSelect = document.getElementById('product-sizes-select');
         if (sizeSelect) sizeSelect.selectedIndex = -1;
 
-        // Reset transport & safe insurance defaults
         const freeTransport = document.getElementById('product-freeTransport');
         if (freeTransport) freeTransport.checked = false;
         const deliveryPricing = document.getElementById('delivery-pricing-section');
@@ -4119,14 +4239,12 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
         const safeInsPriceInp = document.getElementById('product-safeInsurancePrice');
         if (safeInsPriceInp) safeInsPriceInp.value = 0;
 
-        // Reset trust visibility toggles to checked (Requirement 8)
         const trustIds = [
             'product-showTradeIn', 'product-showLayBye', 'product-showDeposit',
             'product-showDeliveryNationwide', 'product-showOneYearWarranty', 'product-showFifteenDayReturns'
         ];
         trustIds.forEach(id => { const el = document.getElementById(id); if (el) el.checked = true; });
 
-        // Reset gift card configuration settings
         const giftToggle = document.getElementById('product-giftCardEnabled');
         if (giftToggle) giftToggle.checked = false;
         const giftConfig = document.getElementById('gift-card-config-section');
@@ -4587,446 +4705,175 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
                                     const previewImg = document.getElementById(`carousel-preview-${num}`);
                                     if (data.images[i + 1] && previewImg) {
                                         previewImg.src = data.images[i + 1];
-                                        previewWrapper.style.display = 'block';
+                                        if (previewWrapper) previewWrapper.style.display = 'block';
+                                    } else if (previewWrapper) {
+                                        previewWrapper.style.display = 'none';
                                     }
                                 }
                             });
-                            if (aiImagesStatus) {
-                                aiImagesStatus.textContent = `✓ Found ${data.images.length} images!`;
-                                aiImagesStatus.style.color = 'green';
-                            }
-                        } else {
-                            if (aiImagesStatus) {
-                                aiImagesStatus.textContent = '❌ Could not find images.';
-                                aiImagesStatus.style.color = '#d32f2f';
-                            }
                         }
                     } catch (err) {
-                        console.error('AI Image Error:', err);
-                        if (aiImagesStatus) {
-                            aiImagesStatus.textContent = '❌ Image search failed.';
-                            aiImagesStatus.style.color = '#d32f2f';
-                        }
+                        console.error("AI image retrieval failed", err);
                     }
                 }
 
-                if (descriptionInput && isDescEmpty) {
-                    if(aiDescStatus) {
-                        aiDescStatus.textContent = '✨ Generating unique description...';
-                        aiDescStatus.style.color = 'var(--corporate-blue)';
-                    }
+                if (isDescEmpty) {
                     try {
-                        const res = await fetch('/api/ai/generate-description', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ title: titleValue })
-                        });
-                        const data = await res.json();
-                        if (data.success && data.description) {
-                            descriptionInput.value = data.description;
-                            descriptionInput.dataset.autoGenerated = "true";
-                            if(aiDescStatus) {
-                                aiDescStatus.textContent = '✓ Description generated';
-                                aiDescStatus.style.color = 'green';
-                            }
+                        const desc = await api.generateDescriptionWithGemini(titleValue, []);
+                        if (desc && descriptionInput) {
+                            descriptionInput.value = desc;
                         }
                     } catch (err) {
-                        console.error('AI Description Error:', err);
-                        if(aiDescStatus) {
-                            aiDescStatus.textContent = '❌ Generation failed';
-                            aiDescStatus.style.color = '#d32f2f';
-                        }
+                        console.error("AI description failed", err);
                     }
                 }
 
-                if (featuresContainer && areFeaturesEmpty) {
-                    if (aiFeaturesStatus) {
-                        aiFeaturesStatus.style.display = 'block';
-                        aiFeaturesStatus.textContent = '✨ Generating features...';
-                        aiFeaturesStatus.style.color = 'var(--corporate-blue)';
-                    }
+                if (areFeaturesEmpty) {
                     await generateFeatures();
                 }
-
-                setTimeout(() => {
-                    if(aiDescStatus) aiDescStatus.textContent = '';
-                    if (aiFeaturesStatus) aiFeaturesStatus.style.display = 'none';
-                    if (aiImagesStatus) {
-                        aiImagesStatus.textContent = '';
-                        aiImagesStatus.style.display = 'none';
-                    }
-                }, 4000);
-
-            }, 1500);
+            }, 1000);
         });
-
-        if (descriptionInput) {
-            descriptionInput.addEventListener('input', () => {
-                if (descriptionInput.value.trim().length > 0) {
-                    delete descriptionInput.dataset.autoGenerated;
-                }
-            });
-        }
     }
 
-    const exclusiveToggleGroups = [
-        ['product-curate-womens', 'product-curate-mens'],
-        ['product-curate-livingroom', 'product-curate-bedroom', 'product-curate-office', 'product-curate-kitchen'],
-        ['product-curate-kids-electronics', 'product-curate-kids-clothing', 'product-curate-kids-toys']
-    ];
+    const addFilterTagBtn = document.getElementById('add-filter-tag-btn');
+    const newFilterTagInput = document.getElementById('new-filter-tag-input');
+    const filterTagsContainer = document.getElementById('product-filter-tags-container');
+    const filterTagsHidden = document.getElementById('product-clothing-filters-hidden');
 
-    allCuratedIds.forEach(id => {
-        const el = document.getElementById(id);
-        if (!el) return;
+    if (addFilterTagBtn && newFilterTagInput && filterTagsContainer && filterTagsHidden) {
+        addFilterTagBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const tag = newFilterTagInput.value.trim().toLowerCase();
+            if (!tag) return;
 
-        el.addEventListener('change', (e) => {
-            if (isMainAdmin) {
-                updateSaveButtonState();
-                return;
+            let currentTags = [];
+            try {
+                currentTags = JSON.parse(filterTagsHidden.value || '[]');
+            } catch (err) {
+                currentTags = [];
             }
 
-            if (e.target.checked) {
-                const parentGroup = exclusiveToggleGroups.find(group => group.includes(id));
-                if (parentGroup) {
-                    parentGroup.forEach(otherId => {
-                        if (otherId !== id) {
-                            const otherEl = document.getElementById(otherId);
-                            if (otherEl) otherEl.checked = false;
-                        }
-                    });
+            if (!currentTags.includes(tag)) {
+                currentTags.push(tag);
+                filterTagsHidden.value = JSON.stringify(currentTags);
+
+                if (filterTagsContainer.querySelector('span')?.style.color === 'rgb(153, 153, 153)') {
+                    filterTagsContainer.innerHTML = '';
                 }
+
+                const tagEl = document.createElement('span');
+                tagEl.style.cssText = 'display:inline-flex; align-items:center; gap:6px; background:var(--corporate-blue); color:white; padding:4px 10px; border-radius:15px; font-size:12px; font-weight:600; margin-right:5px; margin-bottom:5px;';
+                tagEl.innerHTML = `${tag} <button type="button" class="remove-tag-btn" data-tag="${tag}" style="border:none; background:none; color:white; cursor:pointer; font-weight:bold; font-size:12px; padding:0 0 0 4px; line-height:1;">&times;</button>`;
+                filterTagsContainer.appendChild(tagEl);
             }
-            updateSaveButtonState();
-        });
-    });
-
-    const saveBtn = document.getElementById('product-save-btn');
-    let formInteracted = false; 
-    const updateSaveButtonState = () => {
-        if (!saveBtn) return;
-        const anyCurated = allCuratedIds.some(id => document.getElementById(id)?.checked);
-        const validationMsg = document.getElementById('product-validation-msg');
-        
-        const mainAdminCheck = isMainAdmin === true;
-        const fashionAdminCheck = isFashionAdmin === true;
-        
-        if (mainAdminCheck) {
-            saveBtn.disabled = false;
-            if (validationMsg) {
-                validationMsg.textContent = '';
-                validationMsg.style.display = 'none';
-            }
-        } else if (fashionAdminCheck) {
-            const combosChecked = document.getElementById('product-curate-combos')?.checked;
-            if (combosChecked) {
-                saveBtn.disabled = !anyCurated;
-                if (validationMsg) {
-                    if (!formInteracted) {
-                        validationMsg.textContent = '';
-                        validationMsg.style.display = 'none';
-                    } else if (!anyCurated) {
-                        validationMsg.textContent = 'Please select a curated page before saving the product.';
-                        validationMsg.style.display = 'block';
-                    } else {
-                        validationMsg.textContent = '';
-                        validationMsg.style.display = 'none';
-                    }
-                }
-            } else {
-                saveBtn.disabled = !anyCurated;
-                if (validationMsg) {
-                    if (!formInteracted) {
-                        validationMsg.textContent = '';
-                        validationMsg.style.display = 'none';
-                    } else if (!anyCurated) {
-                        validationMsg.textContent = 'Please select a curated page before saving the product.';
-                        validationMsg.style.display = 'block';
-                    } else {
-                        validationMsg.textContent = '';
-                        validationMsg.style.display = 'none';
-                    }
-                }
-            }
-        } else {
-            saveBtn.disabled = false;
-            if (validationMsg) {
-                validationMsg.textContent = '';
-                validationMsg.style.display = 'none';
-            }
-        }
-    };
-
-    allCuratedIds.forEach(id => { const el = document.getElementById(id); if (el) el.addEventListener('change', () => { formInteracted = true; updateSaveButtonState(); }); });
-
-    updateSaveButtonState();
-    document.getElementById('clear-form-btn')?.addEventListener('click', updateSaveButtonState);
-    document.getElementById('cancel-edit-btn')?.addEventListener('click', updateSaveButtonState);
-    
-    const comboToggle = document.getElementById('product-curate-combos');
-    const comboBuilderSection = document.getElementById('combo-builder-section');
-    const comboExpirySection = document.getElementById('combo-expiry-section');
-    const comboProductList = document.getElementById('combo-product-list');
-    const comboProductSearch = document.getElementById('combo-product-search');
-    const comboSelectedCount = document.getElementById('combo-selected-count');
-    const comboSelectedPreview = document.getElementById('combo-selected-preview');
-    const comboCanvas = document.getElementById('combo-image-canvas');
-    const comboProductIdsHidden = document.getElementById('combo-product-ids-hidden');
-    const comboEndDateInput = document.getElementById('product-comboEndDate');
-
-    const populateComboProductList = (filter = '') => {
-        if (!comboProductList) return;
-        const lowerFilter = filter.toLowerCase();
-        
-        const productsHtml = allProducts
-            .filter(p => p.title.toLowerCase().includes(lowerFilter))
-            .map(p => `
-                <div class="combo-switch-row" style="display:flex; align-items:center; justify-content:space-between; padding:5px; border-bottom:1px solid #eee;">
-                    <label for="combo-prod-${p.productId}" class="combo-switch-label" style="display:flex; align-items:center; gap:8px; flex:1;">
-                        <img src="${p.image}" width="40" height="40" style="object-fit: cover; border-radius: 4px;">
-                        <span style="display:inline-block; max-width:420px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${p.title}</span>
-                    </label>
-                    <label class="switch" style="margin-left:12px;">
-                        <input type="checkbox" id="combo-prod-${p.productId}" data-product-id="${p.productId}" class="combo-product-checkbox" ${selectedComboProducts.some(sp => sp.productId === p.productId) ? 'checked' : ''}>
-                        <span class="slider round"></span>
-                    </label>
-                </div>
-            `).join('');
-        comboProductList.innerHTML = productsHtml || '<p>No products found.</p>';
-    };
-
-    const updateComboSelectionDisplay = () => {
-        comboSelectedCount.textContent = selectedComboProducts.length;
-        comboProductIdsHidden.value = JSON.stringify(selectedComboProducts.map(p => p.productId));
-        comboSelectedPreview.innerHTML = selectedComboProducts.map((p, idx) => `
-            <div style="position: relative; text-align: center; font-size: 0.8rem; color: #333; border: 2px solid #007bff; padding: 8px; border-radius: 6px; background: white;">
-                <img src="${p.image}" width="60" height="60" style="object-fit: cover; border-radius: 4px; border: 1px solid #ccc;">
-                <p style="margin: 4px 0; max-width: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${p.title}</p>
-                <div style="display: flex; gap: 4px; margin-top: 6px; justify-content: center;">
-                    <button type="button" class="combo-remove-btn" data-product-id="${p.productId}" data-index="${idx}" style="padding: 4px 8px; background: #ff6b6b; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 0.75rem;">Remove</button>
-                    <button type="button" class="combo-replace-btn" data-product-id="${p.productId}" data-index="${idx}" style="padding: 4px 8px; background: #4dabf7; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 0.75rem;">Replace</button>
-                </div>
-            </div>
-        `).join('');
-
-        const comboTotalValue = document.getElementById('combo-total-value');
-        const total = selectedComboProducts.reduce((sum, p) => sum + (parseFloat(p.currentPrice) || 0), 0);
-        if (comboTotalValue) comboTotalValue.textContent = total.toFixed(2);
-
-        const isComboActive = document.getElementById('product-curate-combos')?.checked;
-        setComboUIState(!!isComboActive);
-    };
-
-    const drawComboLayout = (ctx, images, width, height) => {
-        const count = images.length;
-        const gap = 15;
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(0, 0, width, height);
-        if (count === 0) return;
-
-        const drawImageInBox = (img, x, y, w, h) => {
-            const hRatio = w / img.width;
-            const vRatio = h / img.height;
-            const ratio = Math.min(hRatio, vRatio);
-            const scaledWidth = img.width * ratio;
-            const scaledHeight = img.height * ratio;
-            const centerX = x + (w - scaledWidth) / 2;
-            const centerY = y + (h - scaledHeight) / 2;
-            ctx.drawImage(img, centerX, centerY, scaledWidth, scaledHeight);
-        };
-
-        if (count === 1) {
-            drawImageInBox(images[0], 0, 0, width, height);
-        } else if (count === 2) {
-            const itemWidth = (width - gap * 3) / 2;
-            drawImageInBox(images[0], gap, (height - itemWidth) / 2, itemWidth, itemWidth);
-            drawImageInBox(images[1], gap * 2 + itemWidth, (height - itemWidth) / 2, itemWidth, itemWidth);
-        } else if (count === 3) {
-            const itemWidth = (width - gap * 4) / 3;
-            drawImageInBox(images[0], gap, (height - itemWidth) / 2, itemWidth, itemWidth);
-            drawImageInBox(images[1], gap * 2 + itemWidth, (height - itemWidth) / 2, itemWidth, itemWidth);
-            drawImageInBox(images[2], gap * 3 + itemWidth * 2, (height - itemWidth) / 2, itemWidth, itemWidth);
-        } else if (count === 4) {
-            const itemWidth = (width - gap * 5) / 4;
-            drawImageInBox(images[0], gap, (height - itemWidth) / 2, itemWidth, itemWidth);
-            drawImageInBox(images[1], gap * 2 + itemWidth, (height - itemWidth) / 2, itemWidth, itemWidth);
-            drawImageInBox(images[2], gap * 3 + itemWidth, (height - itemWidth) / 2, itemWidth, itemWidth);
-            drawImageInBox(images[3], gap * 4 + itemWidth, (height - itemWidth) / 2, itemWidth, itemWidth);
-        } else if (count === 5) {
-            const itemWidth = (width - gap * 6) / 5;
-            drawImageInBox(images[0], gap, (height - itemWidth) / 2, itemWidth, itemWidth);
-            drawImageInBox(images[1], gap * 2 + itemWidth, (height - itemWidth) / 2, itemWidth, itemWidth);
-            drawImageInBox(images[2], gap * 3 + itemWidth, (height - itemWidth) / 2, itemWidth, itemWidth);
-            drawImageInBox(images[3], gap * 4 + itemWidth, (height - itemWidth) / 2, itemWidth, itemWidth);
-            drawImageInBox(images[4], gap * 5 + itemWidth, (height - itemWidth) / 2, itemWidth, itemWidth);
-        }
-    };
-
-    const generateAndDisplayComboImage = async () => {
-        if (!comboCanvas) return;
-        const ctx = comboCanvas.getContext('2d');
-        ctx.clearRect(0, 0, comboCanvas.width, comboCanvas.height);
-        
-        if (selectedComboProducts.length === 0) return;
-
-        const imagesToLoad = selectedComboProducts.map(p => {
-            return new Promise((resolve) => {
-                const img = new Image();
-                img.crossOrigin = "anonymous";
-                img.onload = () => resolve(img);
-                img.onerror = () => {
-                    const placeholderImg = new Image();
-                    placeholderImg.width = 100;
-                    placeholderImg.height = 100;
-                    resolve(placeholderImg);
-                };
-                img.src = p.image;
-            });
+            newFilterTagInput.value = '';
+            newFilterTagInput.focus();
         });
 
-        try {
-            const loadedImages = await Promise.all(imagesToLoad);
-            drawComboLayout(ctx, loadedImages, comboCanvas.width, comboCanvas.height);
-        } catch (error) {
-            console.error("Error generating combo image:", error);
-            ctx.fillStyle = '#ccc';
-            ctx.font = '14px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText('Preview will update when images load', comboCanvas.width / 2, comboCanvas.height / 2);
-        }
-    };
-
-    const setComboUIState = (enabled) => {
-        if (comboBuilderSection) comboBuilderSection.style.display = enabled ? 'block' : 'none';
-        if (comboExpirySection) comboExpirySection.style.display = enabled ? 'block' : 'none';
-        if (comboEndDateInput) comboEndDateInput.required = enabled;
-
-        const priceGroup = document.getElementById('product-currentPrice')?.closest('.form-group');
-        const oldPriceGroup = document.getElementById('product-oldPrice')?.closest('.form-group');
-        const imageGroup = document.getElementById('product-image')?.closest('.form-group');
-        const imagesUploadGroup = document.getElementById('product-images')?.closest('.form-group');
-        const imagesPreviewEl = document.getElementById('product-images-preview');
-        const comboSalePriceInput = document.getElementById('product-comboSalePrice')?.closest('.form-group');
-
-        if (priceGroup) priceGroup.style.display = enabled ? 'none' : 'block';
-        if (oldPriceGroup) oldPriceGroup.style.display = enabled ? 'none' : 'block';
-        if (imageGroup) imageGroup.style.display = enabled ? 'none' : 'block';
-        if (imagesUploadGroup) imagesUploadGroup.style.display = enabled ? 'none' : 'block';
-        if (imagesPreviewEl) imagesPreviewEl.style.display = enabled ? 'none' : 'flex';
-        if (comboSalePriceInput) comboSalePriceInput.style.display = enabled ? 'block' : 'none';
-    };
-
-    comboToggle?.addEventListener('change', (e) => {
-        const enabled = e.target.checked;
-        setComboUIState(enabled);
-        if (enabled) {
-            populateComboProductList();
-        } else {
-            selectedComboProducts = [];
-            if (comboEndDateInput) comboEndDateInput.value = '';
-            updateComboSelectionDisplay();
-            generateAndDisplayComboImage();
-        }
-        updateSaveButtonState();
-    });
-
-    if (comboProductSearch) {
-        comboProductSearch.addEventListener('input', (e) => populateComboProductList(e.target.value));
-    }
-
-    if (comboSelectedPreview) {
-        comboSelectedPreview.addEventListener('click', (e) => {
-            const removeBtn = e.target.closest('.combo-remove-btn');
-            const replaceBtn = e.target.closest('.combo-replace-btn');
-
+        filterTagsContainer.addEventListener('click', (e) => {
+            const removeBtn = e.target.closest('.remove-tag-btn');
             if (removeBtn) {
                 e.preventDefault();
-                const productId = removeBtn.dataset.productId;
-                selectedComboProducts = selectedComboProducts.filter(p => p.productId !== productId);
-                const checkbox = document.getElementById(`combo-prod-${productId}`);
-                if (checkbox) checkbox.checked = false;
-                updateComboSelectionDisplay();
-                generateAndDisplayComboImage();
-            }
+                const tagToRemove = removeBtn.dataset.tag;
+                let currentTags = [];
+                try {
+                    currentTags = JSON.parse(filterTagsHidden.value || '[]');
+                } catch (err) {
+                    currentTags = [];
+                }
 
-            if (replaceBtn) {
-                e.preventDefault();
-                const productId = replaceBtn.dataset.productId;
-                const index = parseInt(replaceBtn.dataset.index, 10);
-                
-                comboProductSearch.focus();
-                comboProductSearch.value = '';
-                populateComboProductList('');
-                
-                window.comboReplaceIndex = index;
-                window.comboReplaceProductId = productId;
-                alert('Select a new product from the list below to replace this item.');
+                currentTags = currentTags.filter(t => t !== tagToRemove);
+                filterTagsHidden.value = JSON.stringify(currentTags);
+
+                removeBtn.parentElement.remove();
+                if (currentTags.length === 0) {
+                    filterTagsContainer.innerHTML = '<span style="color:#999; font-size:12px;">No active tags</span>';
+                }
             }
         });
     }
 
-    if (comboProductList) {
-        comboProductList.addEventListener('change', (e) => {
-            if (e.target.classList.contains('combo-product-checkbox')) {
-                const productId = e.target.dataset.productId;
-                const product = allProducts.find(p => p.productId === productId);
+    const editPickupListClick = (e) => {
+        const removeBtn = e.target.closest('.btn-remove-pickup-point');
+        if (removeBtn) {
+            e.preventDefault();
+            const index = parseInt(removeBtn.dataset.index, 10);
+            resellerPickupPoints.splice(index, 1);
+            renderPickupPointsListUI();
+        }
+    };
 
-                if (window.comboReplaceIndex !== undefined && e.target.checked) {
-                    selectedComboProducts.splice(window.comboReplaceIndex, 1);
-                    selectedComboProducts.push(product);
-                    window.comboReplaceIndex = undefined;
-                    window.comboReplaceProductId = undefined;
-                    updateComboSelectionDisplay();
-                    generateAndDisplayComboImage();
+    // --- Combo Builder Integration ---
+    const curateCombos = document.getElementById('product-curate-combos');
+    const comboBuilderSection = document.getElementById('combo-builder-section');
+    const comboExpirySection = document.getElementById('combo-expiry-section');
+
+    const renderComboProductsList = () => {
+        const listContainer = document.getElementById('combo-product-list');
+        const searchInput = document.getElementById('combo-product-search');
+        if (!listContainer) return;
+
+        const filterVal = searchInput ? searchInput.value.toLowerCase() : '';
+        listContainer.innerHTML = '';
+
+        const filtered = allProducts.filter(p => p.title.toLowerCase().includes(filterVal));
+
+        if (filtered.length === 0) {
+            listContainer.innerHTML = '<p style="font-size:0.85rem; color:#666; font-style:italic; padding: 5px;">No products found</p>';
+            return;
+        }
+
+        filtered.forEach(p => {
+            const item = document.createElement('div');
+            item.style.cssText = 'display:flex; align-items:center; justify-content:space-between; padding:6px; border-bottom:1px solid #eee; font-size:0.85rem;';
+            const isSelected = selectedComboProducts.some(sel => sel.productId === p.productId);
+            
+            item.innerHTML = `
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <img src="${p.image}" style="width:30px; height:30px; object-fit:cover; border-radius:4px;">
+                    <span>${p.title} (N$${p.currentPrice})</span>
+                </div>
+                <button type="button" class="add-combo-btn" data-id="${p.productId}" style="padding:4px 8px; border-radius:4px; border:none; background:${isSelected ? '#ccc' : 'var(--corporate-blue)'}; color:white; cursor:${isSelected ? 'not-allowed' : 'pointer'};" ${isSelected ? 'disabled' : ''}>
+                    ${isSelected ? 'Added' : 'Add'}
+                </button>
+            `;
+            listContainer.appendChild(item);
+        });
+
+        listContainer.querySelectorAll('.add-combo-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (selectedComboProducts.length >= 5) {
+                    alert('You can only select up to 5 products for a combo.');
                     return;
                 }
-
-                if (e.target.checked) {
-                    if (selectedComboProducts.length < 5 && !selectedComboProducts.some(p => p.productId === productId)) {
-                        selectedComboProducts.push(product);
-                    } else {
-                        e.target.checked = false;
-                        if (selectedComboProducts.length >= 5) alert('You can select a maximum of 5 products for a combo.');
-                    }
-                } else {
-                    selectedComboProducts = selectedComboProducts.filter(p => p.productId !== productId);
+                const match = allProducts.find(p => p.productId === btn.dataset.id);
+                if (match && !selectedComboProducts.some(sel => sel.productId === match.productId)) {
+                    selectedComboProducts.push(match);
+                    updateComboSelectionDisplay();
+                    generateAndDisplayComboImage();
+                    renderComboProductsList();
                 }
-                updateComboSelectionDisplay();
-                generateAndDisplayComboImage();
+            });
+        });
+    };
+
+    if (curateCombos) {
+        curateCombos.addEventListener('change', () => {
+            const isChecked = curateCombos.checked;
+            if (comboBuilderSection) comboBuilderSection.style.display = isChecked ? 'block' : 'none';
+            if (comboExpirySection) comboExpirySection.style.display = isChecked ? 'block' : 'none';
+            if (isChecked) {
+                renderComboProductsList();
             }
         });
+        // Run once on load to establish correct state
+        comboBuilderSection.style.display = curateCombos.checked ? 'block' : 'none';
+        comboExpirySection.style.display = curateCombos.checked ? 'block' : 'none';
     }
 
-    const giftCardToggle = document.getElementById('product-giftCardEnabled');
-    const giftCardConfigSection = document.getElementById('gift-card-config-section');
-    const giftCardTypeSelect = document.getElementById('product-giftCardType');
-    const giftCardValueLabel = document.getElementById('gift-card-value-label');
-    
-    if (giftCardToggle && giftCardConfigSection && giftCardTypeSelect && giftCardValueLabel) {
-        giftCardToggle.addEventListener('change', (e) => {
-            giftCardConfigSection.style.display = e.target.checked ? 'block' : 'none';
-        });
-
-        giftCardTypeSelect.addEventListener('change', (e) => {
-            giftCardValueLabel.textContent = e.target.value === 'percent' ? 'Value (%)' : 'Value (N$)';
-        });
-    }
-
-    // Toggle logic for reseller's custom dynamic transport pricing
-    const freeTransportToggle = document.getElementById('product-freeTransport');
-    const deliveryPricingSection = document.getElementById('delivery-pricing-section');
-    if (freeTransportToggle && deliveryPricingSection) {
-        freeTransportToggle.addEventListener('change', (e) => {
-            deliveryPricingSection.style.display = e.target.checked ? 'none' : 'block';
-        });
-    }
-
-    // Toggle logic for reseller's custom safe delivery insurance input
-    const safeInsuranceToggle = document.getElementById('product-safeInsuranceEnabled');
-    const safeInsurancePriceGroup = document.getElementById('safe-insurance-price-group');
-    if (safeInsuranceToggle && safeInsurancePriceGroup) {
-        safeInsuranceToggle.addEventListener('change', (e) => {
-            safeInsurancePriceGroup.style.display = e.target.checked ? 'block' : 'none';
-        });
+    const comboSearch = document.getElementById('combo-product-search');
+    if (comboSearch) {
+        comboSearch.addEventListener('input', renderComboProductsList);
     }
 };
 
@@ -5129,7 +4976,6 @@ export const initMobileNav = () => {
 
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
-            // Requirement 1: Make parent dropdown items clickable in mobile view to load target page
             const targetHash = link.getAttribute('href');
             if (targetHash && targetHash !== 'javascript:void(0)' && targetHash.startsWith('#')) {
                 location.hash = targetHash;
@@ -5517,7 +5363,6 @@ export const populateProductForm = (productToEdit, allProducts) => {
     document.getElementById('product-showOneYearWarranty').checked = productToEdit.showOneYearWarranty !== false;
     document.getElementById('product-showFifteenDayReturns').checked = productToEdit.showFifteenDayReturns !== false;
 
-    // Load new dashboard input structures
     document.getElementById('product-freeTransport').checked = !!productToEdit.freeTransport;
     const deliveryPricingSection = document.getElementById('delivery-pricing-section');
     if (deliveryPricingSection) {
@@ -5528,11 +5373,9 @@ export const populateProductForm = (productToEdit, allProducts) => {
 
     document.getElementById('product-cashOnDelivery').checked = !!productToEdit.cashOnDelivery;
     
-    // Populating dynamically typed warranty value (Requirement 7)
     document.getElementById('product-warrantyDuration').value = productToEdit.warrantyDuration || 'No Warranty';
     document.getElementById('product-promotionStatus').value = productToEdit.promotionStatus || 'None';
 
-    // Populating dynamic safe delivery insurance properties (Requirement 20)
     document.getElementById('product-safeInsuranceEnabled').checked = !!productToEdit.safeInsuranceEnabled;
     const safeInsurancePriceGroup = document.getElementById('safe-insurance-price-group');
     if (safeInsurancePriceGroup) {

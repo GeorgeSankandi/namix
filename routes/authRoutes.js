@@ -49,6 +49,17 @@ router.post('/signup', handleResellerDocumentUpload, signup);
 
 // Session-based login
 router.post('/login', passport.authenticate('local'), (req, res) => {
+  const user = req.user;
+
+  // Block the main admin account ONLY if they are logging in via the standard customer portal
+  if (user && (user.isAdmin === true || user.sellerType === 'admin') && !req.body.isAdminPortal) {
+    req.session.destroy(() => {
+      res.clearCookie('connect.sid');
+      return res.status(401).json({ message: 'Main admin accounts must log in through the Admin Portal.' });
+    });
+    return;
+  }
+
   req.session.save((err) => {
     if (err) {
       console.error('Session save error:', err);
@@ -56,8 +67,6 @@ router.post('/login', passport.authenticate('local'), (req, res) => {
     }
     console.log('✓ Session created and saved:', req.session.id);
     console.log('✓ User serialized in session:', req.session.passport?.user);
-    
-    const user = req.user;
     
     const token = jwt.sign(
       { id: user._id, email: user.email },

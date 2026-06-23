@@ -36,8 +36,8 @@ export const login = async (email, password) => {
         // Try session-based login first
         const res = await api.sessionLogin(email, password);
         const userInfo = res.user || res; // session endpoint returns { user }
-        // store minimal user info to indicate logged-in state
-        localStorage.setItem('userInfo', JSON.stringify({ ...userInfo, token: null }));
+        // store user info and preserve token for authorization
+        localStorage.setItem('userInfo', JSON.stringify({ ...userInfo, token: userInfo.token || null }));
         updateAuthUI();
         return userInfo; // Return user info on success
     } catch (error) {
@@ -52,7 +52,8 @@ export const register = async (name, email, password) => {
     try {
         const res = await api.sessionSignup(name, email, password);
         const userInfo = res.user || res;
-        localStorage.setItem('userInfo', JSON.stringify({ ...userInfo, token: null }));
+        // store user info and preserve token for authorization
+        localStorage.setItem('userInfo', JSON.stringify({ ...userInfo, token: userInfo.token || null }));
         updateAuthUI();
         return true; // Return true on success
     } catch (error) {

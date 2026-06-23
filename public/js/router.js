@@ -94,35 +94,55 @@ export const handleRouteChange = async () => {
 
         case 'cart':
             const cartItems = CartManager.getCart();
-            const detailedCartItems = (await Promise.all(
-                cartItems.map(async (item) => {
-                    const productDetails = await api.fetchProductById(item.id);
-                    if (!productDetails) return null;
-                    return {
+            const detailedCartItems = [];
+            const validCartItemsForStorage = [];
+
+            for (const item of cartItems) {
+                const productDetails = await api.fetchProductById(item.id);
+                if (productDetails) {
+                    detailedCartItems.push({
                         ...productDetails,
                         quantity: item.quantity,
                         selectedColor: item.selectedColor || null,
                         selectedSize: item.selectedSize || null
-                    };
-                })
-            )).filter(item => item !== null);
+                    });
+                    validCartItemsForStorage.push(item);
+                }
+            }
+
+            // Synchronize local cache if any deleted/invalid products were found in cart
+            if (validCartItemsForStorage.length !== cartItems.length) {
+                localStorage.setItem('namixCart', JSON.stringify(validCartItemsForStorage));
+                ui.updateFloatingCartButton();
+            }
+
             ui.renderCartPage(detailedCartItems);
             break;
 
         case 'checkout':
             const itemsForCheckout = CartManager.getCart();
-            const detailedItemsForCheckout = (await Promise.all(
-                itemsForCheckout.map(async (item) => {
-                    const productDetails = await api.fetchProductById(item.id);
-                    if (!productDetails) return null;
-                    return { 
-                        ...productDetails, 
+            const detailedItemsForCheckout = [];
+            const validCheckoutItemsForStorage = [];
+
+            for (const item of itemsForCheckout) {
+                const productDetails = await api.fetchProductById(item.id);
+                if (productDetails) {
+                    detailedItemsForCheckout.push({
+                        ...productDetails,
                         quantity: item.quantity,
                         selectedColor: item.selectedColor || null,
                         selectedSize: item.selectedSize || null
-                    };
-                })
-            )).filter(item => item !== null);
+                    });
+                    validCheckoutItemsForStorage.push(item);
+                }
+            }
+
+            // Synchronize local cache if any deleted/invalid products were found in checkout
+            if (validCheckoutItemsForStorage.length !== itemsForCheckout.length) {
+                localStorage.setItem('namixCart', JSON.stringify(validCheckoutItemsForStorage));
+                ui.updateFloatingCartButton();
+            }
+
             ui.renderCheckoutPage(detailedItemsForCheckout);
             break;
 
