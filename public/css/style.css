@@ -338,7 +338,7 @@ main {
 .dot { width: 12px; height: 12px; border-radius: 50%; background-color: rgba(255,255,255,0.4); cursor: pointer; transition: var(--transition); border: 1px solid rgba(255,255,255,0.2); }
 .dot.active { background-color: var(--white); transform: scale(1.1); }
 
-/* Stacked dynamic category containers underneath homepage hero instead of carousels */
+/* Stacked dynamic category containers under homepage hero */
 .home-category-carousel {
     display: grid !important;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
@@ -483,7 +483,7 @@ main {
 
 /* Vertical category sidebar (icon tabs) */
 .category-layout { display: flex; gap: 18px; align-items: flex-start; }
-.category-sidebar { width: 72px; background: #0f1720; border-radius: 12px; padding: 8px; display: flex; flex-direction: column; gap: 8px; align-items: stretch; transition: width .2s ease; }
+.category-sidebar { width: 72px; background: #0f1720; border-radius: 12px; padding: 8px; display: flex; flex-direction: column; gap: 8px; align-items: stretch; transition: width .2s ease; position: relative; }
 .category-sidebar .category-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 10px 6px; min-height: 64px; border-radius: 8px; cursor: pointer; color: #cfd8e3; background: transparent; transition: all .12s ease; position: relative; }
 .category-sidebar .category-tab .icon svg { width: 26px; height: 26px; fill: #cfd8e3; transition: transform .2s ease, fill .2s ease; }
 .category-sidebar .category-tab .label { font-size: 10px; font-weight: 700; text-align: center; color: #cfd8e3; max-width: 100%; line-height: 1.1; white-space: normal; word-break: break-word; }
@@ -502,6 +502,7 @@ main {
 .category-sidebar.minimized .category-tab.more { margin-top: auto; }
 .category-sidebar.minimized .category-tab.more .icon svg { transform: rotate(180deg); }
 .category-sidebar .category-tab.more .icon svg { transform: rotate(0deg); }
+.category-sidebar .category-tab.more { margin-top: auto; }
 .category-main { flex: 1; }
 @media (max-width: 900px) { .category-layout { flex-direction: column; } .category-sidebar { width: 100%; flex-direction: row; overflow-x: auto; padding: 6px; } .category-sidebar .category-tab { min-width: 72px; } }
 
@@ -1508,6 +1509,14 @@ main {
         right: 16px !important;
     }
 
+    .chatbot-container.open {
+        left: 0 !important;
+        right: 0 !important;
+        width: 100vw !important;
+        justify-content: center !important;
+        align-items: flex-end !important;
+    }
+
     .chat-toggle-btn {
         width: 56px;
         height: 56px;
@@ -1516,10 +1525,11 @@ main {
     }
 
     .chat-widget {
-        width: 92vw;
-        height: 70vh;
-        right: 18px;
-        bottom: 18px;
+        width: calc(100vw - 32px) !important; /* Spans across with 16px margins on both sides */
+        max-width: none !important;
+        height: 65vh !important;
+        margin: 0 auto !important;
+        transform-origin: bottom center !important;
     }
 }
 
@@ -2230,21 +2240,22 @@ label {
 
 .peak-time-option:hover {
     border-color: var(--corporate-blue);
-    background-color: var(--background-light);
+    background-color: var(--white);
+    box-shadow: 0 0 0 2px rgba(4, 44, 107, 0.2);
 }
 
 .peak-time-option.selected {
-    border-color: var(--corporate-blue);
     background-color: var(--corporate-blue);
     color: var(--white);
+    border-color: var(--corporate-blue);
 }
 
-.peak-time-option.selected:hover {
-    background-color: var(--corporate-blue-dark);
-    border-color: var(--corporate-blue-dark);
-}
+/* Theme-specific details */
+body.theme-green .peak-time-option.selected { background-color: var(--corporate-green); border-color: var(--corporate-green); }
+body.theme-red .peak-time-option.selected { background-color: var(--corporate-red); border-color: var(--corporate-red); }
+body.theme-yellow .peak-time-option.selected { background-color: var(--corporate-gold); border-color: var(--corporate-gold); }
 
-/* Inline form message styles for auth forms */
+/* Form status indicators */
 .form-message {
     margin-bottom: 0.75rem;
     padding: 0.5rem 0.75rem;
@@ -2849,293 +2860,193 @@ input:checked + .slider:before {
     }
 
     .payment-details-list li span {
-        font-size: 0.95rem;
-        word-break: break-all;
-    }
-
-    p, .note-text {
         font-size: 0.85rem;
-        line-height: 1.4;
     }
 
-    .payment-actions {
-        margin-top: 1.5rem;
-    }
-
-    .payment-actions .btn {
-        padding: 10px;
-        font-size: 0.9rem;
+    .note-text {
+        font-size: 0.85rem;
     }
 }
 
 /* =================================== */
-/* AMAZON-STYLE SELL PAGE              */
+/* 18. AMAZON HERO & DYNAMIC CARDS     */
 /* =================================== */
 .amazon-layout-wrapper {
-    background-color: #ffffff;
-    color: #0F1111;
-    font-family: "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    background-color: var(--white);
+    color: var(--text-dark);
 }
-
 .amazon-hero {
-    background: linear-gradient(135deg, #F2F4F8 0%, #FFFFFF 100%);
-    padding: 80px 5%;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 60px;
-    border-bottom: 1px solid #eaeded;
+    padding: 60px 10%;
+    background-color: var(--background-light);
+    gap: 40px;
 }
-
+.amazon-hero-content {
+    flex: 1;
+    max-width: 600px;
+}
 .amazon-hero-content h1 {
-    font-size: clamp(2.5rem, 5vw, 3.5rem);
-    font-weight: 800;
-    line-height: 1.1;
-    margin-bottom: 1.5rem;
+    font-size: clamp(2rem, 5vw, 3rem);
     color: var(--corporate-blue);
-    letter-spacing: -0.02em;
+    margin-bottom: 20px;
+    font-weight: 700;
 }
-
 .amazon-hero-content p {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
+    color: var(--text-light);
+    margin-bottom: 30px;
     line-height: 1.6;
-    color: #565959;
-    margin-bottom: 2.5rem;
-    font-weight: 400;
 }
-
 .amazon-cta-btn {
     display: inline-block;
     background-color: var(--corporate-blue);
-    color: #fff;
-    font-weight: 700;
-    padding: 14px 32px;
-    border-radius: 4px;
+    color: var(--white);
+    padding: 12px 30px;
+    border-radius: 30px;
+    font-weight: 600;
     text-decoration: none;
-    font-size: 1.1rem;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    transition: all 0.2s ease-in-out;
+    transition: var(--transition);
 }
-
 .amazon-cta-btn:hover {
     background-color: var(--corporate-blue-dark);
     transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
 }
-
+.amazon-hero-img {
+    flex: 1;
+    max-width: 500px;
+}
+.amazon-hero-img img {
+    width: 100%;
+    height: auto;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-medium);
+}
 .amazon-stats-bar {
     display: flex;
     justify-content: center;
-    gap: 50px;
-    padding: 40px 5%;
-    background: #fff;
-    border-bottom: 1px solid #eaeded;
-    flex-wrap: wrap;
+    gap: 80px;
+    padding: 40px 10%;
+    background-color: var(--white);
+    border-bottom: 1px solid var(--border-color);
 }
-
 .amazon-stat {
     text-align: center;
 }
-
 .amazon-stat strong {
     display: block;
-    font-size: 2rem;
-    font-weight: 800;
+    font-size: 2.5rem;
     color: var(--corporate-blue);
+    margin-bottom: 5px;
 }
-
 .amazon-stat span {
     font-size: 0.9rem;
-    color: #565959;
+    color: var(--text-light);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.5px;
 }
-
 .amazon-section {
-    padding: 80px 5%;
-    max-width: 1200px;
-    margin: 0 auto;
+    padding: 80px 10%;
 }
-
 .amazon-section-header {
     text-align: center;
     margin-bottom: 60px;
-    max-width: 700px;
-    margin-left: auto;
-    margin-right: auto;
 }
-
 .amazon-section-header h2 {
-    font-size: 2.5rem;
-    font-weight: 700;
+    font-size: 2.2rem;
+    color: var(--corporate-blue-dark);
     margin-bottom: 15px;
-    color: #0F1111;
 }
-
 .amazon-section-header p {
     font-size: 1.1rem;
-    color: #565959;
+    color: var(--text-light);
 }
-
-/* Amazon Card Grid */
 .amazon-card-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 30px;
 }
-
 .amazon-card {
-    background: #fff;
-    border: 1px solid #eaeded;
-    border-radius: 8px;
-    padding: 40px 30px;
-    transition: all 0.3s ease;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
+    background-color: var(--background-light);
+    border-radius: var(--border-radius);
+    padding: 40px 25px;
+    text-align: center;
+    transition: var(--transition);
+    border: 1px solid transparent;
 }
-
 .amazon-card:hover {
-    border-color: #d5d9d9;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    background-color: var(--white);
+    border-color: var(--border-color);
+    box-shadow: var(--shadow-medium);
     transform: translateY(-5px);
 }
-
 .amazon-card-icon {
     font-size: 2.5rem;
     color: var(--corporate-blue);
     margin-bottom: 20px;
-    background: #f0f7ff;
-    width: 64px;
-    height: 64px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
 }
-
 .amazon-card h3 {
     font-size: 1.4rem;
-    font-weight: 700;
+    color: var(--corporate-blue-dark);
     margin-bottom: 15px;
-    color: #0F1111;
 }
-
 .amazon-card p {
     font-size: 1rem;
+    color: var(--text-light);
     line-height: 1.6;
-    color: #565959;
 }
-
 .amazon-final-cta {
-    background-color: #f2f4f8;
+    background-color: var(--background-light);
+    padding: 80px 10%;
     text-align: center;
-    padding: 100px 5%;
-    margin-top: 50px;
 }
 
 @media (max-width: 768px) {
-    .amazon-hero { grid-template-columns: 1fr; text-align: center; gap: 30px; padding: 60px 5%; }
-    .amazon-hero-img img { max-width: 80%; margin: 0 auto; display: block; }
-    .amazon-stats-bar { gap: 30px; }
+    .amazon-hero {
+        flex-direction: column;
+        padding: 40px 5%;
+        text-align: center;
+    }
+    .amazon-hero-content {
+        max-width: 100%;
+    }
+    .amazon-stats-bar {
+        flex-direction: column;
+        gap: 30px;
+        padding: 30px 5%;
+    }
+    .amazon-section {
+        padding: 60px 5%;
+    }
+    .amazon-final-cta {
+        padding: 60px 5%;
+    }
 }
 
 /* =================================== */
-/* MINIMALIST CORPORATE ABOUT PAGE     */
+/* 19. MINIMALIST CORPORATE ABOUT PAGE  */
 /* =================================== */
 .minimal-about-wrapper {
-    background-color: #fff;
-    color: #1d1d1f;
+    background-color: var(--white);
+    color: var(--text-dark);
 }
-
-.minimal-hero {
-    height: 70vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    background-color: #fff;
-    padding: 0 20px;
-}
-
-.minimal-hero h1 {
-    font-size: clamp(3rem, 6vw, 5rem);
-    font-weight: 700;
-    letter-spacing: -0.03em;
-    color: #000;
-    margin-bottom: 20px;
-    line-height: 1;
-}
-
-.minimal-hero p {
-    font-size: clamp(1.2rem, 3vw, 1.8rem);
-    font-weight: 300;
-    color: #6e6e73;
-    max-width: 700px;
-    line-height: 1.4;
-}
-
-.minimal-full-img {
-    width: 100%;
-    height: 600px;
-    object-fit: cover;
-    margin-bottom: 80px;
-    display: block;
-}
-
 .minimal-content-container {
     max-width: 800px;
     margin: 0 auto;
-    padding: 0 20px 120px;
+    padding: 80px 20px;
 }
-
-.minimal-section {
-    margin-bottom: 100px;
-}
-
-.minimal-section h2 {
-    font-size: 2rem;
-    font-weight: 600;
+.minimal-content-container h2 {
+    font-size: 2.2rem;
+    color: var(--corporate-blue-dark);
     margin-bottom: 30px;
-    color: #000;
-    letter-spacing: -0.01em;
+    text-align: center;
 }
-
-.minimal-text {
+.minimal-content-container p {
     font-size: 1.15rem;
-    line-height: 2;
-    color: #424245;
-    font-weight: 400;
-    text-align: justify;
-    text-justify: inter-word;
-}
-
-.minimal-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 60px;
-    margin-top: 60px;
-}
-
-.minimal-grid-item h3 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    margin-bottom: 15px;
-    color: var(--corporate-blue);
-}
-
-.minimal-grid-item p {
-    font-size: 1.05rem;
-    line-height: 1.7;
-    color: #6e6e73;
-}
-
-@media (max-width: 768px) {
-    .minimal-hero { height: 50vh; }
-    .minimal-full-img { height: 300px; }
-    .minimal-grid { grid-template-columns: 1fr; gap: 40px; }
-    .minimal-text { text-align: left; }
+    line-height: 1.8;
+    color: var(--text-light);
+    margin-bottom: 20px;
 }
 
 /* ======================================================= */
@@ -3157,28 +3068,75 @@ input:checked + .slider:before {
     .hero {
         height: 320px !important; /* Reduced from 550px for tight mobile view */
     }
+    
+    /* Push text content higher up to clear controls and CTA */
     .hero .slide .content {
-        bottom: 8% !important;
+        bottom: 120px !important;
         left: 5% !important;
         width: 90% !important;
+        text-align: center !important; /* Center aligned */
     }
+    
     .hero h1 {
         font-size: 1.5rem !important;
         margin-bottom: 0.5rem !important;
     }
+    
     .hero p {
         font-size: 0.95rem !important;
         margin-bottom: 1rem !important;
     }
-    .hero .cta {
+    
+    /* Position the CTA button absolutely at the bottom of the slide */
+    .hero .slide .cta {
+        position: absolute !important;
+        bottom: 15px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        z-index: 10 !important;
         padding: 8px 18px !important;
         font-size: 13px !important;
     }
+
+    /* Position the navigation controls securely above the CTA button */
+    .hero .carousel-controls {
+        bottom: 65px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+    }
+
+    /* --- Chatbot Mobile Layout Overrides --- */
+    /* When open, make it center the widget with perfect equal spacing */
+    .chatbot-container.open {
+        left: 0 !important;
+        right: 0 !important;
+        width: 100vw !important;
+        justify-content: center !important;
+        align-items: flex-end !important;
+    }
+
+    .chat-widget {
+        width: calc(100vw - 32px) !important; /* Ensures exact 16px margins on both sides */
+        max-width: none !important;
+        height: 65vh !important;
+        margin: 0 auto !important;
+        transform-origin: bottom center !important;
+    }
 }
 
+/* Smartwatches and ultra-narrow screen configurations */
 @media (max-width: 320px) {
     .hero {
         height: 250px !important; /* Extra small for smartwatch/tight viewports */
+    }
+    .hero .slide .content {
+        bottom: 100px !important;
+    }
+    .hero .carousel-controls {
+        bottom: 55px !important;
+    }
+    .hero .slide .cta {
+        bottom: 10px !important;
     }
     .hero h1 {
         font-size: 1.25rem !important;
