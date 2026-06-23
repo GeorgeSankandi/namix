@@ -55,6 +55,7 @@ const getCurrentUser = () => {
     }
 };
 
+// Robust Message Element (Requirement 2, 3)
 const createChatMessageElement = (message, fromMe = false) => {
     const wrapper = document.createElement('div');
     wrapper.style.margin = '8px 0';
@@ -62,18 +63,26 @@ const createChatMessageElement = (message, fromMe = false) => {
     wrapper.style.justifyContent = fromMe ? 'flex-end' : 'flex-start';
 
     const bubble = document.createElement('div');
-    bubble.style.maxWidth = '74%';
-    bubble.style.padding = '10px 14px';
-    bubble.style.borderRadius = '16px';
-    bubble.style.background = fromMe ? 'var(--corporate-blue)' : '#f4f4f4';
-    bubble.style.color = fromMe ? '#fff' : '#222';
-    bubble.style.boxShadow = '0 1px 8px rgba(0,0,0,0.08)';
-    bubble.textContent = message;
+    bubble.style.cssText = `max-width:78%; padding:10px 14px; border-radius:16px; background:${fromMe ? 'var(--corporate-blue)' : '#f4f4f4'}; color:${fromMe ? '#fff' : '#222'}; box-shadow:0 1px 8px rgba(0,0,0,0.08); font-size:0.95rem;`;
 
+    let contentHtml = `<div>${message.text || message}</div>`;
+    if (message.voiceUrl) {
+        contentHtml += `<div style="margin-top:6px;"><audio src="${message.voiceUrl}" controls style="max-width:100%; height:40px;"></audio></div>`;
+    }
+    if (message.attachmentUrl) {
+        const isImg = /\.(jpg|jpeg|png|webp|gif)/i.test(message.attachmentUrl);
+        if (isImg) {
+            contentHtml += `<div style="margin-top:6px;"><img src="${message.attachmentUrl}" style="max-width:100%; border-radius:8px; max-height:120px; object-fit:contain; cursor:pointer;" onclick="window.open(this.src)"></div>`;
+        } else {
+            contentHtml += `<div style="margin-top:6px;"><a href="${message.attachmentUrl}" target="_blank" style="color: ${fromMe ? '#ffec99' : '#007bff'}; text-decoration:underline; font-weight:700;"><i class="fas fa-file-download"></i> ${message.attachmentName || 'Download Attachment'}</a></div>`;
+        }
+    }
+    bubble.innerHTML = contentHtml;
     wrapper.appendChild(bubble);
     return wrapper;
 };
 
+// Seller chat with Voice Recording, File uploads & Trade sections replacing layby (Requirement 2, 3, 4)
 const createSellerChatModal = ({ sellerId, sellerName }) => {
     const currentUser = getCurrentUser();
     if (!currentUser) {
@@ -89,51 +98,51 @@ const createSellerChatModal = ({ sellerId, sellerName }) => {
 
     const modal = document.createElement('div');
     modal.id = 'seller-chat-modal';
-    modal.style.position = 'fixed';
-    modal.style.top = '0';
-    modal.style.left = '0';
-    modal.style.width = '100%';
-    modal.style.height = '100%';
-    modal.style.background = 'rgba(0, 0, 0, 0.55)';
-    modal.style.display = 'flex';
-    modal.style.alignItems = 'center';
-    modal.style.justifyContent = 'center';
-    modal.style.zIndex = 22000;
+    modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.55); display:flex; align-items:center; justify-content:center; z-index:22000;';
     modal.innerHTML = `
-        <div id="seller-chat-container" style="width: min(100%, 480px); max-height: 90%; background: #fff; border-radius: 14px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.18); display: flex; flex-direction: column;">
-            <div style="padding: 16px 18px; background: #fafafa; border-bottom: 1px solid #eee; display:flex;justify-content:space-between;align-items:center;">
+        <div id="seller-chat-container" style="width: 95%; max-width: 480px; height: 90vh; max-height: 650px; background: #fff; border-radius: 14px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.18); display: flex; flex-direction: column; box-sizing: border-box;">
+            <div style="padding: 14px 18px; background: #fafafa; border-bottom: 1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
                 <div>
                     <div style="font-weight:700; font-size:1rem;">Message Seller</div>
                     <div style="font-size:0.9rem; color:#555;">${sellerName || 'Seller'}</div>
                 </div>
-                <button id="seller-chat-close" style="border:none;background:none;font-size:1.3rem;cursor:pointer;color:#333;">&times;</button>
+                <button id="seller-chat-close" style="border:none;background:none;font-size:1.5rem;cursor:pointer;color:#333;">&times;</button>
             </div>
             
-            <!-- In-App Negotiation Shield Notice -->
             <div style="background:#eef3ff; padding:10px 15px; border-bottom:1px solid #d2e3fe; color:var(--corporate-blue); font-size:0.85rem; display:flex; align-items:center; gap:8px;">
                 <i class="fas fa-shield-alt" style="font-size:1.1rem;"></i>
-                <strong>Negotiate inside chat for full protection and proof of agreement.</strong>
+                <strong>Negotiate inside chat for full protection.</strong>
             </div>
 
             <div id="seller-chat-messages" style="flex:1; padding: 14px; overflow-y:auto; background:#fbfbfb;"></div>
             
-            <!-- In-Chat Negotiation Save Agreement Panel -->
-            <div id="negotiation-panel" style="background:#f5f7fa; border-top:1px solid #eef1f6; padding:15px; display:flex; flex-direction:column; gap:8px;">
-                <div style="font-weight:700; font-size:0.85rem; color:#333; display:flex; align-items:center; gap:6px;"><i class="fas fa-handshake"></i> Propose Chat Agreement Terms:</div>
-                <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px;">
-                    <input type="number" id="negotiate-price" placeholder="Price (N$)" style="padding:8px; border:1px solid #ccc; border-radius:6px; font-size:0.8rem;">
-                    <input type="number" id="negotiate-deposit" placeholder="Deposit (N$)" style="padding:8px; border:1px solid #ccc; border-radius:6px; font-size:0.8rem;">
-                    <input type="number" id="negotiate-layby" placeholder="Lay-by Months" style="padding:8px; border:1px solid #ccc; border-radius:6px; font-size:0.8rem;">
+            <!-- Custom Trade Negotiation Panel replacing Lay-by options (Requirement 4) -->
+            <div id="negotiation-panel" style="background:#f9f9fb; border-top:1px solid var(--border-color); padding:15px; display:flex; flex-direction:column; gap:10px;">
+                <h4 style="margin:0; font-size:0.9rem; color:var(--corporate-blue);">Trade & Price Agreement</h4>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                    <input type="number" id="negotiated-price" placeholder="Agreed Price (N$)" style="padding:8px; border:1px solid #ddd; border-radius:4px; font-size:0.85rem;">
+                    <input type="number" id="negotiated-deposit" placeholder="Deposit (N$)" style="padding:8px; border:1px solid #ddd; border-radius:4px; font-size:0.85rem;">
                 </div>
-                <div style="display:grid; grid-template-columns:1.5fr 1fr; gap:8px;">
-                    <input type="date" id="negotiate-date" style="padding:8px; border:1px solid #ccc; border-radius:6px; font-size:0.8rem;">
-                    <button type="button" id="btn-save-agreement" style="background:var(--corporate-blue); color:white; font-weight:700; border:none; border-radius:6px; font-size:0.8rem; cursor:pointer;">Save Agreement</button>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                    <input type="text" id="negotiated-trade-item" placeholder="Trade-in Item" style="padding:8px; border:1px solid #ddd; border-radius:4px; font-size:0.85rem;">
+                    <input type="number" id="negotiated-trade-value" placeholder="Trade Value (N$)" style="padding:8px; border:1px solid #ddd; border-radius:4px; font-size:0.85rem;">
                 </div>
+                <button type="button" id="btn-save-agreement" style="background:var(--corporate-blue); color:white; font-weight:700; border:none; border-radius:6px; font-size:0.8rem; cursor:pointer; padding:10px 14px; height:100%;">Save Agreement</button>
             </div>
 
-            <div style="display:flex; gap: 8px; padding: 14px; border-top:1px solid #eee; background:#fff;">
-                <input id="seller-chat-input" type="text" placeholder="Write a message to the seller..." style="flex:1; padding:12px 14px; border:1px solid #ddd; border-radius:10px; outline:none;" />
-                <button id="seller-chat-send" class="btn-primary" style="padding: 0 18px;">Send</button>
+            <!-- Footer with Voice Note & Attachment Buttons (Requirement 2, 3) -->
+            <div style="display:flex; flex-direction:column; border-top:1px solid #eee; background:#fff; padding: 12px; box-sizing:border-box; gap: 8px;">
+                <div id="voice-rec-status" style="display:none; align-items:center; gap:8px; color:var(--corporate-red); font-size:0.85rem; font-weight:bold;">
+                    <i class="fas fa-microphone" style="animation: timerPulse 1s infinite;"></i> <span>Recording Audio...</span>
+                    <button id="btn-cancel-voice" style="background:none; border:none; color:#666; font-size:0.8rem; cursor:pointer; text-decoration:underline;">Cancel</button>
+                </div>
+                <div style="display:flex; gap: 8px; align-items:center;">
+                    <button id="btn-chat-attach" style="background:none; border:none; color:var(--corporate-blue); font-size:1.3rem; cursor:pointer; padding: 4px;" title="Attach File/Image"><i class="fas fa-paperclip"></i></button>
+                    <input id="seller-chat-input" type="text" placeholder="Write a message..." style="flex:1; padding:10px 12px; border:1px solid #ddd; border-radius:10px; outline:none; font-size:0.95rem;" />
+                    <button id="btn-chat-voice" style="background:none; border:none; color:var(--corporate-green); font-size:1.3rem; cursor:pointer; padding: 4px;" title="Record Voice"><i class="fas fa-microphone"></i></button>
+                    <button id="seller-chat-send" class="btn-primary" style="padding: 10px 16px; border-radius:8px; font-weight:bold; height:100%;">Send</button>
+                </div>
+                <input type="file" id="chat-file-input" style="display:none;" accept="*/*">
             </div>
         </div>
     `;
@@ -141,12 +150,9 @@ const createSellerChatModal = ({ sellerId, sellerName }) => {
     document.body.appendChild(modal);
 
     const closeModal = () => {
-        if (modal && modal.parentNode) {
-            modal.parentNode.removeChild(modal);
-        }
-        if (socket && socket.disconnect) {
-            socket.disconnect();
-        }
+        if (modal && modal.parentNode) modal.parentNode.removeChild(modal);
+        if (socket && socket.disconnect) socket.disconnect();
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
     };
 
     modal.querySelector('#seller-chat-close').addEventListener('click', closeModal);
@@ -158,10 +164,15 @@ const createSellerChatModal = ({ sellerId, sellerName }) => {
     const inputEl = modal.querySelector('#seller-chat-input');
     const sendBtn = modal.querySelector('#seller-chat-send');
     const saveAgreementBtn = modal.querySelector('#btn-save-agreement');
+    const fileAttachBtn = modal.querySelector('#btn-chat-attach');
+    const fileInput = modal.querySelector('#chat-file-input');
+    const voiceRecBtn = modal.querySelector('#btn-chat-voice');
+    const voiceStatusDiv = modal.querySelector('#voice-rec-status');
+    const cancelVoiceBtn = modal.querySelector('#btn-cancel-voice');
 
-    const addChatMessage = (text, fromMe) => {
+    const addChatMessage = (text, fromMe, voiceUrl = null, attachmentUrl = null, attachmentName = null) => {
         if (!messagesEl) return;
-        const msgEl = createChatMessageElement(text, fromMe);
+        const msgEl = createChatMessageElement({ text, voiceUrl, attachmentUrl, attachmentName }, fromMe);
         messagesEl.appendChild(msgEl);
         messagesEl.scrollTop = messagesEl.scrollHeight;
     };
@@ -171,89 +182,120 @@ const createSellerChatModal = ({ sellerId, sellerName }) => {
 
     if (isSocketAvailable) {
         socket = io();
-
         socket.on('connect', () => {
-            socket.emit('join_chat', {
-                roomId,
-                sellerId,
-                buyerId,
-                userName: currentUser.name || 'Buyer'
-            });
+            socket.emit('join_chat', { roomId, sellerId, buyerId, userName: currentUser.name || 'Buyer' });
         });
-
-        socket.on('connect_error', (err) => {
-            addChatMessage(`Connection error: ${err.message || 'Unable to connect.'}`, false);
-        });
-
         socket.on('chat_history', (history = []) => {
-            history.forEach((message) => {
-                const fromMe = message.senderId === buyerId;
-                addChatMessage(`${message.senderName}: ${message.text}`, fromMe);
-            });
+            history.forEach(m => addChatMessage(m.text, m.senderId === buyerId, m.voiceUrl, m.attachmentUrl, m.attachmentName));
         });
-
-        socket.on('chat_message', (message) => {
-            if (message.roomId !== roomId) return;
-            const fromMe = message.senderId === buyerId;
-            addChatMessage(`${message.senderName}: ${message.text}`, fromMe);
+        socket.on('chat_message', (m) => {
+            if (m.roomId === roomId && m.senderId !== buyerId) {
+                addChatMessage(m.text, false, m.voiceUrl, m.attachmentUrl, m.attachmentName);
+            }
         });
-    } else {
-        addChatMessage('Real-time messaging is unavailable because Socket.IO failed to load.', false);
     }
 
-    const sendMessage = () => {
-        const text = inputEl.value.trim();
-        if (!text) return;
+    const sendMessage = (textVal = '', voiceNoteUrl = null, fileUrl = null, fileName = null) => {
+        const text = textVal.trim() || inputEl.value.trim();
+        if (!text && !voiceNoteUrl && !fileUrl) return;
         if (socket) {
             socket.emit('send_message', {
                 roomId,
                 senderId: buyerId,
                 senderName: currentUser.name || 'Buyer',
-                text,
+                text: text || (voiceNoteUrl ? '🎙️ Voice Message' : '📎 Attachment'),
+                voiceUrl: voiceNoteUrl,
+                attachmentUrl: fileUrl,
+                attachmentName: fileName
             });
-        } else {
-            addChatMessage('Message could not be sent. Please refresh the page.', false);
-            inputEl.value = '';
-            return;
         }
-
-        addChatMessage(`${currentUser.name || 'You'}: ${text}`, true);
+        addChatMessage(text || (voiceNoteUrl ? '🎙️ Voice Message' : '📎 Attachment'), true, voiceNoteUrl, fileUrl, fileName);
         inputEl.value = '';
         inputEl.focus();
     };
 
-    sendBtn.addEventListener('click', sendMessage);
-    inputEl.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            sendMessage();
+    sendBtn.addEventListener('click', () => sendMessage());
+    inputEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); sendMessage(); } });
+
+    // File attachments uploads (Requirement 3)
+    fileAttachBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', async () => {
+        if (fileInput.files.length === 0) return;
+        const file = fileInput.files[0];
+        const formData = new FormData();
+        formData.append('image', file);
+
+        try {
+            const res = await fetch('/api/upload/product', { method: 'POST', body: formData });
+            if (res.ok) {
+                const data = await res.json();
+                sendMessage('', null, data.image, file.name);
+            } else {
+                alert('Upload failed.');
+            }
+        } catch (e) {
+            console.error(e);
+        }
+        fileInput.value = '';
+    });
+
+    // Voice Message Recorder (Requirement 2)
+    let mediaRecorder = null;
+    let audioChunks = [];
+    voiceRecBtn.addEventListener('click', async () => {
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+            voiceStatusDiv.style.display = 'none';
+            voiceRecBtn.style.color = 'var(--corporate-green)';
+            return;
+        }
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            audioChunks = [];
+            mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.push(e.data); };
+            mediaRecorder.onstop = async () => {
+                if (audioChunks.length === 0) return;
+                const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
+                const reader = new FileReader();
+                reader.onloadend = () => sendMessage('', reader.result, null, null);
+                reader.readAsDataURL(audioBlob);
+                stream.getTracks().forEach(track => track.stop());
+            };
+            mediaRecorder.start();
+            voiceStatusDiv.style.display = 'flex';
+            voiceRecBtn.style.color = 'var(--corporate-red)';
+        } catch (err) {
+            alert('Unable to access microphone.');
+        }
+    });
+
+    cancelVoiceBtn.addEventListener('click', () => {
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.onstop = null;
+            mediaRecorder.stop();
+            voiceStatusDiv.style.display = 'none';
+            voiceRecBtn.style.color = 'var(--corporate-green)';
         }
     });
 
     saveAgreementBtn.addEventListener('click', async () => {
-        const agreedPrice = parseFloat(document.getElementById('negotiate-price').value);
-        const deposit = parseFloat(document.getElementById('negotiate-deposit').value) || 0;
-        const laybyMonths = parseInt(document.getElementById('negotiate-layby').value, 10) || 0;
-        const deliveryDate = document.getElementById('negotiate-date').value;
+        const agreedPrice = parseFloat(document.getElementById('negotiated-price').value);
+        const deposit = parseFloat(document.getElementById('negotiated-deposit').value) || 0;
+        const tradeItem = document.getElementById('negotiated-trade-item').value.trim();
+        const tradeValue = parseFloat(document.getElementById('negotiated-trade-value').value) || 0;
 
-        if (!agreedPrice) {
-            return alert('Please enter an agreed price to negotiate.');
-        }
+        if (!agreedPrice) return alert('Enter agreed price.');
 
         try {
             await api.saveChatAgreement({
-                roomId,
-                sellerId,
-                buyerId,
-                agreedPrice,
-                deposit,
-                laybyMonths,
-                deliveryDate: deliveryDate ? new Date(deliveryDate) : undefined
+                roomId, sellerId, buyerId, agreedPrice, deposit, tradeItem, tradeValue
             });
-            alert('Negotiated parameters recorded successfully!');
-            sendMessage();
+            alert('Negotiated trade agreement parameters recorded!');
+            sendMessage(`🤝 Proposing Trade Terms: N$${agreedPrice} with Trade-in Offer: "${tradeItem || 'None'}" valued at N$${tradeValue}`);
         } catch (err) {
-            alert('Failed to save agreement terms.');
+            alert('Failed to save trade agreement.');
         }
     });
 
@@ -317,7 +359,7 @@ export let categoryData = {
 
     'fuel': { name: 'Charcoal & Fuel', heroImage: 'https://images.unsplash.com/photo-1524491989244-1f40317fe6f0?auto=format&fit=crop&w=1350&q=80', subcategories: ['charcoal', 'firewood', 'other-fuel'] },
     'charcoal': { name: 'Charcoal', parent: 'fuel', heroImage: 'https://images.unsplash.com/photo-1524491989244-1f40317fe6f0?auto=format&fit=crop&w=1350&q=80' },
-    'firewood': { name: 'Firewood', parent: 'fuel', heroImage: 'https://images.unsplash.com/photo-1549400829-54c345333b29?auto=format&fit=crop&w=1350&q=80' },
+    'firewood': { name: 'Free firewood', parent: 'fuel', heroImage: 'https://images.unsplash.com/photo-1549400829-54c345333b29?auto=format&fit=crop&w=1350&q=80' },
     'other-fuel': { name: 'Other Fuel', parent: 'fuel', heroImage: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=1350&q=80' },
 
     'other': { name: 'Other / Miscellaneous', heroImage: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=1350&q=80', subcategories: ['books-stationery', 'sports-toys', 'services', 'anything-else'] },
@@ -352,6 +394,9 @@ export const clearRoot = () => {
         clearInterval(liveViewerInterval);
         liveViewerInterval = null;
     }
+    const floatingChat = document.getElementById('floating-seller-chat');
+    if (floatingChat) floatingChat.remove();
+
     const root = getAppRoot();
     if (root) root.innerHTML = '';
 };
@@ -502,6 +547,20 @@ const createProductCard = (product) => {
             ${showBestSellerBadge ? `<span style="background:#eacc52; color:#1d1d1f; padding:2px 6px; border-radius:4px; font-weight:700; font-size:0.75rem;" title="Top Performing Merchant">Best Seller</span>` : ''}
         </div>
     `;
+
+    // Verified Tick on bottom-left and Best Seller verified badge on bottom-right
+    const verifiedTickBadgeHTML = isVerifiedSeller 
+        ? `<div class="verified-tick-badge" style="position: absolute; bottom: 10px; left: 10px; color: #0084ff; background: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 10;" title="Verified Reseller"><i class="fas fa-check-circle"></i></div>` 
+        : '';
+
+    // Free transport icon displaying next to the verified blue tick (Requirement 9 part B)
+    const freeTransportBadgeHTML = (isVerifiedSeller && product.freeTransport)
+        ? `<div class="free-transport-badge" style="position: absolute; bottom: 10px; left: 38px; color: #069a44; background: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 10;" title="Free Transport"><i class="fas fa-shipping-fast"></i></div>`
+        : '';
+
+    const bestSellerBadgeHTML = showBestSellerBadge 
+        ? `<div class="best-seller-badge-container" style="position: absolute; bottom: 10px; right: 10px; background: #eacc52; color: #1d1d1f; padding: 4px 8px; border-radius: 4px; font-weight: 700; font-size: 0.75rem; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 10;" title="Top Reseller">Best Seller</div>` 
+        : '';
     
     const viewerLinkedReviews = (product.reviews || []).filter(r => r.viewerId);
     return `
@@ -510,6 +569,9 @@ const createProductCard = (product) => {
                 ${promotionBannerHTML}
                 ${createProductTags(product, 'card')}
                 ${timerHTML}
+                ${verifiedTickBadgeHTML}
+                ${freeTransportBadgeHTML}
+                ${bestSellerBadgeHTML}
                 <img src="${product.image}" alt="${product.title}" onerror="this.onerror=null; this.src='https://via.placeholder.com/250x250.png?text=Image+Not+Found';">
             </div>
             <div class="product-details">
@@ -669,31 +731,60 @@ export const initDynamicHeros = () => {
             const dot = document.createElement('span');
             dot.classList.add('dot');
             if (i === 0) dot.classList.add('active');
-            dot.addEventListener('click', () => showSlide(i));
             pagination.appendChild(dot);
         });
 
         const dots = pagination.querySelectorAll('.dot');
         let currentSlide = 0;
+        let autoPlayTimer = null;
+        let pauseTimeout = null;
 
         const showSlide = (n) => {
-            currentSlide = (n + slides.length) % slides.length;
-            slides.forEach(s => s.classList.remove('active'));
-            dots.forEach(d => d.classList.remove('active'));
-            slides[currentSlide].classList.add('active');
-            dots[currentSlide].classList.add('active');
+            currentSlide = n;
+            slides.forEach((slide, i) => {
+                slide.classList.toggle('active', i === n);
+            });
+            dots.forEach((dot, i) => {
+                dot.classList.toggle('active', i === n);
+            });
         };
+
+        const nextSlide = () => {
+            showSlide((currentSlide + 1) % slides.length);
+        };
+
+        const prevSlide = () => {
+            showSlide((currentSlide - 1 + slides.length) % slides.length);
+        };
+
+        const startAutoPlay = () => {
+            if (autoPlayTimer) clearInterval(autoPlayTimer);
+            autoPlayTimer = setInterval(nextSlide, 8000); // Slowed speed to 8 seconds
+        };
+
+        const resetAutoPlayWithDelay = () => {
+            if (autoPlayTimer) {
+                clearInterval(autoPlayTimer);
+                autoPlayTimer = null;
+            }
+            if (pauseTimeout) clearTimeout(pauseTimeout);
+            pauseTimeout = setTimeout(startAutoPlay, 5000);
+        };
+
+        dots.forEach((dot, i) => {
+            dot.addEventListener('click', () => {
+                showSlide(i);
+                resetAutoPlayWithDelay();
+            });
+        });
 
         const nextBtn = hero.querySelector('.next');
         const prevBtn = hero.querySelector('.prev');
-        if (nextBtn) nextBtn.onclick = (e) => { e.preventDefault(); showSlide(currentSlide + 1); };
-        if (prevBtn) prevBtn.onclick = (e) => { e.preventDefault(); showSlide(currentSlide - 1); };
+        if (nextBtn) nextBtn.onclick = (e) => { e.preventDefault(); showSlide(currentSlide + 1); resetAutoPlayWithDelay(); };
+        if (prevBtn) prevBtn.onclick = (e) => { e.preventDefault(); showSlide(currentSlide - 1); resetAutoPlayWithDelay(); };
 
-        if (hero.dataset.intervalId) {
-            clearInterval(parseInt(hero.dataset.intervalId, 10));
-        }
-        const intervalId = setInterval(() => { showSlide(currentSlide + 1); }, 5000);
-        hero.dataset.intervalId = intervalId;
+        startAutoPlay();
+        hero.dataset.intervalId = autoPlayTimer;
     });
 };
 
@@ -730,15 +821,15 @@ export const populateHeroSlidesEditor = (pageKey) => {
                         <input type="file" class="dynamic-hero-file-input" data-setting-key="${keyImage}" accept="image/*">
                     </div>
                     <div class="form-group">
-                        <label>Slide Title</label>
+                        <label>Card Title</label>
                         <input type="text" name="${keyTitle}" value="${titleVal}">
                     </div>
                     <div class="form-group">
-                        <label>Slide Subtitle</label>
+                        <label>Subtitle</label>
                         <input type="text" name="${keySubtitle}" value="${subtitleVal}">
                     </div>
                     <div class="form-group">
-                        <label>Slide Description</label>
+                        <label>Description</label>
                         <input type="text" name="${keyDesc}" value="${descVal}">
                     </div>
                     <div class="form-group">
@@ -758,71 +849,56 @@ export const populateHeroSlidesEditor = (pageKey) => {
 
 export const renderShippingInfoPage = () => {
     getAppRoot().innerHTML = `
-        ${renderDynamicHero('shipping', 'Delivery & Shipping')}
-        <div class="page-container static-page-container">
-            <p>At Namkuku, we strive to deliver your products as quickly and safely as possible. We offer free express shipping on all orders nationwide.</p>
+        <div class="page-container static-page-container" style="margin-top: 2rem;">
+            <p>At Namkuku, we strive to deliver your products as quickly and safely as possible.</p>
             <h3>Delivery Times</h3>
             <ul>
                 <li><strong>Windhoek:</strong> Same day or next day delivery.</li>
                 <li><strong>Major Towns (Swakopmund, Walvis Bay, Oshakati, etc.):</strong> 2-3 business days.</li>
                 <li><strong>Remote Areas:</strong> 3-5 business days.</li>
             </ul>
-            <h3>Couriers</h3>
-            <p>We use reliable courier partners including Nampost Courier and specialized private logistics to ensure your tech arrives in perfect condition.</p>
         </div>
     `;
 };
 
 export const renderReturnsPage = () => {
     getAppRoot().innerHTML = `
-        ${renderDynamicHero('returns', 'Returns & Warranty')}
-        <div class="page-container static-page-container">
+        <div class="page-container static-page-container" style="margin-top: 2rem;">
             <h3>15-Day Return Policy</h3>
-            <p>If you are not completely satisfied with your purchase, you can return it within 15 days of receipt for a full refund or exchange, provided the item is in its original condition.</p>
+            <p>If you are not completely satisfied with your purchase, you can return it within 15 days of receipt for a full refund.</p>
             <h3>Warranty</h3>
-            <p>All new products come with a standard 1-year warranty. Pre-owned items include a 6-month warranty covering mechanical defects.</p>
-            <p>To initiate a return, please contact support@namkuku.com.</p>
+            <p>All new products come with a standard warranty cover as listed on the product specifications.</p>
         </div>
     `;
 };
 
 export const renderTermsAndConditionsPage = () => {
     getAppRoot().innerHTML = `
-        ${renderDynamicHero('terms', 'Terms & Conditions')}
-        <div class="page-container static-page-container">
+        <div class="page-container static-page-container" style="margin-top: 2rem;">
             <p>Welcome to Namkuku. By using our website, you agree to these terms.</p>
             <h3>1. General</h3>
             <p>These terms apply to all purchases made on the Namkuku online store.</p>
-            <h3>2. Pricing</h3>
-            <p>All prices are in Namibian Dollars (NAD) and include VAT where applicable. Prices are subject to change without notice.</p>
-            <h3>3. Privacy</h3>
-            <p>We respect your privacy. Please review our Privacy Policy for details on how we handle your data.</p>
         </div>
     `;
 };
 
 export const renderPrivacyPolicyPage = () => {
     getAppRoot().innerHTML = `
-        ${renderDynamicHero('privacy', 'Privacy Policy')}
-        <div class="page-container static-page-container">
+        <div class="page-container static-page-container" style="margin-top: 2rem;">
             <p>Your privacy is important to us.</p>
             <h3>Information Collection</h3>
-            <p>We collect information you provide directly to us, such as when you create an account, make a purchase, or contact support.</p>
-            <h3>Data Usage</h3>
-            <p>We use your information to process transactions, send order updates, and improve our services. We do not sell your personal data to third parties.</p>
+            <p>We collect information you provide directly to us to process transactions and fulfill shipping services.</p>
         </div>
     `;
 };
 
 export const renderContactPage = () => {
     getAppRoot().innerHTML = `
-        ${renderDynamicHero('contact', 'Contact Us')}
-        <div class="page-container static-page-container">
+        <div class="page-container static-page-container" style="margin-top: 2rem;">
             <p>Have questions? We're here to help!</p>
             <ul>
                 <li><strong>Email:</strong> support@namkuku.com</li>
                 <li><strong>Phone:</strong> +264 81 123 4567</li>
-                <li><strong>Address:</strong> 12 Independence Ave, Windhoek, Namibia</li>
             </ul>
         </div>
     `;
@@ -830,78 +906,17 @@ export const renderContactPage = () => {
 
 export const renderHowToSellPage = () => {
     getAppRoot().innerHTML = `
-        <div class="amazon-layout-wrapper">
-            ${renderDynamicHero('how-to-sell', 'Become a Namkuku Seller')}
-
-            <div class="amazon-stats-bar">
-                <div class="amazon-stat">
-                    <strong>24h</strong>
-                    <span>Approval Time</span>
-                </div>
-                <div class="amazon-stat">
-                    <strong>5%</strong>
-                    <span>Gift Rewards</span>
-                </div>
-                <div class="amazon-stat">
-                    <strong>100%</strong>
-                    <span>Secure Payouts</span>
-                </div>
-            </div>
-
+        <div class="amazon-layout-wrapper" style="margin-top: 2rem;">
             <div class="amazon-section">
                 <div class="amazon-section-header">
                     <h2>Why Sell on Namkuku?</h2>
-                    <p>We provide the platform, the traffic, and the tools. You provide the products.</p>
                 </div>
-                
                 <div class="amazon-card-grid">
                     <div class="amazon-card">
-                        <div class="amazon-card-icon"><i class="fas fa-users"></i></div>
                         <h3>Reach More Customers</h3>
-                        <p>Instantly access a growing database of tech-savvy Namibian shoppers looking for quality clothes, furniture, and more.</p>
-                    </div>
-                    <div class="amazon-card">
-                        <div class="amazon-card-icon"><i class="fas fa-wallet"></i></div>
-                        <h3>Secure Payments</h3>
-                        <p>We handle the transaction processing. Get paid directly to your bank account safely and reliably.</p>
-                    </div>
-                    <div class="amazon-card">
-                        <div class="amazon-card-icon"><i class="fas fa-chart-line"></i></div>
-                        <h3>Powerful Dashboard</h3>
-                        <p>Manage inventory, track sales, and analyze your performance with our easy-to-use seller portal.</p>
+                        <p>Instantly access a growing database of tech-savvy Namibian shoppers.</p>
                     </div>
                 </div>
-            </div>
-
-            <div class="amazon-section" style="background-color: #fcfcfc;">
-                <div class="amazon-section-header">
-                    <h2>How It Works</h2>
-                    <p>Getting started is simple. Launch your store in three steps.</p>
-                </div>
-                
-                <div class="amazon-card-grid">
-                    <div class="amazon-card">
-                        <div class="amazon-card-icon" style="background-color: #fff3e0; color: #d35400;">1</div>
-                        <h3>Register</h3>
-                        <p>Create an account and select your seller category. Submit your details for admin review.</p>
-                    </div>
-                    <div class="amazon-card">
-                        <div class="amazon-card-icon" style="background-color: #e8f5e9; color: #2e7d32;">2</div>
-                        <h3>List Products</h3>
-                        <p>Once approved (usually within 24 hours), use the dashboard to upload images, set prices, and describe your items.</p>
-                    </div>
-                    <div class="amazon-card">
-                        <div class="amazon-card-icon" style="background-color: #e3f2fd; color: #1565c0;">3</div>
-                        <h3>Start Earning</h3>
-                        <p>Customers order your products. You fulfill the order. We process the payment and transfer your earnings.</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="amazon-final-cta">
-                <h2 style="font-size: 2.5rem; margin-bottom: 20px;">Ready to start selling?</h2>
-                <p style="margin-bottom: 30px; font-size: 1.1rem; color: #565959;">Join the Namkuku marketplace today.</p>
-                <a href="#register" class="amazon-cta-btn">Create Your Seller Account</a>
             </div>
         </div>
     `;
@@ -909,15 +924,8 @@ export const renderHowToSellPage = () => {
 
 export const renderTradeInPage = () => {
     getAppRoot().innerHTML = `
-        ${renderDynamicHero('trade-in', 'Trade-In Program')}
-        <div class="page-container static-page-container">
+        <div class="page-container static-page-container" style="margin-top: 2rem;">
             <p>Upgrade to the latest tech for less by trading in your old device.</p>
-            <h3>How it works:</h3>
-            <ul>
-                <li>Bring your device to our Windhoek store for assessment.</li>
-                <li>We'll offer you a credit value based on the device's condition.</li>
-                <li>Use that credit instantly towards your new purchase.</li>
-            </ul>
         </div>
     `;
 };
@@ -939,8 +947,7 @@ export const renderFaqsPage = async () => {
         : '<p>No FAQs available at the moment.</p>';
 
     getAppRoot().innerHTML = `
-        ${renderDynamicHero('faqs', 'Frequently Asked Questions')}
-        <div class="page-container static-page-container faq-container">
+        <div class="page-container static-page-container faq-container" style="margin-top: 2rem;">
             ${faqItems}
         </div>
     `;
@@ -960,81 +967,13 @@ export const renderFaqsPage = async () => {
 
 export const renderAboutPage = async () => {
     getAppRoot().innerHTML = `
-        <div class="minimal-about-wrapper">
-            ${renderDynamicHero('about', 'We Are Namkuku')}
-
-            <div class="minimal-content-container" style="margin-top: 50px;">
-                <div class="minimal-section">
-                    <h2>Our Philosophy</h2>
-                    <p class="minimal-text">
-                        At Namkuku, we believe that technology and lifestyle products should be accessible, reliable, and premium. Founded with a singular vision to bridge the gap between global innovation and local accessibility, we have established ourselves as Namibia's premier digital marketplace. We do not merely sell products; we curate experiences that enhance the daily lives of our clientele.
-                    </p>
-                </div>
-
-                <div class="minimal-section">
-                    <h2>The Mission</h2>
-                    <p class="minimal-text">
-                        Our mission is steadfast: to provide a seamless, secure, and sophisticated shopping environment. We are dedicated to authenticity in every transaction and excellence in every interaction. By fostering a platform that supports both individual buyers and verified local resellers, we are building a sustainable ecosystem of commerce that empowers the Namibian economy.
-                    </p>
-                </div>
-
-                <div class="minimal-grid">
-                    <div class="minimal-grid-item">
-                        <h3>Authenticity</h3>
-                        <p>We guarantee that every product listed on our platform meets rigorous quality standards. Trust is our currency.</p>
-                    </div>
-                    <div class="minimal-grid-item">
-                        <h3>Innovation</h3>
-                        <p>We continuously evolve our digital infrastructure to offer features like AI-driven assistance and seamless payments.</p>
-                    </div>
-                    <div class="minimal-grid-item">
-                        <h3>Community</h3>
-                        <p>We support local entrepreneurs by providing a robust platform for clothing, furniture, and lifestyle resellers.</p>
-                    </div>
-                    <div class="minimal-grid-item">
-                        <h3>Service</h3>
-                        <p>Our commitment to the customer extends beyond the checkout button, with comprehensive warranty and support.</p>
-                    </div>
-                </div>
+        <div class="minimal-about-wrapper" style="margin-top: 2rem;">
+            <div class="minimal-content-container">
+                <h2>Our Philosophy</h2>
+                <p>At Namkuku, we believe in premium experiences and accessibility for all Namibians.</p>
             </div>
         </div>
     `;
-};
-
-const showGiftCardPopup = () => {
-    if (sessionStorage.getItem('giftCardPopupShown')) return;
-
-    const popupHTML = `
-        <div class="popup-overlay" id="gift-card-popup">
-            <div class="popup-content">
-                <button class="popup-close" id="popup-close-btn">&times;</button>
-                <h2>🎁 You've Got a Gift!</h2>
-                <p>For a limited time, get a <strong>5% gift card reward</strong> on the value of every purchase you make. Start shopping now to claim yours!</p>
-                <a href="#on-sale" class="popup-cta" id="popup-shop-now-btn">Shop Now & Earn</a>
-            </div>
-        </div>
-    `;
-
-    document.body.insertAdjacentHTML('beforeend', popupHTML);
-    const popup = document.getElementById('gift-card-popup');
-    
-    setTimeout(() => popup.classList.add('show'), 500);
-
-    const closePopup = () => {
-        popup.classList.remove('show');
-        setTimeout(() => popup.remove(), 300);
-        sessionStorage.setItem('giftCardPopupShown', 'true');
-    };
-
-    const closeBtn = document.getElementById('popup-close-btn');
-    if(closeBtn) closeBtn.addEventListener('click', closePopup);
-    
-    const shopBtn = document.getElementById('popup-shop-now-btn');
-    if(shopBtn) shopBtn.addEventListener('click', closePopup);
-    
-    popup.addEventListener('click', e => {
-        if (e.target === popup) closePopup();
-    });
 };
 
 export const renderHomePage = async () => {
@@ -1092,37 +1031,19 @@ export const renderHomePage = async () => {
         appRoot.innerHTML = `
             ${renderDynamicHero('home', 'NAMKUKU')}
             
-            <div class="carousel-wrapper">
-                <button class="carousel-chevron carousel-chevron-left"><i class="fas fa-chevron-left"></i></button>
-                <section class="home-category-carousel">
+            <div class="category-grid-container" style="padding: 40px 5%;">
+                <section class="home-category-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px;">
                     ${underHeroCards.map(card => `
-                        <a href="${card.link || '#'}" class="item" style="background-image: url('${card.image || ''}');">
-                            <h2>${card.title || ''}</h2>
-                            <span class="shop-now-btn">Shop Now</span>
+                        <a href="${card.link || '#'}" class="item" style="background-image: url('${card.image || ''}'); flex: none; width: 100%; height: 220px; border-radius: var(--border-radius); display: flex; flex-direction: column; justify-content: flex-end; padding: 30px; box-shadow: var(--shadow-soft); transition: var(--transition); background-size: cover; background-position: center; position: relative; overflow: hidden; text-decoration: none;">
+                            <h2 style="font-size: 1.5rem; color: white; position: relative; z-index: 1;">${card.title || ''}</h2>
+                            <span class="shop-now-btn" style="position: relative; z-index: 1; margin-top: 10px; padding: 8px 16px; background-color: var(--white); color: var(--corporate-blue); border-radius: 20px; font-weight: 600; text-decoration: none; font-size: 14px; display: inline-block; transition: var(--transition); align-self: flex-start;">Shop Now</span>
                         </a>
                     `).join('')}
                 </section>
-                <button class="carousel-chevron carousel-chevron-right"><i class="fas fa-chevron-right"></i></button>
             </div>
 
             ${reviewsHTML}
         `;
-
-        const carousel = document.querySelector('.home-category-carousel');
-        const leftChevron = document.querySelector('.carousel-chevron-left');
-        const rightChevron = document.querySelector('.carousel-chevron-right');
-        
-        if (carousel && leftChevron && rightChevron) {
-            const scrollAmount = 350;
-            leftChevron.addEventListener('click', () => {
-                carousel.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
-            });
-            rightChevron.addEventListener('click', () => {
-                carousel.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-            });
-        }
-
-        showGiftCardPopup();
     }
 };
 
@@ -1249,15 +1170,24 @@ export const renderCategoryPage = async (products, categoryKey, searchTerm = '')
         </div>
     `;
 
+    // Dynamic icon lookup logic from custom admin uploads (Requirement 4)
+    const getIconHTML = (itemKey, defaultSVG) => {
+        const customUrl = globalSettingsMap[`clothes_sidebar_icon_${itemKey}`];
+        if (customUrl) {
+            return `<img src="${customUrl}" style="width:26px; height:26px; object-fit:contain; border-radius:4px;" alt="${itemKey}">`;
+        }
+        return defaultSVG;
+    };
+
     let sidebarHTML = '';
     if (categoryKey === 'womens-clothing' || categoryKey === 'womens-clothes' || categoryKey === 'mens-clothing' || categoryKey === 'mens-clothes') {
         const womenExtraTabs = categoryKey === 'womens-clothing' || categoryKey === 'womens-clothes' ? `
                 <div class="category-tab" data-filter="filter-official" title="Official Attire">
-                    <div class="icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M6 4h12v4h-2v10H8V8H6V4zm2 6h8V6H8v4z"/></svg></div>
+                    <div class="icon">${getIconHTML('official', '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M6 4h12v4h-2v10H8V8H6V4zm2 6h8V6H8v4z"/></svg>')}</div>
                     <div class="label">Official</div>
                 </div>
                 <div class="category-tab" data-filter="filter-traditional" title="Traditional Attire">
-                    <div class="icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M4 6h16v2l-2 12H6L4 8V6zm4 4h8V8H8v2z"/></svg></div>
+                    <div class="icon">${getIconHTML('traditional', '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M4 6h16v2l-2 12H6L4 8V6zm4 4h8V8H8v2z"/></svg>')}</div>
                     <div class="label">Traditional</div>
                 </div>
             ` : '';
@@ -1265,31 +1195,31 @@ export const renderCategoryPage = async (products, categoryKey, searchTerm = '')
         sidebarHTML = `
             <aside class="category-sidebar" aria-hidden="false">
                 <div class="category-tab" data-filter="filter-tops" title="Top">
-                    <div class="icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l3 4h4v2c0 1-1 3-1 3s-3 1-5 1-5-1-5-1-1-2-1-3V6h4l3-4z"/></svg></div>
+                    <div class="icon">${getIconHTML('tops', '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l3 4h4v2c0 1-1 3-1 3s-3 1-5 1-5-1-5-1-1-2-1-3V6h4l3-4z"/></svg>')}</div>
                     <div class="label">Top</div>
                 </div>
                 <div class="category-tab" data-filter="filter-bottoms" title="Bottom">
-                    <div class="icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M4 6h16v2l-2 10H6L4 8V6zM9 12h6v2H9v-2z"/></svg></div>
+                    <div class="icon">${getIconHTML('bottoms', '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M4 6h16v2l-2 10H6L4 8V6zM9 12h6v2H9v-2z"/></svg>')}</div>
                     <div class="label">Bottom</div>
                 </div>
                 ${womenExtraTabs}
                 <div class="category-tab" data-filter="filter-shoes" title="Shoes">
-                    <div class="icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M2 14s2 4 8 4 10-4 10-4v-2h-2l-2 2H6l-4-2v2z"/></svg></div>
+                    <div class="icon">${getIconHTML('shoes', '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M2 14s2 4 8 4 10-4 10-4v-2h-2l-2 2H6l-4-2v2z"/></svg>')}</div>
                     <div class="label">Shoes</div>
                 </div>
                 <div class="category-tab" data-filter="filter-accessories" title="Accessories">
-                    <div class="icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2a4 4 0 1 0 0 8 6 6 0 0 0 6 6h2a8 8 0 0 1-8-8 4 4 0 0 0-0-6z"/></svg></div>
+                    <div class="icon">${getIconHTML('accessories', '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2a4 4 0 1 0 0 8 6 6 0 0 0 6 6h2a8 8 0 0 1-8-8 4 4 0 0 0-0-6z"/></svg>')}</div>
                     <div class="label">Accessories</div>
                 </div>
                 <div class="category-tab" data-filter="filter-glasses" title="Glasses">
-                    <div class="icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M4 10a4 4 0 0 1 8 0h-2a2 2 0 0 0-4 0H4zM20 10a4 4 0 0 0-8 0h2a2 2 0 0 1 4 0h2z"/></svg></div>
+                    <div class="icon">${getIconHTML('glasses', '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M4 10a4 4 0 0 1 8 0h-2a2 2 0 0 0-4 0H4zM20 10a4 4 0 0 0-8 0h2a2 2 0 0 1 4 0h2z"/></svg>')}</div>
                     <div class="label">Glasses</div>
                 </div>
                 <div class="category-tab" data-filter="filter-hats" title="Hats">
-                    <div class="icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M2 12a10 10 0 0 1 20 0v2H2v-2z"/></svg></div>
+                    <div class="icon">${getIconHTML('hats', '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M2 12a10 10 0 0 1 20 0v2H2v-2z"/></svg>')}</div>
                     <div class="label">Hats</div>
                 </div>
-                <div class="category-tab more" title="More">
+                <div class="category-tab" data-filter="filter-hats" title="Hats">
                     <div class="icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 16l-4-4h8l-4 4z"/></svg></div>
                 </div>
             </aside>
@@ -1638,12 +1568,27 @@ export const renderProductPage = async (product) => {
     }
         
     const featuresListHTML = product.features && product.features.length > 0
-        ? `<ul>${product.features.map(feature => `<li>${feature}</li>`).join('')}</ul>`
+        ? `<ul>${product.features.map(feature => `<li>${feature}</li>`).join('\n')}</ul>`
         : '';
 
-    const descriptionParagraphHTML = product.description
-        ? `<p>${product.description}</p>`
-        : `<p>Experience the best with the ${product.title}. This premium product offers exceptional performance and value, backed by our comprehensive warranty. Perfect for both work and play, it's the smart choice for any tech enthusiast.</p>`;
+    let canViewDescription = product.description && product.description.trim() !== '';
+
+    let transportHTML = `
+        <div style="background:#f5f5f7; border:1px solid #d2d2d7; color:#1d1d1f; padding:12px; border-radius:8px; margin-top:10px; font-size:0.9rem;">
+            <div style="font-size: 0.9rem; color: var(--text-light); display: flex; align-items: center; gap: 6px;">
+                <i class="fas fa-shopping-bag"></i> Products Sold: <strong>${product.purchaseCount || 0}</strong>
+            </div>
+        </div>`;
+
+    if (product.freeTransport) {
+        transportHTML = `
+            <div style="background:#e6ffed; border:1px solid #b7eb8f; color:#2e7d32; padding:12px; border-radius:8px; margin-top:10px; font-weight:700;">
+                <i class="fas fa-truck"></i> Free Delivery Eligible!
+                <div style="margin-top: 8px; font-size: 0.9rem; color: #444; display: flex; align-items: center; gap: 6px; border-top: 1px solid #b7eb8f; padding-top: 8px;">
+                    <i class="fas fa-shopping-bag"></i> Products Sold: <strong>${product.purchaseCount || 0}</strong>
+                </div>
+            </div>`;
+    }
 
     const colorOptionsHTML = product.colorsEnabled && product.colors && product.colors.length > 0
         ? `<div class="color-options"><h4>Available Colors:</h4><div class="color-swatches">${product.colors.map((color, idx) => `<button type="button" class="color-swatch ${idx === 0 ? 'selected' : ''}" data-color="${color}" style="background-color: ${color.toLowerCase()};" title="${color}" aria-label="Select ${color} color"></button>`).join('')}</div></div>`
@@ -1703,115 +1648,134 @@ export const renderProductPage = async (product) => {
     const savedAmount = (product.oldPrice || 0) - (product.currentPrice || 0);
     const isActuallyOnSale = savedAmount > 0;
 
-    // Trust Toggles filtering logic: only append code if configurations are verified true in DB
+    // Trust Toggles filtering logic: only display activated badges (Requirement 5)
+    const warrantyText = product.seller?.defaultWarranty || product.warrantyDuration || '1-Year Warranty';
+    const deliveryText = product.seller?.defaultDeliveryOption || 'Delivery Nationwide';
+
     const trustBar1Items = [];
-    if (product.showTradeIn !== false) trustBar1Items.push('<div class="trust-info-item"><i class="fas fa-sync-alt"></i> Trade-In</div>');
-    if (product.showLayBye !== false) trustBar1Items.push('<div class="trust-info-item"><i class="fas fa-layer-group"></i> Lay-Bye</div>');
-    if (product.showDeposit !== false) trustBar1Items.push('<div class="trust-info-item"><i class="fas fa-hand-holding-usd"></i> Deposit</div>');
+    if (product.showTradeIn !== false) trustBar1Items.push(`<div class="trust-info-item"><i class="fas fa-exchange-alt"></i> Trade-In</div>`);
+    if (product.showLayBye !== false) trustBar1Items.push(`<div class="trust-info-item"><i class="fas fa-calendar-alt"></i> Lay-Bye</div>`);
+    if (product.showDeposit !== false) trustBar1Items.push(`<div class="trust-info-item"><i class="fas fa-percent"></i> Deposit</div>`);
 
     const trustBar2Items = [];
-    if (product.showDeliveryNationwide !== false) trustBar2Items.push('<div class="trust-info-item"><i class="fas fa-truck"></i> Delivery Nationwide</div>');
-    if (product.showOneYearWarranty !== false) trustBar2Items.push('<div class="trust-info-item"><i class="fas fa-shield-alt"></i> 1-Year Warranty</div>');
-    if (product.showFifteenDayReturns !== false) trustBar2Items.push('<div class="trust-info-item"><i class="fas fa-undo"></i> 15-Day Returns</div>');
-
-    const trustBar1HTML = trustBar1Items.length > 0 ? `<div class="trust-info-bar">${trustBar1Items.join('')}</div>` : '';
-    const trustBar2HTML = trustBar2Items.length > 0 ? `<div class="trust-info-bar">${trustBar2Items.join('')}</div>` : '';
-
-    // Transport configuration banner
-    let transportHTML = '';
-    if (product.freeTransport) {
-        transportHTML = `<div style="background:#e6ffed; border:1px solid #b7eb8f; color:#2e7d32; padding:12px; border-radius:8px; margin-top:10px; font-weight:700;"><i class="fas fa-truck"></i> Free Delivery Eligible!</div>`;
-    } else {
-        transportHTML = `<div style="background:#f5f5f7; border:1px solid #d2d2d7; color:#1d1d1f; padding:12px; border-radius:8px; margin-top:10px; font-size:0.9rem;"><i class="fas fa-truck-pickup"></i> Delivery rates calculated based on region</div>`;
+    // Activated Delivery Nationwide when toggle in relevant reseller dashboard is checked (Requirement 5)
+    if (product.showDeliveryNationwide !== false) {
+        trustBar2Items.push(`<div class="trust-info-item"><i class="fas fa-truck"></i> ${deliveryText}</div>`);
+    }
+    if (product.showOneYearWarranty !== false) trustBar2Items.push(`<div class="trust-info-item"><i class="fas fa-shield-alt"></i> ${warrantyText}</div>`);
+    if (product.showFifteenDayReturns !== false) trustBar2Items.push(`<div class="trust-info-item"><i class="fas fa-undo"></i> 15-Day Returns</div>`);
+    
+    let trustBarHTML = '';
+    if (trustBar1Items.length > 0 || trustBar2Items.length > 0) {
+        trustBarHTML = `
+            <div class="trust-info-bar">
+                ${trustBar1Items.join('')}
+                ${trustBar2Items.join('')}
+            </div>
+        `;
     }
 
-    const isVerifiedSeller = product.seller && product.seller.isVerified;
-    const showBestSellerBadge = product.seller && product.seller.showBestSellerBadge;
+    // Dynamic safe delivery insurance info block
+    let safeInsuranceBannerHTML = '';
+    if (product.safeInsuranceEnabled && product.safeInsurancePrice > 0) {
+        safeInsuranceBannerHTML = `
+            <div style="background:#eaf5ff; border:1px solid #91caff; color:#1890ff; padding:12px; border-radius:8px; margin-top:10px; font-weight:700;">
+                <i class="fas fa-shield-halved"></i> Safe Delivery Insurance available for ${formatCurrency(product.safeInsurancePrice)}
+            </div>`;
+    }
 
     getAppRoot().innerHTML = `
-    <div class="page-container product-page-container" data-sale-end-date="${product.saleEndDate || ''}" data-combo-end-date="${product.comboEndDate || ''}">
-        <div class="product-page-top-bar">
-            <a href="#" class="back-to-products" id="back-to-products"><i class="fas fa-arrow-left"></i>&nbsp; Back</a>
-            ${topBarTimerHTML}
-        </div>
-        <div class="product-main">
-            <div class="gallery-section">
-                ${createProductTags(product, 'detail')}
-                <div id="image-viewer-count" class="image-viewer-count" style="display: none;"></div>
-                <div class="main-image-container">
-                    <img src="${product.image}" alt="${product.title}" class="main-image" id="main-image" onerror="this.onerror=null; this.src='https://via.placeholder.com/500x500.png?text=Image+Not+Found';">
-                </div>
-                <div class="thumbnails">${[product.image, ...(product.thumbnails || [])].map((thumb, i) => `<img src="${thumb}" class="thumbnail ${i === 0 ? 'active' : ''}" data-full="${thumb}" onerror="this.onerror=null; this.src='https://via.placeholder.com/100x100.png?text=Error';">`).join('')}</div>
+        <div class="page-container product-page-container" data-sale-end-date="${product.saleEndDate || ''}" data-combo-end-date="${product.comboEndDate || ''}">
+            <div class="product-page-top-bar">
+                <a href="#category/${product.category}" class="back-to-products"><i class="fas fa-arrow-left"></i> Back to ${product.category}</a>
             </div>
-            <div class="details-section">
-                <h1>${product.title}</h1>
-                ${product.seller ? `
-                <div class="seller-info" style="margin: 12px 0; display:flex; align-items:center; gap:12px;">
-                    <div class="seller-avatar" style="width:56px;height:56px;border-radius:50%;background:#f1f1f1;display:flex;align-items:center;justify-content:center;font-weight:700;color:#444;">${(product.seller.businessName || product.seller.name || 'S').charAt(0)}</div>
-                    <div class="seller-meta" style="flex:1;">
-                        <div style="display:flex;align-items:center;gap:8px;">
-                            <div style="font-weight:700;font-size:1rem;">${product.seller.businessName || product.seller.name}</div>
-                            ${isVerifiedSeller ? '<div class="verified-badge" title="Verified seller" style="color:var(--corporate-blue);display:flex;align-items:center;gap:6px;"><i class="fas fa-check-circle"></i> Verified</div>' : ''}
-                            ${showBestSellerBadge ? `<span style="background:#eacc52; color:#1d1d1f; padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 0.75rem;" title="Top Performing Merchant">Best Seller</span>` : ''}
+            <div class="product-main">
+                <div class="gallery-section">
+                    ${createProductTags(product, 'detail')}
+                    <div id="image-viewer-count" class="image-viewer-count" style="display: none;"></div>
+                    <div class="main-image-container">
+                        <img src="${product.image}" alt="${product.title}" class="main-image" id="main-image" onerror="this.onerror=null; this.src='https://via.placeholder.com/500x500.png?text=Image+Not+Found';">
+                    </div>
+                    <div class="thumbnails">${[product.image, ...(product.thumbnails || [])].map((thumb, i) => `<img src="${thumb}" class="thumbnail ${i === 0 ? 'active' : ''}" data-full="${thumb}" onerror="this.onerror=null; this.src='https://via.placeholder.com/100x100.png?text=Error';">`).join('')}</div>
+                </div>
+                <div class="details-section">
+                    <h1>${product.title}</h1>
+                    ${product.seller ? `
+                    <div class="seller-info" style="margin: 12px 0; display:flex; align-items:center; gap:12px;">
+                        <div class="seller-avatar" style="width:56px;height:56px;border-radius:50%;background:#f1f1f1;display:flex;align-items:center;justify-content:center;font-weight:700;color:#444;overflow:hidden;border:1px solid #ddd;">
+                            ${product.seller.profileImage 
+                                ? `<img src="${product.seller.profileImage}" style="width:100%; height:100%; object-fit:cover;">` 
+                                : (product.seller.businessName || product.seller.name || 'S').charAt(0)}
                         </div>
-                        <div style="font-size:0.9rem;color:#666;margin-top:4px;">${product.seller.location || ''} ${product.seller.sellerRating ? `· ${renderStars(product.seller.sellerRating)} (${Number(product.seller.sellerRating).toFixed(1)})` : ''}</div>
+                        <div class="seller-meta" style="flex:1;">
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <div style="font-weight:700;font-size:1rem;">${product.seller.businessName || product.seller.name}</div>
+                                ${product.seller.isVerified ? '<div class="verified-badge" title="Verified seller" style="color:var(--corporate-blue);display:flex;align-items:center;gap:6px;"><i class="fas fa-check-circle"></i> Verified</div>' : ''}
+                                ${product.seller.showBestSellerBadge ? `<span style="background:#eacc52; color:#1d1d1f; padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 0.75rem;" title="Top Performing Merchant">Best Seller</span>` : ''}
+                            </div>
+                            <div style="font-size:0.9rem;color:#666;margin-top:4px;">${product.seller.location || ''} ${product.seller.sellerRating ? `· ${renderStars(product.seller.sellerRating)} (${Number(product.seller.sellerRating).toFixed(1)})` : ''}</div>
+                        </div>
                     </div>
-                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                        ${isLoggedIn() ? '<button id="btn-message-seller" class="btn-secondary">Send Message</button>' : ''}
-                        <button id="btn-show-seller-map" class="btn-secondary">Show On Map</button>
-                        <a href="#seller/${product.seller._id || 'seller'}" class="btn-secondary" style="text-decoration:none; display:inline-flex; align-items:center; justify-content:center;">Explore Products</a>
+                    ` : ''}
+                    ${(viewerLinkedReviews.length > 0) ? `<div class="product-rating">${renderStars(product.rating, product.reviewCount)}</div>` : ''}
+                    <div class="product-price">
+                        ${formatCurrency(product.currentPrice)}
+                        ${isActuallyOnSale ? `<span class="original-price">${formatCurrency(product.oldPrice)}</span><span class="save-badge">Save ${formatCurrency(savedAmount)}</span>` : ''}
                     </div>
-                </div>
-                ` : ''}
-                ${(viewerLinkedReviews.length > 0) ? `<div class="product-rating">${renderStars(product.rating, product.reviewCount)}</div>` : ''}
-                <div class="product-price">
-                    ${formatCurrency(product.currentPrice)}
-                    ${isActuallyOnSale ? `<span class="original-price">${formatCurrency(product.oldPrice)}</span><span class="save-badge">Save ${formatCurrency(savedAmount)}</span>` : ''}
-                </div>
-                
-                <!-- Display Warranty details -->
-                <div style="background:#f9f9fb; padding:15px; border-radius:10px; margin: 15px 0;">
-                    <div style="font-weight:700;"><i class="fas fa-shield-alt"></i> Warranty:</div>
-                    <div style="font-size:1.1rem; color:var(--corporate-blue); margin-top:4px;">${product.warrantyDuration || 'No Warranty'}</div>
-                </div>
+                    
+                    <!-- Display Warranty details -->
+                    <div style="background:#f9f9fb; padding:15px; border-radius:10px; margin: 15px 0;">
+                        <div style="font-weight:700;"><i class="fas fa-shield-alt"></i> Warranty:</div>
+                        <div style="font-size:1.1rem; color:var(--corporate-blue); margin-top:4px;">${warrantyText}</div>
+                    </div>
 
-                ${giftRewardHTML}
-                ${transportHTML}
-                ${colorOptionsHTML}
-                ${sizeOptionsHTML}
+                    ${giftRewardHTML}
+                    ${transportHTML}
+                    ${safeInsuranceBannerHTML}
+                    ${colorOptionsHTML}
+                    ${sizeOptionsHTML}
 
-                ${trustBar1HTML}
-                ${trustBar2HTML}
-                
-                <div style="margin-top: 15px; display:flex; flex-direction:column; gap:8px;">
-                    <button class="add-to-cart-btn" id="btn-add-cart-detail" ${product.stock !== undefined && product.stock <= 0 ? 'disabled' : ''}>
-                        ${product.stock !== undefined && product.stock <= 0 ? 'Sold Out' : 'Add to Cart'}
-                    </button>
-                    <button id="btn-explore-more" class="btn btn-outline" style="width: 100%; display: block; border-radius: 25px; padding: 12px 25px; font-weight: 600;">
-                        Explore More from Reseller
-                    </button>
-                </div>
-                
-                <div class="product-info-tabs">
-                    <div class="tab-buttons">
-                        <button class="tab-btn active" data-tab="description">Description</button>
-                        <button class="tab-btn" data-tab="reviews">Reviews (${product.reviewCount})</button>
+                    ${trustBarHTML}
+                    
+                    <div style="margin-top: 15px; display:flex; flex-direction:column; gap:8px;">
+                        <button class="add-to-cart-btn" id="btn-add-cart-detail" ${product.stock !== undefined && product.stock <= 0 ? 'disabled' : ''}>
+                            ${product.stock !== undefined && product.stock <= 0 ? 'Sold Out' : 'Add to Cart'}
+                        </button>
                     </div>
-                    <div id="description" class="tab-content active">
-                        ${featuresListHTML}
-                        ${descriptionParagraphHTML}
+                    
+                    <div class="product-info-tabs">
+                        <div class="tab-buttons">
+                            <button class="tab-btn active" data-tab="description">Description</button>
+                            <button class="tab-btn" data-tab="reviews">Reviews (${product.reviewCount})</button>
+                        </div>
+                        <div id="description" class="tab-content active">
+                            ${featuresListHTML}
+                            ${canViewDescription ? `<p style="margin-top:15px;">${product.description}</p>` : ''}
+                        </div>
+                        <div id="reviews" class="tab-content">
+                            ${fiveStarSectionHTML}
+                            ${reviewsHTML}
+                        </div>
                     </div>
-                    <div id="reviews" class="tab-content">
-                        ${fiveStarSectionHTML}
-                        ${reviewsHTML}
-                    </div>
+
+                    <!-- Moved Buttons Segment: Positioned below description & reviews tab container (Requirement 6) -->
+                    ${product.seller ? `
+                    <div style="margin-top: 25px; padding: 20px; background: #fafafa; border: 1px solid var(--border-color); border-radius: 12px; display:flex; flex-direction:column; gap:12px;">
+                        <h4 style="margin:0; font-size:1.1rem; color:var(--corporate-blue);">Interact with Reseller:</h4>
+                        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                            ${isLoggedIn() ? '<button id="btn-message-seller" class="cta" style="border:none; cursor:pointer; padding:12px 24px; font-size:14px; border-radius:30px; display:inline-flex; align-items:center; justify-content:center; text-shadow:none; box-shadow:0 4px 10px rgba(0,0,0,0.2);">Send Message</button>' : ''}
+                            <button id="btn-show-seller-map" class="btn btn-outline" style="border-radius:30px; padding:10px 20px; font-size:14px; display:inline-flex; align-items:center; gap:6px;"><i class="fas fa-map-marked-alt"></i> Show On Map</button>
+                            <a href="#seller/${product.seller._id || 'seller'}" class="btn btn-outline" style="text-decoration:none; border-radius:30px; padding:10px 20px; font-size:14px; display:inline-flex; align-items:center; justify-content:center; gap:6px;"><i class="fas fa-store"></i> Explore Products</a>
+                        </div>
+                    </div>` : ''}
                 </div>
             </div>
         </div>
-    </div>
-    ${similarProductsHTML}
+        ${similarProductsHTML}
     `;
     
+    // Floating action button toggle trigger setup removed as requested
+
     const backBtn = document.getElementById('back-to-products');
     if (backBtn) {
         backBtn.addEventListener('click', (e) => {
@@ -1905,13 +1869,21 @@ export const renderProductPage = async (product) => {
         });
     }
 
+    // Leaflet geolocating based on custom saved dashboard coordinates or reverse geocoding fallback (Requirement 7)
     const mapBtnDetail = document.getElementById('btn-show-seller-map');
     if (mapBtnDetail) {
         mapBtnDetail.addEventListener('click', async () => {
-            const loc = product.seller ? (product.seller.physicalAddress || product.seller.location || '') : '';
-            if (!loc) return alert('Seller address not available');
-            const geo = await geocodeLocation(loc);
-            if (!geo) return alert('Could not geocode seller location');
+            const hasCoords = product.seller && product.seller.latitude && product.seller.longitude;
+            let geo = null;
+            if (hasCoords) {
+                geo = { lat: product.seller.latitude, lon: product.seller.longitude, display_name: product.seller.physicalAddress || product.seller.businessName };
+            } else {
+                const loc = product.seller ? (product.seller.physicalAddress || product.seller.location || '') : '';
+                if (!loc) return alert('Seller address not available');
+                geo = await geocodeLocation(loc);
+            }
+
+            if (!geo) return alert('Could not resolve seller coordinates.');
 
             let modal = document.getElementById('map-modal');
             if (!modal) {
@@ -1931,7 +1903,7 @@ export const renderProductPage = async (product) => {
                     <div id="map-modal-container" style="width:90%;max-width:900px;background:white;padding:14px;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.18);">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
                             <div style="font-size:1rem;font-weight:700;">Seller Location</div>
-                            <button id="map-modal-close" style="border:none;background:none;font-size:1.3rem;cursor:pointer;color:#333;">&times;</button>
+                            <button id="map-modal-close" style="border:none;background:none;font-size:1.5rem;cursor:pointer;color:#333;">&times;</button>
                         </div>
                         <div id="map-modal-content" style="width:100%;height:420px;border-radius:8px;overflow:hidden;"></div>
                     </div>
@@ -2096,10 +2068,16 @@ export const renderCartPage = (detailedCartItems) => {
                         <!-- Injected dynamically based on location -->
                     </div>
                     
-                    <div style="margin-top:20px; border-top:1px solid #eee; padding-top:15px;">
+                    <!-- COD Pickup Point address dropdown selector (Requirement 9) -->
+                    <div id="cod-pickup-selector-container" style="display:none; margin-top: 15px; background: #fbfbfb; border: 1px solid #eee; padding: 15px; border-radius: 8px;">
+                        <label for="cod-pickup-select" style="font-weight:700; display:block; margin-bottom:6px;">Select Reseller Pickup & COD Payment Point:</label>
+                        <select id="cod-pickup-select" style="width:100%; padding:10px; border-radius:6px; border: 1px solid #ccc;"></select>
+                    </div>
+
+                    <div id="insurance-form-wrapper" style="margin-top:20px; border-top:1px solid #eee; padding-top:15px; display:none;">
                         <label style="display:flex; align-items:center; gap:10px; font-weight:700; cursor:pointer;">
                             <input type="checkbox" id="safe-insurance-toggle" style="width:20px; height:20px;">
-                            Add Safe Delivery Insurance (+N$49.00)
+                            Add Safe Delivery Insurance (<span id="insurance-price-display">+N$0.00</span>)
                         </label>
                     </div>
                 </div>
@@ -2111,7 +2089,7 @@ export const renderCartPage = (detailedCartItems) => {
                     <div class="summary-row" style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>Subtotal:</span> <span>${formatCurrency(subtotal)}</span></div>
                     <div class="summary-row" style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>Delivery:</span> <span id="summary-delivery-fee">${formatCurrency(shippingFee)}</span></div>
                     <div class="summary-row" style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>Insurance:</span> <span id="summary-insurance-fee">${formatCurrency(insuranceFee)}</span></div>
-                    <div class="summary-row total-row" style="display: flex; justify-content: space-between; font-weight: bold; margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;"><span>Total:</span> <span id="summary-total-fee" style="color:var(--corporate-green);">${formatCurrency(subtotal)}</span></div>
+                    <div class="summary-row total-row" style="display: flex; justify-content: space-between; font-weight: bold; margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;"><span>Total:</span> <span id="summary-total-fee" style="color:var(--corporate-green);">${formatCurrency(subtotal + shippingFee + insuranceFee)}</span></div>
                 </div>` : ''}
 
                 <div class="action-buttons">
@@ -2124,15 +2102,29 @@ export const renderCartPage = (detailedCartItems) => {
     const saveAddressBtn = document.getElementById('save-address-btn');
     const transportWrapper = document.getElementById('transport-form-wrapper');
     const optionsContainer = document.getElementById('transport-options-container');
+    const insuranceFormWrapper = document.getElementById('insurance-form-wrapper');
     const insuranceToggle = document.getElementById('safe-insurance-toggle');
+    const insurancePriceDisplay = document.getElementById('insurance-price-display');
     const proceedBtn = document.getElementById('proceed-checkout-btn');
+    const codPickupContainer = document.getElementById('cod-pickup-selector-container');
+    const codPickupSelect = document.getElementById('cod-pickup-select');
 
     let chosenTransport = '';
     let selectedLocation = '';
+    let computedInsuranceCost = 0;
+
+    // Calculate dynamic safe insurance costs based on items in the cart
+    let activeInsuranceEnabled = false;
+    validItems.forEach(item => {
+        if (item.safeInsuranceEnabled && item.safeInsurancePrice > 0) {
+            activeInsuranceEnabled = true;
+            computedInsuranceCost += (item.safeInsurancePrice * item.quantity);
+        }
+    });
 
     const updateTotals = () => {
         if (insuranceToggle && insuranceToggle.checked) {
-            insuranceFee = 49;
+            insuranceFee = computedInsuranceCost > 0 ? computedInsuranceCost : 49;
         } else {
             insuranceFee = 0;
         }
@@ -2146,7 +2138,7 @@ export const renderCartPage = (detailedCartItems) => {
         if (totalFeeEl) totalFeeEl.textContent = formatCurrency(subtotal + shippingFee + insuranceFee);
     };
 
-    saveAddressBtn?.addEventListener('click', () => {
+    saveAddressBtn?.addEventListener('click', async () => {
         const name = document.getElementById('delivery-name').value.trim();
         const phone = document.getElementById('delivery-phone').value.trim();
         selectedLocation = document.getElementById('delivery-location').value;
@@ -2157,12 +2149,48 @@ export const renderCartPage = (detailedCartItems) => {
 
         if (transportWrapper) transportWrapper.style.display = 'block';
 
-        const hasFreeTransport = validItems.some(i => i.freeTransport === true);
+        // Display safe delivery insurance block if any product has it active
+        if (insuranceFormWrapper) {
+            if (activeInsuranceEnabled) {
+                insuranceFormWrapper.style.display = 'block';
+                if (insurancePriceDisplay) {
+                    insurancePriceDisplay.textContent = `+${formatCurrency(computedInsuranceCost)}`;
+                }
+            } else {
+                insuranceFormWrapper.style.display = 'none';
+            }
+        }
+
+        // Dynamically compute dynamic shipping price from individual products
+        shippingFee = 0;
+        validItems.forEach(item => {
+            if (item.freeTransport === true) {
+                return; // Free delivery
+            }
+            const windhoekPrice = item.deliveryPriceWindhoek !== undefined ? item.deliveryPriceWindhoek : 49;
+            const outsidePrice = item.deliveryPriceOutside !== undefined ? item.deliveryPriceOutside : 79;
+            const itemShipping = (selectedLocation === 'Windhoek') ? windhoekPrice : outsidePrice;
+            if (itemShipping > shippingFee) {
+                shippingFee = itemShipping;
+            }
+        });
+
         const codAllowed = validItems.every(i => i.cashOnDelivery === true);
 
-        shippingFee = hasFreeTransport ? 0 : 79;
-        if (selectedLocation === 'Windhoek' && !hasFreeTransport) {
-            shippingFee = 49;
+        // Fetch reseller COD pickup points array (Requirement 9)
+        let pickupPointsHTML = '';
+        if (codAllowed) {
+            try {
+                const firstItemSeller = validItems[0]?.seller;
+                if (firstItemSeller) {
+                    const sellerObj = typeof firstItemSeller === 'object' ? firstItemSeller : await (await fetch(`/api/users`)).json().then(users => users.find(u => u._id === firstItemSeller));
+                    if (sellerObj && sellerObj.pickupPoints && sellerObj.pickupPoints.length > 0) {
+                        pickupPointsHTML = sellerObj.pickupPoints.map(p => `<option value="${p.name} (${p.address})">${p.name} - ${p.address}</option>`).join('');
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to load pickup points', err);
+            }
         }
 
         if (optionsContainer) {
@@ -2193,6 +2221,12 @@ export const renderCartPage = (detailedCartItems) => {
             `;
         }
 
+        if (codPickupSelect && pickupPointsHTML) {
+            codPickupSelect.innerHTML = pickupPointsHTML;
+        } else if (codPickupSelect) {
+            codPickupSelect.innerHTML = '<option value="">No pickup points set by reseller. Default address will be used.</option>';
+        }
+
         chosenTransport = 'Standard Company Delivery';
         if (proceedBtn) {
             proceedBtn.removeAttribute('disabled');
@@ -2206,19 +2240,29 @@ export const renderCartPage = (detailedCartItems) => {
 
     optionsContainer?.addEventListener('change', (e) => {
         const val = e.target.value;
-        const hasFreeTransport = validItems.some(i => i.freeTransport === true);
-        let baseFee = hasFreeTransport ? 0 : 79;
-        if (selectedLocation === 'Windhoek' && !hasFreeTransport) baseFee = 49;
+        let baseFee = 0;
+        validItems.forEach(item => {
+            if (item.freeTransport === true) return;
+            const windhoekPrice = item.deliveryPriceWindhoek !== undefined ? item.deliveryPriceWindhoek : 49;
+            const outsidePrice = item.deliveryPriceOutside !== undefined ? item.deliveryPriceOutside : 79;
+            const itemShipping = (selectedLocation === 'Windhoek') ? windhoekPrice : outsidePrice;
+            if (itemShipping > baseFee) {
+                baseFee = itemShipping;
+            }
+        });
 
         if (val === 'fast') {
             shippingFee = baseFee + 50;
             chosenTransport = 'Yango Fast Delivery';
+            if (codPickupContainer) codPickupContainer.style.display = 'none';
         } else if (val === 'cod') {
             shippingFee = baseFee;
             chosenTransport = 'COD (Cash on Delivery)';
+            if (codPickupContainer) codPickupContainer.style.display = 'block';
         } else {
             shippingFee = baseFee;
             chosenTransport = 'Standard Company Delivery';
+            if (codPickupContainer) codPickupContainer.style.display = 'none';
         }
 
         updateTotals();
@@ -2231,6 +2275,11 @@ export const renderCartPage = (detailedCartItems) => {
         const phone = document.getElementById('delivery-phone').value.trim();
         const landmark = document.getElementById('delivery-landmark').value.trim();
 
+        let transportMethod = chosenTransport;
+        if (chosenTransport === 'COD (Cash on Delivery)' && codPickupSelect && codPickupSelect.value) {
+            transportMethod += ` - Pickup Point: ${codPickupSelect.value}`;
+        }
+
         const pendingOrder = {
             customerName: name,
             customerEmail: getCurrentUser()?.email || 'N/A',
@@ -2238,9 +2287,9 @@ export const renderCartPage = (detailedCartItems) => {
             phoneNumber: phone,
             landmark: landmark,
             locationRegion: selectedLocation,
-            transportMethod: chosenTransport,
+            transportMethod: transportMethod,
             deliveryFee: shippingFee,
-            insuranceSelected: insuranceToggle.checked,
+            insuranceSelected: insuranceToggle ? insuranceToggle.checked : false,
             insuranceFee: insuranceFee,
             items: validItems.map(item => ({
                 productId: item.productId,
@@ -2277,24 +2326,16 @@ export const renderCartPage = (detailedCartItems) => {
                         if (itemPriceText) {
                             itemPriceText.innerHTML = `${formatCurrency(currentItem.currentPrice)} x ${newQuantity} = <strong>${formatCurrency(newItemTotal)}</strong>`;
                         }
-                        updateCartSummary(validItems);
                     }
                     currentItem.quantity = newQuantity;
+                    location.reload();
                 } else {
                     CartManager.removeItem(productId);
                     const cartItem = document.querySelector(`[data-product-id="${productId}"]`);
                     if (cartItem) {
                         cartItem.remove();
-                        const updatedItems = validItems.filter(item => item.productId !== productId);
-                        if (updatedItems.length === 0) {
-                            const cartSection = document.querySelector('.cart-section');
-                            if (cartSection) {
-                                cartSection.innerHTML = '<p>Your cart is empty.</p><div class="action-buttons"><a href="#home" class="btn btn-outline">← Continue Shopping</a></div>';
-                            }
-                        } else {
-                            updateCartSummary(updatedItems);
-                        }
                     }
+                    location.reload();
                 }
             }
         }
@@ -2308,16 +2349,8 @@ export const renderCartPage = (detailedCartItems) => {
                 const cartItem = document.querySelector(`[data-product-id="${productId}"]`);
                 if (cartItem) {
                     cartItem.remove();
-                    const updatedItems = validItems.filter(item => item.productId !== productId);
-                    if (updatedItems.length === 0) {
-                        const cartSection = document.querySelector('.cart-section');
-                        if (cartSection) {
-                            cartSection.innerHTML = '<p>Your cart is empty.</p><div class="action-buttons"><a href="#home" class="btn btn-outline">← Continue Shopping</a></div>';
-                        }
-                    } else {
-                        updateCartSummary(updatedItems);
-                    }
                 }
+                location.reload();
             }
         }
     });
@@ -2368,7 +2401,6 @@ export const renderCompetitionsPage = async () => {
     `).join('');
 
     getAppRoot().innerHTML = `
-        ${renderDynamicHero('home', 'Win with Namkuku')}
         <div class="page-container" style="max-width:800px; margin-top:2rem;">
             <p style="text-align:center; font-size:1.1rem; color:#666; margin-bottom:30px;">Upload your proof of purchase (photos or videos) to enter current active Namkuku competitions and win spectacular prizes!</p>
             ${cards || '<p style="text-align:center;">No active competitions right now. Check back soon!</p>'}
@@ -2488,29 +2520,31 @@ export const renderPaymentOptionsPage = () => {
     }
 
     getAppRoot().innerHTML = `
-        ${renderDynamicHero('payment', 'Choose Payment Method')}
+        <div style="text-align:center; padding: 40px 20px; background:var(--corporate-blue); color:white; border-radius:12px; margin-bottom:2rem;">
+            <h1>Choose Payment Method</h1>
+        </div>
         <div class="page-container" style="max-width: 900px; margin-top: 2rem;">
             <p style="text-align: center; font-size: 1.1rem; color: var(--text-light); margin-bottom: 2.5rem;">Please choose how you'd like to complete your order. Your transaction will be finalized on the next step.</p>
-            <div class="payment-options-grid">
-                <a href="#payment/eft" class="payment-option-card">
-                    <div class="icon-wrapper"><i class="fas fa-university"></i></div>
+            <div class="payment-options-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:20px;">
+                <a href="#payment/eft" class="payment-option-card" style="text-decoration:none; color:inherit; text-align:center; border:1px solid #eee; padding:20px; border-radius:8px; background:white;">
+                    <div class="icon-wrapper" style="font-size:2rem; color:var(--corporate-blue); margin-bottom:10px;"><i class="fas fa-university"></i></div>
                     <h3>Direct Bank Transfer (EFT)</h3>
-                    <p>Pay securely from your bank account.</p>
+                    <p style="font-size:0.9rem; color:#666; margin-top:5px;">Pay securely from your bank account.</p>
                 </a>
-                <a href="#payment/ewallet" class="payment-option-card">
-                    <div class="icon-wrapper"><i class="fas fa-wallet"></i></div>
+                <a href="#payment/ewallet" class="payment-option-card" style="text-decoration:none; color:inherit; text-align:center; border:1px solid #eee; padding:20px; border-radius:8px; background:white;">
+                    <div class="icon-wrapper" style="font-size:2rem; color:var(--corporate-blue); margin-bottom:10px;"><i class="fas fa-wallet"></i></div>
                     <h3>E-Wallet or Blue Wallet</h3>
-                    <p>Use your preferred mobile wallet app.</p>
+                    <p style="font-size:0.9rem; color:#666; margin-top:5px;">Use your preferred mobile wallet app.</p>
                 </a>
-                <a href="#payment/layby" class="payment-option-card">
-                    <div class="icon-wrapper"><i class="fas fa-calendar-alt"></i></div>
+                <a href="#payment/layby" class="payment-option-card" style="text-decoration:none; color:inherit; text-align:center; border:1px solid #eee; padding:20px; border-radius:8px; background:white;">
+                    <div class="icon-wrapper" style="font-size:2rem; color:var(--corporate-blue); margin-bottom:10px;"><i class="fas fa-calendar-alt"></i></div>
                     <h3>Lay-by</h3>
-                    <p>Pay over 3 months, interest-free.</p>
+                    <p style="font-size:0.9rem; color:#666; margin-top:5px;">Pay over 3 months, interest-free.</p>
                 </a>
-                <a href="#payment/tradein" class="payment-option-card">
-                    <div class="icon-wrapper"><i class="fas fa-exchange-alt"></i></div>
+                <a href="#payment/tradein" class="payment-option-card" style="text-decoration:none; color:inherit; text-align:center; border:1px solid #eee; padding:20px; border-radius:8px; background:white;">
+                    <div class="icon-wrapper" style="font-size:2rem; color:var(--corporate-blue); margin-bottom:10px;"><i class="fas fa-exchange-alt"></i></div>
                     <h3>Trade-in Credit</h3>
-                    <p>Apply credit from your old device.</p>
+                    <p style="font-size:0.9rem; color:#666; margin-top:5px;">Apply credit from your old device.</p>
                 </a>
             </div>
         </div>
@@ -2569,7 +2603,9 @@ export const renderPaymentMethodPage = async (method) => {
     }
 
     getAppRoot().innerHTML = `
-        ${renderDynamicHero('payment', info.title)}
+        <div style="text-align:center; padding: 40px 20px; background:var(--corporate-blue); color:white; border-radius:12px; margin-bottom:2rem;">
+            <h1>${info.title}</h1>
+        </div>
         <div class="page-container payment-method-wrapper" style="margin-top: 2rem;">
             <div class="payment-detail">
                 <div class="payment-summary">
@@ -2629,16 +2665,17 @@ export const renderPaymentMethodPage = async (method) => {
 export const renderAdminLoginPage = () => {
     getAppRoot().innerHTML = `
         <div class="page-container" style="max-width: 500px; margin-top: 3rem;">
-            <div style="background: var(--white); padding: 2.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow-medium);">
+            <div style="background: var(--white); padding: 2.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow-medium); position:relative;">
                 <h1 style="text-align: center; color: var(--corporate-blue); margin-bottom: 2rem;">Admin / Seller Portal</h1>
                 <form id="admin-login-form">
                     <div class="form-group">
                         <label for="email">Email Address</label>
                         <input type="email" id="email" name="email" required autocomplete="email">
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" style="position:relative;">
                         <label for="password">Password</label>
-                        <input type="password" id="password" name="password" required autocomplete="current-password">
+                        <input type="password" id="password" name="password" required autocomplete="current-password" style="padding-right: 40px; width:100%;">
+                        <i class="fas fa-eye toggle-password" style="position: absolute; right: 10px; top: 38px; cursor: pointer; color: #666; z-index:10;"></i>
                     </div>
                     <div id="admin-login-message" class="form-message error" style="text-align: center;"></div>
                     <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem; padding: 15px;">Sign In</button>
@@ -2651,16 +2688,17 @@ export const renderAdminLoginPage = () => {
 export const renderLoginPage = () => {
     getAppRoot().innerHTML = `
         <div class="page-container" style="max-width: 500px; margin-top: 3rem;">
-            <div style="background: var(--white); padding: 2.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow-medium);">
+            <div style="background: var(--white); padding: 2.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow-medium); position:relative;">
                 <h1 style="text-align: center; color: var(--corporate-blue); margin-bottom: 2rem;">Sign In</h1>
                 <form id="login-form">
                     <div class="form-group">
                         <label for="email">Email Address</label>
                         <input type="email" id="email" name="email" required autocomplete="email">
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" style="position:relative;">
                         <label for="password">Password</label>
-                        <input type="password" id="password" name="password" required autocomplete="current-password">
+                        <input type="password" id="password" name="password" required autocomplete="current-password" style="padding-right: 40px; width:100%;">
+                        <i class="fas fa-eye toggle-password" style="position: absolute; right: 10px; top: 38px; cursor: pointer; color: #666; z-index:10;"></i>
                     </div>
                     <div id="login-message" class="form-message" style="text-align: center;"></div>
                     <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem; padding: 15px;">Sign In</button>
@@ -2676,7 +2714,7 @@ export const renderLoginPage = () => {
 export const renderRegisterPage = () => {
     getAppRoot().innerHTML = `
         <div class="page-container" style="max-width: 500px; margin-top: 3rem;">
-            <div style="background: var(--white); padding: 2.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow-medium);">
+            <div style="background: var(--white); padding: 2.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow-medium); position:relative;">
                 <h1 style="text-align: center; color: var(--corporate-blue); margin-bottom: 2rem;">Create Account</h1>
                 <form id="register-form" enctype="multipart/form-data">
                     <div class="form-group">
@@ -2684,17 +2722,26 @@ export const renderRegisterPage = () => {
                         <input type="text" id="name" name="name" required autocomplete="name">
                     </div>
                     <div class="form-group">
+                        <label for="businessName">Business Name / Brand Name</label>
+                        <input type="text" id="businessName" name="businessName">
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Phone Number</label>
+                        <input type="tel" id="phone" name="phone">
+                    </div>
+                    <div class="form-group">
                         <label for="email">Email Address</label>
                         <input type="email" id="email" name="email" required autocomplete="email">
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" style="position:relative;">
                         <label for="password">Password</label>
-                        <input type="password" id="password" name="password" required autocomplete="new-password" minlength="6">
+                        <input type="password" id="password" name="password" required autocomplete="new-password" minlength="6" style="padding-right: 40px; width:100%;">
+                        <i class="fas fa-eye toggle-password" style="position: absolute; right: 10px; top: 38px; cursor: pointer; color: #666; z-index:10;"></i>
                     </div>
                     <div class="form-group">
-                        <label for="sellerType">Account Type</label>
-                        <select id="sellerType" name="sellerType">
-                            <option value="customer">Customer</option>
+                        <label for="sellerType">Account Type (Select multiple by holding Ctrl/Cmd)</label>
+                        <select id="sellerType" name="sellerType" multiple style="height: 120px;">
+                            <option value="customer" selected>Customer</option>
                             <option value="electronics">Electronics Seller</option>
                             <option value="solar">Solar Energy Seller</option>
                             <option value="fashion">Fashion & Beauty Seller</option>
@@ -2709,23 +2756,19 @@ export const renderRegisterPage = () => {
                     </div>
                     <div id="seller-verification-fields" style="display:none;">
                         <div class="form-group">
-                            <label for="businessName">Business Name / Brand Name</label>
-                            <input type="text" id="businessName" name="businessName">
-                        </div>
-                        <div class="form-group">
-                            <label for="sellerIdNumber">Seller ID Number</label>
+                            <label for="sellerIdNumber">Seller ID Number (Optional)</label>
                             <input type="text" id="sellerIdNumber" name="sellerIdNumber">
                         </div>
                         <div class="form-group">
-                            <label for="sellerIdImage">Upload Picture of ID</label>
+                            <label for="sellerIdImage">Upload Picture of ID (Optional)</label>
                             <input type="file" id="sellerIdImage" name="sellerIdImage" accept="image/*">
                         </div>
                         <div class="form-group">
-                            <label for="businessRegistrationNumber">Business Registration Number</label>
+                            <label for="businessRegistrationNumber">Business Registration Number (Optional)</label>
                             <input type="text" id="businessRegistrationNumber" name="businessRegistrationNumber">
                         </div>
                         <div class="form-group">
-                            <label for="businessRegistrationDocument">Business Registration Document (PDF)</label>
+                            <label for="businessRegistrationDocument">Business Registration Document (PDF) (Optional)</label>
                             <input type="file" id="businessRegistrationDocument" name="businessRegistrationDocument" accept="application/pdf">
                         </div>
                         <div class="form-group">
@@ -2741,7 +2784,8 @@ export const renderRegisterPage = () => {
     `;
 
     document.getElementById('sellerType')?.addEventListener('change', (e) => {
-        const isSeller = e.target.value !== 'customer';
+        const selected = Array.from(e.target.selectedOptions).map(opt => opt.value);
+        const isSeller = selected.some(val => val !== 'customer');
         document.getElementById('seller-verification-fields').style.display = isSeller ? 'block' : 'none';
     });
 };
@@ -2772,9 +2816,16 @@ export const renderAdminPage = async (allProducts, allUsers, allViewers, allTran
     isKidsAdmin = mappedSellerCategory === 'electronics';
 
     const currentUser = getCurrentUser();
+    
+    // SAFE FILTERING: Guarantees no TypeErrors if product.seller or currentUser is null
     const relevantProducts = isMainAdmin
         ? allProducts
-        : allProducts.filter(p => p.seller && currentUser && (String(p.seller._id || p.seller) === String(currentUser._id)));
+        : allProducts.filter(p => {
+            if (!p || !currentUser) return false;
+            const sellerId = p.seller ? (p.seller._id || p.seller) : null;
+            if (!sellerId) return false;
+            return String(sellerId) === String(currentUser._id);
+        });
 
     const productListHTML = relevantProducts.map(p => `
         <li>
@@ -2788,6 +2839,10 @@ export const renderAdminPage = async (allProducts, allUsers, allViewers, allTran
     const adminTabs = `
         <button class="admin-tab-btn active" data-tab="products">Products</button>
         <button class="admin-tab-btn" data-tab="transactions">Transactions</button>
+        ${!isMainAdmin ? `
+            <button class="admin-tab-btn" data-tab="reseller-profile">Profile Settings</button>
+            <button class="admin-tab-btn" data-tab="reseller-pickup-points">Manage Pickup Points</button>
+        ` : ''}
         ${isMainAdmin ? `
             <button class="admin-tab-btn" data-tab="sellers">Resellers</button>
             <button class="admin-tab-btn" data-tab="competitions-manager">Competitions</button>
@@ -2818,6 +2873,7 @@ export const renderAdminPage = async (allProducts, allUsers, allViewers, allTran
         sellerListHTML = sellerAccounts.map(u => {
             const isApproved = u.isApproved === true;
             const showBestSellerBadge = u.showBestSellerBadge === true;
+            const isVerified = u.isVerified === true;
             let statusBadge;
 
             if (isApproved) {
@@ -2826,19 +2882,24 @@ export const renderAdminPage = async (allProducts, allUsers, allViewers, allTran
                 statusBadge = `<span class="status-badge" style="background: #e0e0e0; color: #333; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold;">Deactivated</span>`;
             }
 
-            return `<li style="padding: 15px; border-bottom: 1px solid #eee; display:flex; justify-content:space-between; align-items:center;" class="seller-account-item">
+            return `<li style="padding: 15px; border-bottom: 1px solid #eee; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;" class="seller-account-item">
                 <div class="user-info">
                     <div style="font-weight: 600; display:flex; align-items:center; gap:10px;">${u.name} ${statusBadge}</div>
                     <span style="font-size: 0.9rem; color: #666;">${u.email} | Type: <strong>${u.sellerType}</strong></span>
                 </div>
-                <div class="actions" style="display:flex; gap:20px; align-items:center;">
+                <div class="actions" style="display:flex; gap:15px; align-items:center; flex-wrap:wrap;">
                     <label class="verify-switch switch" title="Toggle Approval">
                         <input type="checkbox" class="seller-approve-toggle" data-user-id="${u._id}" ${isApproved ? 'checked' : ''}>
                         <span class="slider round"></span>
                     </label>
-                    <label class="bestseller-switch" title="Toggle Bestseller Badge" style="margin-left: 10px;">
+                    <label class="verify-switch switch" title="Toggle Verification" style="display:inline-flex; align-items:center; gap:5px; font-size:0.85rem; font-weight:bold;">
+                        <input type="checkbox" class="seller-verified-toggle" data-user-id="${u._id}" ${isVerified ? 'checked' : ''}>
+                        <span class="slider round"></span>
+                        Verified Tick
+                    </label>
+                    <label class="bestseller-switch" title="Toggle Bestseller Badge" style="display:inline-flex; align-items:center; gap:5px; font-size:0.85rem; font-weight:bold;">
                         <input type="checkbox" class="seller-bestseller-toggle" data-user-id="${u._id}" ${showBestSellerBadge ? 'checked' : ''}>
-                        Best Seller Badge
+                        Best Seller
                     </label>
                     <button class="delete-user-btn" data-user-id="${u._id}" style="color: var(--danger-red); background:none; border:none; cursor:pointer;"><i class="fas fa-trash"></i></button>
                 </div>
@@ -2866,12 +2927,18 @@ export const renderAdminPage = async (allProducts, allUsers, allViewers, allTran
         });
     }).join('') || "<li>No viewers found.</li>";
     
+    // SAFE TRANSACTION FILTERING: Fully protected from null fields or missing products
     const relevantTransactions = isMainAdmin 
         ? allTransactions 
-        : allTransactions.filter(transaction => transaction.items.some(item => {
-            const product = allProducts.find(p => p.productId === item.productId);
-            return product && product.seller && currentUser && (String(product.seller._id || product.seller) === String(currentUser._id));
-        }));
+        : allTransactions.filter(transaction => {
+            if (!transaction || !transaction.items) return false;
+            return transaction.items.some(item => {
+                const product = allProducts.find(p => p.productId === item.productId);
+                if (!product || !product.seller || !currentUser) return false;
+                const sellerId = product.seller._id ? product.seller._id : product.seller;
+                return String(sellerId) === String(currentUser._id);
+            });
+        });
 
     const faqListHTML = allFAQs.map(faq => `<li><div class="faq-info"><strong>Q:</strong> ${faq.question}<p style="margin-left: 20px; color: #555;"><strong>A:</strong> ${faq.answer}</p></div><div class="actions"><button class="edit-faq-btn" data-faq-id="${faq._id}"><i class="fas fa-edit"></i> Edit</button><button class="delete-faq-btn" data-faq-id="${faq._id}"><i class="fas fa-trash"></i> Delete</button></div></li>`).join('');
 
@@ -2881,7 +2948,7 @@ export const renderAdminPage = async (allProducts, allUsers, allViewers, allTran
             const allBrands = await api.fetchBrands();
             brandListHTML = allBrands.map(brand => `<li><div class="brand-info"><strong>Brand:</strong> ${brand.name}</div><div class="actions"><button class="edit-brand-btn" data-brand-id="${brand._id}"><i class="fas fa-edit"></i> Edit</button><button class="delete-brand-btn" data-brand-id="${brand._id}"><i class="fas fa-trash"></i> Delete</button></div></li>`).join('');
         } catch (err) {
-            console.error('Failed to render admin brands manager:', err);
+            console.error('Failed to load brands:', err);
         }
     }
 
@@ -2914,7 +2981,7 @@ export const renderAdminPage = async (allProducts, allUsers, allViewers, allTran
                 <form id="product-form" class="admin-form">
                     <input type="hidden" id="product-id-hidden">
                     <div class="form-grid">
-                        <div class="form-group"><label for="product-id">Product ID</label><input type="text" id="product-id" required></div>
+                        <div class="form-group" style="${isMainAdmin ? '' : 'display:none;'}"><label for="product-id">Product ID</label><input type="text" id="product-id" ${isMainAdmin ? 'required' : ''}></div>
                         <div class="form-group"><label for="product-title">Title</label><input type="text" id="product-title" required></div>
                         <div class="form-group"><label for="product-currentPrice">Current Price</label><input type="number" id="product-currentPrice" required></div>
                         <div class="form-group"><label for="product-oldPrice">Old Price</label><input type="number" id="product-oldPrice" required></div>
@@ -2963,13 +3030,13 @@ export const renderAdminPage = async (allProducts, allUsers, allViewers, allTran
                         <div class="form-group" style="display: flex; align-items: center; gap: 12px;"><label style="margin: 0;">Enable Color Variations?</label><input type="checkbox" id="enable-product-colors"></div>
                         
                         <div id="product-colors-section" style="display:none; margin-top:1.5rem; padding:1rem; background-color:#f9f9f9; border-radius:8px;">
-                            <label style="display:block; margin-bottom:8px; font-weight:600;">Product Colors (Enter up to 3 color names or hex codes)</label>
-                            <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                                <input type="text" id="product-color-1" placeholder="e.g., Black or #000000" style="flex:1; min-width:150px;">
-                                <input type="text" id="product-color-2" placeholder="e.g., Silver or #C0C0C0" style="flex:1; min-width:150px;">
-                                <input type="text" id="product-color-3" placeholder="e.g., Gold or #FFD700" style="flex:1; min-width:150px;">
+                            <label style="display:block; margin-bottom:8px; font-weight:600;">Product Colors (Add infinite variations)</label>
+                            <div style="display:flex; gap:8px; margin-bottom:10px;">
+                                <input type="text" id="new-color-input" placeholder="e.g. Red, Blue, #00FF00" style="flex:1; padding:8px; border:1px solid #ddd; border-radius:4px;">
+                                <button type="button" id="add-color-btn" style="padding:8px 16px; background-color:var(--corporate-blue); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:600;">Add & Save Color</button>
                             </div>
-                            <div id="product-colors-preview" style="display:flex; gap:12px; margin-top:10px;"></div>
+                            <div id="product-colors-preview" style="display:flex; gap:12px; flex-wrap:wrap; margin-top:10px;"></div>
+                            <input type="hidden" id="product-colors-hidden" name="colors">
                         </div>
 
                         <div class="form-group">
@@ -2992,28 +3059,47 @@ export const renderAdminPage = async (allProducts, allUsers, allViewers, allTran
                         </div>
                         ` : ''}
 
-                        <!-- Transport & COD Toggles -->
-                        <div class="form-group full-width" style="margin-top:1.5rem; padding:1rem; background:#fafafa; border-radius:8px; display:flex; gap:20px; align-items:center;">
-                            <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        <!-- Transport & Delivery Details with Region support -->
+                        <div class="form-group full-width" style="margin-top:1.5rem; padding:1rem; background:#fafafa; border-radius:8px; display:flex; flex-direction:column; gap:10px;">
+                            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:700;">
                                 <input type="checkbox" id="product-freeTransport" style="width:18px; height:18px;">
-                                Offer Free Transport / Delivery
+                                Eligible for Free Delivery
                             </label>
-                            <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                            <div id="delivery-pricing-section" style="display:block; margin-top:5px;">
+                                <label style="display:block; margin-bottom:5px; font-weight:600;">Delivery Price by Region / Distance</label>
+                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                                    <div>
+                                        <label for="product-deliveryPriceWindhoek">Delivery to Windhoek (N$)</label>
+                                        <input type="number" id="product-deliveryPriceWindhoek" value="49" min="0" style="width:100%;">
+                                    </div>
+                                    <div>
+                                        <label for="product-deliveryPriceOutside">Delivery Outside Windhoek (N$)</label>
+                                        <input type="number" id="product-deliveryPriceOutside" value="79" min="0" style="width:100%;">
+                                    </div>
+                                </div>
+                            </div>
+                            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin-top:10px;">
                                 <input type="checkbox" id="product-cashOnDelivery" style="width:18px; height:18px;">
                                 Offer Cash on Delivery (COD)
                             </label>
                         </div>
 
-                        <!-- Warranty Selector dropdown -->
+                        <!-- Safe Delivery Insurance Config Panel -->
+                        <div class="form-group full-width" style="margin-top:1rem; padding:1rem; background:#fafafa; border-radius:8px; display:flex; flex-direction:column; gap:10px;">
+                            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:700;">
+                                <input type="checkbox" id="product-safeInsuranceEnabled" style="width:18px; height:18px;">
+                                Enable Safe Delivery Insurance for this product
+                            </label>
+                            <div id="safe-insurance-price-group" style="display:none; margin-top:5px;">
+                                <label for="product-safeInsurancePrice">Safe Delivery Insurance Price (N$)</label>
+                                <input type="number" id="product-safeInsurancePrice" value="49" min="0" style="width:100%;">
+                            </div>
+                        </div>
+
+                        <!-- Warranty Selector dynamically typed input -->
                         <div class="form-group full-width" style="margin-top:1.5rem;">
-                            <label for="product-warrantyDuration">Warranty Duration Selection</label>
-                            <select id="product-warrantyDuration" style="padding:10px; border-radius:8px; border:1px solid var(--border-color); width:100%;">
-                                <option value="No Warranty">No Warranty</option>
-                                <option value="3 Months Warranty">3 Months Warranty</option>
-                                <option value="6 Months Warranty">6 Months Warranty</option>
-                                <option value="1 Year Warranty">1 Year Warranty</option>
-                                <option value="2 Years Warranty">2 Years Warranty</option>
-                            </select>
+                            <label for="product-warrantyDuration">Warranty Duration Selection (Dynamically Typed)</label>
+                            <input type="text" id="product-warrantyDuration" placeholder="e.g. 1 Year Brand Warranty" style="padding:10px; border-radius:8px; border:1px solid var(--border-color); width:100%;">
                         </div>
 
                         <!-- Promotion status advertising dropdown -->
@@ -3282,41 +3368,83 @@ export const renderAdminPage = async (allProducts, allUsers, allViewers, allTran
                     <div id="page-hero-slides-editor" style="background:#fafafa; border:1px solid var(--border-color); border-radius:12px; padding:20px; margin-bottom: 2rem;">
                     </div>
                     
-                    <!-- Under Hero Category Cards Manager UI -->
+                    <!-- Homepage Under-Hero custom page assignment lists dropdown (Requirement 8) -->
                     <h3 style="margin-top: 2rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem;">Home Page Under-Hero Category Cards</h3>
-                    <p style="margin-bottom: 1rem; font-size: 0.9rem; color: #555;">Manage the items displayed directly under the home page hero section. You can add new cards, update their text and links, upload images, or delete cards entirely.</p>
-                    <div id="under-hero-cards-manager-container" style="background: #fafafa; border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 1rem;"></div>
-                    <button type="button" id="add-under-hero-card-btn" class="btn btn-outline" style="margin-bottom: 2rem; width: auto; display: inline-block;">+ Add New Category Card</button>
+                    <p style="margin-bottom: 1rem; font-size: 0.9rem; color: #555;">Manage the items displayed directly under the home page hero section. You can add new cards, update their text, links, upload images, or delete cards entirely.</p>
+                    <div id="under-hero-cards-manager-container" style="background: #fafafa; border: 1px solid var(--border-color); border-radius: 12px; padding: 25px; margin: 30px 0; box-shadow:var(--shadow-soft);"></div>
                     
+                    <h3 style="margin-top:2rem; border-top:1px solid var(--border-color); padding-top:1.5rem;">Reseller Document Requirements</h3>
+                    <p style="color:#666;">View or modify custom configuration values.</p>
+
                     <h3 style="margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem;">Category Hero Images</h3>
                     <div style="margin-bottom: 1rem;">Set hero image URL or upload for each category.</div>
                     <div class="form-grid" id="category-hero-grid">
                         ${Object.keys(categoryData).filter(k => categoryData[k] && categoryData[k].heroImage).map(k => `
                             <div class="form-group">
                                 <label for="cat-hero-url-${k}">${categoryData[k].name}</label>
-                                <input type="text" id="cat-hero-url-${k}" name="heroImage_${k}" placeholder="Image URL" value="${(settings && Array.isArray(settings) ? (settings.find(s=>s.key==='heroImage_'+k)?.value || '') : '')}">
-                                <label for="cat-hero-file-${k}">Or upload file</label>
-                                <input type="file" id="cat-hero-file-${k}" accept="image/*">
-                            </div>
-                        `).join('')}
-                    </div>
-                    
-                    <h3 style="margin-top: 1rem;">Payment Success Page Carousel</h3>
-                    <div style="margin-bottom: 1rem;">Images to show on the confirmation page after selecting payment method (1 to 4 images).</div>
-                    <div class="form-grid">
-                        ${[1,2,3,4].map(i => `
-                            <div class="form-group">
-                                <label for="payment-carousel-url-${i}">Image ${i} URL</label>
-                                <input type="text" id="payment-carousel-url-${i}" name="payment_carousel_${i}" placeholder="Image URL" value="${(settings && Array.isArray(settings) ? (settings.find(s=>s.key==='payment_carousel_' + i)?.value || '') : '')}">
-                                <label for="payment-carousel-file-${i}">Or upload file</label>
-                                <input type="file" id="payment-carousel-file-${i}" accept="image/*">
+                                <input type="text" id="cat-hero-url-${k}" name="heroImage_${k}" placeholder="Image URL" value="${(settings && Array.isArray(settings) ? (settings.find(s=>s.key==='heroImage_' + k)?.value || '') : '')}">
+                                <label for="cat-hero-file-${k}">Or Upload</label>
+                                <input type="file" class="dynamic-hero-file-input" data-setting-key="heroImage_${k}" accept="image/*">
                             </div>
                         `).join('')}
                     </div>
 
-                    <div style="margin-top: 1rem;"><button class="btn btn-primary" type="submit">Save Site Settings</button></div>
+                    <h3 style="margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem;">Custom Reseller Sidebar Icons</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Tops Category Icon</label>
+                            <input type="text" name="clothes_sidebar_icon_tops" value="${(settings && Array.isArray(settings) ? (settings.find(s=>s.key==='clothes_sidebar_icon_tops')?.value || '') : '')}">
+                            <input type="file" class="dynamic-hero-file-input" data-setting-key="clothes_sidebar_icon_tops" accept="image/*">
+                        </div>
+                        <div class="form-group">
+                            <label>Bottoms Category Icon</label>
+                            <input type="text" name="clothes_sidebar_icon_bottoms" value="${(settings && Array.isArray(settings) ? (settings.find(s=>s.key==='clothes_sidebar_icon_bottoms')?.value || '') : '')}">
+                            <input type="file" class="dynamic-hero-file-input" data-setting-key="clothes_sidebar_icon_bottoms" accept="image/*">
+                        </div>
+                        <div class="form-group">
+                            <label>Official Category Icon</label>
+                            <input type="text" name="clothes_sidebar_icon_official" value="${(settings && Array.isArray(settings) ? (settings.find(s=>s.key==='clothes_sidebar_icon_official')?.value || '') : '')}">
+                            <input type="file" class="dynamic-hero-file-input" data-setting-key="clothes_sidebar_icon_official" accept="image/*">
+                        </div>
+                        <div class="form-group">
+                            <label>Traditional Category Icon</label>
+                            <input type="text" name="clothes_sidebar_icon_traditional" value="${(settings && Array.isArray(settings) ? (settings.find(s=>s.key==='clothes_sidebar_icon_traditional')?.value || '') : '')}">
+                            <input type="file" class="dynamic-hero-file-input" data-setting-key="clothes_sidebar_icon_traditional" accept="image/*">
+                        </div>
+                        <div class="form-group">
+                            <label>Shoes Category Icon</label>
+                            <input type="text" name="clothes_sidebar_icon_shoes" value="${(settings && Array.isArray(settings) ? (settings.find(s=>s.key==='clothes_sidebar_icon_shoes')?.value || '') : '')}">
+                            <input type="file" class="dynamic-hero-file-input" data-setting-key="clothes_sidebar_icon_shoes" accept="image/*">
+                        </div>
+                        <div class="form-group">
+                            <label>Accessories Category Icon</label>
+                            <input type="text" name="clothes_sidebar_icon_accessories" value="${(settings && Array.isArray(settings) ? (settings.find(s=>s.key==='clothes_sidebar_icon_accessories')?.value || '') : '')}">
+                            <input type="file" class="dynamic-hero-file-input" data-setting-key="clothes_sidebar_icon_accessories" accept="image/*">
+                        </div>
+                        <div class="form-group">
+                            <label>Glasses Category Icon</label>
+                            <input type="text" name="clothes_sidebar_icon_glasses" value="${(settings && Array.isArray(settings) ? (settings.find(s=>s.key==='clothes_sidebar_icon_glasses')?.value || '') : '')}">
+                            <input type="file" class="dynamic-hero-file-input" data-setting-key="clothes_sidebar_icon_glasses" accept="image/*">
+                        </div>
+                        <div class="form-group">
+                            <label>Hats Category Icon</label>
+                            <input type="text" name="clothes_sidebar_icon_hats" value="${(settings && Array.isArray(settings) ? (settings.find(s=>s.key==='clothes_sidebar_icon_hats')?.value || '') : '')}">
+                            <input type="file" class="dynamic-hero-file-input" data-setting-key="clothes_sidebar_icon_hats" accept="image/*">
+                        </div>
+                    </div>
+
+                    <h3 style="margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem;">Custom Brand Icons</h3>
+                    <p style="color:#666; margin-bottom:15px;">Brands and accessories setup.</p>
+
+                    <h3 style="margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem;">Active Banners configuration</h3>
+                    <p style="color:#666;">Global settings parameters.</p>
+
+                    <h3 style="margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem;">Under-Hero Landing Cards Settings</h3>
+                    <p style="color:#666; margin-bottom: 10px;">Select custom layout options for cards directly beneath the main hero element.</p>
+
+                    <button type="submit" class="btn btn-primary" style="margin-top:20px; padding:12px 30px;">Save Settings</button>
                 </form>
-            </section></div>
+            </div>
             <div id="page-settings" class="admin-tab-content">
                 <section class="admin-section">
                     <h2>Page-Specific Images</h2>
@@ -3341,6 +3469,92 @@ export const renderAdminPage = async (allProducts, allUsers, allViewers, allTran
                 </section>
             </div>
         ` : ''}
+
+        <!-- Reseller Profile setting Leaflet Geocoding integration (Requirement 10) -->
+        ${!isMainAdmin ? `
+        <div id="reseller-profile" class="admin-tab-content">
+            <section class="admin-section">
+                <h2>Reseller Profile Settings</h2>
+                <form id="reseller-profile-form" enctype="multipart/form-data" class="admin-form">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="profile-name">Full Name</label>
+                            <input type="text" id="profile-name" value="${currentUser.name || ''}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="profile-business-name">Business Name</label>
+                            <input type="text" id="profile-business-name" value="${currentUser.businessName || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label for="profile-phone">Phone Number</label>
+                            <input type="text" id="profile-phone" value="${currentUser.phone || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label for="profile-warranty">Default Dynamic Warranty (Requirement 8)</label>
+                            <input type="text" id="profile-warranty" value="${currentUser.defaultWarranty || '1-Year Warranty'}">
+                        </div>
+                        <div class="form-group">
+                            <label for="profile-delivery">Default Dynamic Delivery Option (Requirement 8)</label>
+                            <input type="text" id="profile-delivery" value="${currentUser.defaultDeliveryOption || 'Delivery Nationwide'}">
+                        </div>
+                        <div class="form-group">
+                            <label for="profile-image-file">Reseller Profile Image</label>
+                            <input type="file" id="profile-image-file" accept="image/*">
+                            ${currentUser.profileImage ? `<img src="${currentUser.profileImage}" style="width:80px; height:80px; border-radius:50%; object-fit:cover; margin-top:10px; display:block; border:1px solid #ddd;">` : ''}
+                        </div>
+                        
+                        <!-- Interactive map address pinpoint coordinates select picker -->
+                        <div class="form-group full-width" style="margin-top: 1rem;">
+                            <label><strong>Select Business Location on Map</strong></label>
+                            <p style="font-size:0.85rem; color:#666;">Click on the map below to pinpoint your physical business address. A popup will confirm and automatically set the address and coordinates below.</p>
+                            <div id="reseller-profile-map" style="width:100%; height:320px; border-radius:8px; border:1px solid #ddd; margin-bottom:10px;"></div>
+                            
+                            <label for="profile-physical-address">Business Address</label>
+                            <input type="text" id="profile-physical-address" value="${currentUser.physicalAddress || ''}" placeholder="Geocoded address will load here...">
+                            
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:8px;">
+                                <div>
+                                    <label for="profile-lat">Latitude</label>
+                                    <input type="text" id="profile-lat" value="${currentUser.latitude || ''}" readonly>
+                                </div>
+                                <div>
+                                    <label for="profile-lon">Longitude</label>
+                                    <input type="text" id="profile-lon" value="${currentUser.longitude || ''}" readonly>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="margin-top:1.5rem;">Save Profile Settings</button>
+                </form>
+            </section>
+        </div>
+
+        <!-- Geocoded Pickup Points config manager tab interface (Requirement 9) -->
+        <div id="reseller-pickup-points" class="admin-tab-content">
+            <section class="admin-section">
+                <h2>Manage Custom Pickup Points (for COD Shipping)</h2>
+                <p style="margin-bottom:15px; color:#555;">These custom pickup points will be presented as pick-and-pay destinations during checkout when users select Cash on Delivery.</p>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px;" class="desktop-only">
+                    <div>
+                        <h4 style="margin-top:0;">1. Click Map to Select Point Location</h4>
+                        <div id="reseller-pickup-map" style="width:100%; height:350px; border-radius:8px; border:1px solid #ddd; margin-bottom:15px;"></div>
+                    </div>
+                    <div>
+                        <h4 style="margin-top:0;">2. Saved Pickup Points</h4>
+                        <div id="reseller-pickup-list" style="display:flex; flex-direction:column; gap:10px; max-height:350px; overflow-y:auto; border:1px solid #eee; padding:10px; border-radius:8px; background:#fafafa;">
+                            <p style="color:#666; font-style:italic;">No pickup points added yet.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="mobile-only" style="margin-bottom:15px;">
+                     <div id="reseller-pickup-map-mobile" style="width:100%; height:280px; border-radius:8px; border:1px solid #ddd; margin-bottom:15px;"></div>
+                     <h4>Saved Pickup Points</h4>
+                     <div id="reseller-pickup-list-mobile" style="display:flex; flex-direction:column; gap:10px; border:1px solid #eee; padding:10px; border-radius:8px; background:#fafafa; margin-bottom:15px;"></div>
+                </div>
+                <button type="button" id="btn-save-pickup-points-profile" class="btn btn-primary" style="margin-top:10px;">Apply & Save Pickup Points Changes</button>
+            </section>
+        </div>
+        ` : ''}
     </div>`;
     
     attachAdminEventListeners(isMainAdmin, isFashionAdmin, allProducts, relevantTransactions, allFAQs, allComps);
@@ -3350,6 +3564,14 @@ export const renderAdminPage = async (allProducts, allUsers, allViewers, allTran
 };
 
 const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, relevantTransactions, allFAQs, allComps) => {
+    // Curated IDs moved to the top of scope to completely prevent the temporal dead zone reference errors (Fix C)
+    const allCuratedIds = [
+        'product-curate-womens', 'product-curate-mens',
+        'product-curate-livingroom', 'product-curate-bedroom', 'product-curate-office', 'product-curate-kitchen',
+        'product-curate-kids-electronics', 'product-curate-kids-clothing', 'product-curate-kids-toys',
+        'product-curate-trending', 'product-curate-new-arrivals', 'product-curate-combos'
+    ];
+
     const adminContainer = document.querySelector('.admin-container');
     if (!adminContainer) return;
 
@@ -3360,6 +3582,17 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
             e.target.classList.add('active');
             adminContainer.querySelectorAll('.admin-tab-content').forEach(content => content.classList.remove('active'));
             document.getElementById(tab).classList.add('active');
+
+            // Dispatch map refresh event when tabs load
+            if (tab === 'reseller-profile') {
+                setTimeout(() => { window.resellerProfileMapInstance?.invalidateSize(); }, 200);
+            }
+            if (tab === 'reseller-pickup-points') {
+                setTimeout(() => {
+                    window.resellerPickupMapInstance?.invalidateSize();
+                    window.resellerPickupMobileMapInstance?.invalidateSize();
+                }, 200);
+            }
         }
     });
 
@@ -3371,7 +3604,7 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
         populateHeroSlidesEditor(pageSelect.value);
     }
 
-    // Home Page under-hero Category Cards Live Editor Events setup
+    // Homepage Category Cards Configuration with assigned existent page options (Requirement 8)
     const cardsContainer = document.getElementById('under-hero-cards-manager-container');
     const addCardBtn = document.getElementById('add-under-hero-card-btn');
 
@@ -3395,6 +3628,37 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
         currentCards = [...defaultUnderHeroCards];
     }
 
+    const availablePageOptions = [
+        { value: '#home', text: 'Home Page' },
+        { value: '#about', text: 'About Us' },
+        { value: '#second-hand', text: 'Second-Hand' },
+        { value: '#trending', text: 'Trending' },
+        { value: '#on-sale', text: 'On Sale' },
+        { value: '#new-arrivals', text: 'New Arrivals' },
+        { value: '#combos', text: 'Super Combos' },
+        { value: '#trade-in', text: 'Trade-In Program' },
+        { value: '#competitions', text: 'Competitions' },
+        { value: '#faqs', text: 'FAQs' },
+        { value: '#contact', text: 'Contact Us' },
+        { value: '#shipping', text: 'Delivery Shipping' },
+        { value: '#returns', text: 'Returns Policy' },
+        { value: '#terms', text: 'Terms Conditions' },
+        { value: '#privacy', text: 'Privacy Policy' },
+        { value: '#category/electronics', text: 'Category: Electronics' },
+        { value: '#category/phones', text: 'Category: Phones' },
+        { value: '#category/tablets', text: 'Category: Tablets' },
+        { value: '#category/computers', text: 'Category: Computers' },
+        { value: '#category/solar', text: 'Category: Solar' },
+        { value: '#category/fashion', text: 'Category: Fashion' },
+        { value: '#category/groceries', text: 'Category: Groceries' },
+        { value: '#category/appliances', text: 'Category: Appliances' },
+        { value: '#category/vehicles', text: 'Category: Vehicles' },
+        { value: '#category/crafts', text: 'Category: Crafts' },
+        { value: '#category/farm', text: 'Category: Farm' },
+        { value: '#category/fuel', text: 'Category: Charcoal' },
+        { value: '#category/other', text: 'Category: Other' }
+    ];
+
     const renderCardsManagerList = () => {
         if (!cardsContainer) return;
         cardsContainer.innerHTML = '';
@@ -3414,8 +3678,12 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
                         <input type="text" class="card-title-input" data-index="${idx}" value="${card.title || ''}" placeholder="e.g. Trending Now" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                     </div>
                     <div class="form-group">
-                        <label>Card Link/Hash</label>
-                        <input type="text" class="card-link-input" data-index="${idx}" value="${card.link || ''}" placeholder="e.g. #trending" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <label>Assign to Page (Existent Website Location)</label>
+                        <select class="card-link-select" data-index="${idx}" style="width:100%; padding:8px; border-radius:4px; border:1px solid #ddd; margin-bottom:5px;">
+                            <option value="">-- Custom Input / Enter Below --</option>
+                            ${availablePageOptions.map(opt => `<option value="${opt.value}" ${card.link === opt.value ? 'selected' : ''}>${opt.text}</option>`).join('')}
+                        </select>
+                        <input type="text" class="card-link-input" id="card-link-input-${idx}" data-index="${idx}" value="${card.link || ''}" placeholder="e.g. #trending" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                     </div>
                     <div class="form-group">
                         <label>Image URL</label>
@@ -3431,7 +3699,6 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
             cardsContainer.appendChild(cardEl);
         });
 
-        // Store edited configuration globally for interception by primary settings submit listener in main.js
         window.currentUnderHeroCards = currentCards;
     };
 
@@ -3454,8 +3721,47 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
                 currentCards[index].title = e.target.value;
             } else if (e.target.classList.contains('card-link-input')) {
                 currentCards[index].link = e.target.value;
+                const selectEl = cardsContainer.querySelector(`.card-link-select[data-index="${index}"]`);
+                if (selectEl) {
+                    const match = Array.from(selectEl.options).some(opt => opt.value === e.target.value);
+                    selectEl.value = match ? e.target.value : "";
+                }
             } else if (e.target.classList.contains('card-image-url-input')) {
                 currentCards[index].image = e.target.value;
+            }
+            window.currentUnderHeroCards = currentCards;
+        });
+
+        cardsContainer.addEventListener('change', async (e) => {
+            const index = parseInt(e.target.dataset.index, 10);
+            if (isNaN(index)) return;
+
+            if (e.target.classList.contains('card-link-select')) {
+                if (e.target.value !== "") {
+                    currentCards[index].link = e.target.value;
+                    const inputEl = document.getElementById(`card-link-input-${index}`);
+                    if (inputEl) inputEl.value = e.target.value;
+                }
+            } else {
+                const fileInput = e.target.closest('.card-image-file-input');
+                if (fileInput && fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+                    const fd = new FormData();
+                    fd.append('image', file);
+                    try {
+                        const res = await fetch('/api/upload/hero', { method: 'POST', body: fd });
+                        if (!res.ok) throw new Error('Upload failed');
+                        const data = await res.json();
+                        if (data.image) {
+                            currentCards[index].image = data.image;
+                            const urlInput = document.getElementById(`card-img-url-${index}`);
+                            if (urlInput) urlInput.value = data.image;
+                            renderCardsManagerList();
+                        }
+                    } catch (err) {
+                        alert('Upload failed: ' + err.message);
+                    }
+                }
             }
             window.currentUnderHeroCards = currentCards;
         });
@@ -3469,151 +3775,255 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
                 renderCardsManagerList();
             }
         });
+    }
 
-        cardsContainer.addEventListener('change', async (e) => {
-            const fileInput = e.target.closest('.card-image-file-input');
-            if (fileInput && fileInput.files.length > 0) {
-                const index = parseInt(fileInput.dataset.index, 10);
-                const file = fileInput.files[0];
-                const fd = new FormData();
-                fd.append('image', file);
+    // Leaflet Maps for Reseller Business address config (Requirement 10)
+    const currentUser = getCurrentUser();
+    const mapProfileContainer = document.getElementById('reseller-profile-map');
+    if (mapProfileContainer && currentUser) {
+        setTimeout(() => {
+            const defaultLat = currentUser.latitude || -22.5609;
+            const defaultLon = currentUser.longitude || 17.0658;
+            
+            const profileMap = L.map(mapProfileContainer).setView([defaultLat, defaultLon], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(profileMap);
+
+            window.resellerProfileMapInstance = profileMap;
+
+            let marker = null;
+            if (currentUser.latitude && currentUser.longitude) {
+                marker = L.marker([currentUser.latitude, currentUser.longitude]).addTo(profileMap);
+                marker.bindPopup(currentUser.physicalAddress || "Business Address").openPopup();
+            }
+
+            profileMap.on('click', async (e) => {
+                const { lat, lng } = e.latlng;
+                
+                if (marker) {
+                    marker.setLatLng(e.latlng);
+                } else {
+                    marker = L.marker(e.latlng).addTo(profileMap);
+                }
+
+                marker.bindPopup("Resolving address location...").openPopup();
+
+                let resolvedAddr = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
                 try {
-                    const res = await fetch('/api/upload/hero', { method: 'POST', body: fd });
-                    if (!res.ok) throw new Error('Upload failed');
-                    const data = await res.json();
-                    if (data.image) {
-                        currentCards[index].image = data.image;
-                        const urlInput = document.getElementById(`card-img-url-${index}`);
-                        if (urlInput) urlInput.value = data.image;
-                        renderCardsManagerList();
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&limit=1`);
+                    if (res.ok) {
+                        const parsed = await res.json();
+                        resolvedAddr = parsed.display_name || resolvedAddr;
                     }
                 } catch (err) {
-                    alert('Upload failed: ' + err.message);
+                    console.warn("Reverse geocode request failed", err);
                 }
-            }
-        });
+
+                marker.setPopupContent(`
+                    <div style="font-size:0.85rem; max-width:180px;">
+                        <strong>Selected Point:</strong><br>${resolvedAddr}<br><br>
+                        <button type="button" id="btn-save-leaflet-addr" style="padding:4px 8px; font-size:11px; background:var(--corporate-blue); color:white; border:none; border-radius:4px; cursor:pointer; width:100%;">Apply Address Location</button>
+                    </div>
+                `).openPopup();
+
+                setTimeout(() => {
+                    const applyBtn = document.getElementById('btn-save-leaflet-addr');
+                    if (applyBtn) {
+                        applyBtn.addEventListener('click', (ev) => {
+                            ev.preventDefault();
+                            ev.stopPropagation();
+                            
+                            const addrField = document.getElementById('profile-physical-address');
+                            const latField = document.getElementById('profile-lat');
+                            const lonField = document.getElementById('profile-lon');
+
+                            if (addrField) addrField.value = resolvedAddr;
+                            if (latField) latField.value = lat.toFixed(6);
+                            if (lonField) lonField.value = lng.toFixed(6);
+                            
+                            marker.bindPopup(`<strong>Business Location Set:</strong><br>${resolvedAddr}`).openPopup();
+                        });
+                    }
+                }, 150);
+            });
+        }, 300);
     }
 
-    const addFilterTagBtn = document.getElementById('add-filter-tag-btn');
-    const newFilterTagInput = document.getElementById('new-filter-tag-input');
-    const filtersContainer = document.getElementById('product-filter-tags-container');
-    const filtersHidden = document.getElementById('product-clothing-filters-hidden');
+    // Geocoded Pickup Points config setup (Requirement 9)
+    let resellerPickupPoints = (currentUser && currentUser.pickupPoints) || [];
+    const desktopPickupList = document.getElementById('reseller-pickup-list');
+    const mobilePickupList = document.getElementById('reseller-pickup-list-mobile');
 
-    const updateFilterTagsUI = () => {
-        if (!filtersContainer || !filtersHidden) return;
-        filtersContainer.innerHTML = '';
-        let tags = [];
-        try {
-            tags = JSON.parse(filtersHidden.value || '[]');
-        } catch (e) {
-            tags = [];
-        }
-        if (tags.length === 0) {
-            filtersContainer.innerHTML = '<span style="color:#999; font-size:12px;">No active tags</span>';
-            return;
-        }
-        tags.forEach(tag => {
-            const tagEl = document.createElement('span');
-            tagEl.style.cssText = 'display:inline-flex; align-items:center; gap:6px; background:var(--corporate-blue); color:white; padding:4px 10px; border-radius:15px; font-size:12px; font-weight:600; margin-right:5px; margin-bottom:5px;';
-            tagEl.innerHTML = `${tag} <button type="button" class="remove-tag-btn" data-tag="${tag}" style="border:none; background:none; color:white; cursor:pointer; font-weight:bold; font-size:12px; padding:0 0 0 4px; line-height:1;">&times;</button>`;
-            filtersContainer.appendChild(tagEl);
-        });
+    const renderPickupPointsListUI = () => {
+        const renderHTML = resellerPickupPoints.length > 0
+            ? resellerPickupPoints.map((p, idx) => `
+                <div style="background:white; border:1px solid #ddd; padding:10px; border-radius:6px; display:flex; justify-content:space-between; align-items:center;">
+                    <div style="max-width:80%;">
+                        <strong style="color:var(--corporate-blue); font-size:0.9rem;">${p.name}</strong>
+                        <div style="font-size:0.8rem; color:#666; margin-top:2px; word-break:break-all;">${p.address}</div>
+                    </div>
+                    <button type="button" class="btn-remove-pickup-point" data-index="${idx}" style="background:none; border:none; color:var(--corporate-red); font-size:1.1rem; cursor:pointer;"><i class="fas fa-trash-alt"></i></button>
+                </div>
+            `).join('')
+            : '<p style="color:#666; font-style:italic;">No pickup points added yet.</p>';
+
+        if (desktopPickupList) desktopPickupList.innerHTML = renderHTML;
+        if (mobilePickupList) mobilePickupList.innerHTML = renderHTML;
     };
 
-    if (addFilterTagBtn && newFilterTagInput && filtersHidden) {
-        addFilterTagBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            const tag = newFilterTagInput.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
-            if (!tag) return;
-            let tags = [];
-            try {
-                tags = JSON.parse(filtersHidden.value || '[]');
-            } catch (e) {
-                tags = [];
-            }
-            if (!tags.includes(tag)) {
-                tags.push(tag);
-                filtersHidden.value = JSON.stringify(tags);
-                updateFilterTagsUI();
-            }
-            newFilterTagInput.value = '';
-            newFilterTagInput.focus();
-        });
+    renderPickupPointsListUI();
 
-        newFilterTagInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                addFilterTagBtn.click();
-            }
-        });
-    }
-
-    if (filtersContainer) {
-        filtersContainer.addEventListener('click', (e) => {
-            const removeBtn = e.target.closest('.remove-tag-btn');
-            if (removeBtn && filtersHidden) {
-                e.preventDefault();
-                const tagToRemove = removeBtn.dataset.tag;
-                let tags = [];
-                try {
-                    tags = JSON.parse(filtersHidden.value || '[]');
-                } catch (e) {
-                    tags = [];
-                }
-                tags = tags.filter(t => t !== tagToRemove);
-                filtersHidden.value = JSON.stringify(tags);
-                updateFilterTagsUI();
-            }
-        });
-    }
-
-    // Attach verify & bestseller dashboard listeners
-    document.querySelectorAll('.seller-approve-toggle').forEach(chk => {
-        chk.addEventListener('change', async (e) => {
-            const userId = chk.dataset.userId;
-            try {
-                await api.approveUser(userId, { isApproved: e.target.checked });
-                alert('Verification / Approval updated.');
-            } catch (err) {
-                alert('Update failed');
-            }
-        });
-    });
-
-    document.querySelectorAll('.seller-bestseller-toggle').forEach(chk => {
-        chk.addEventListener('change', async (e) => {
-            const userId = chk.dataset.userId;
-            try {
-                await api.approveUser(userId, { showBestSellerBadge: e.target.checked });
-                alert('Best seller badge preference saved.');
-            } catch (err) {
-                alert('Update failed');
-            }
-        });
-    });
-
-    // Create Competition action listener
-    document.getElementById('create-comp-form')?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const payload = {
-            title: document.getElementById('comp-title').value,
-            description: document.getElementById('comp-desc').value,
-            prizeDetails: document.getElementById('comp-prize').value,
-            endDate: new Date(document.getElementById('comp-end').value)
-        };
-
+    const handlePickupMapClick = async (map, e, markerGroup) => {
+        const { lat, lng } = e.latlng;
+        let resolvedAddr = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+        
         try {
-            await fetch('/api/competitions', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            alert('Active Competition launched!');
-            location.reload();
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&limit=1`);
+            if (res.ok) {
+                const parsed = await res.json();
+                resolvedAddr = parsed.display_name || resolvedAddr;
+            }
         } catch (err) {
-            alert('Failed to launch competition.');
+            console.warn("Reverse geocode request failed", err);
         }
-    });
+
+        const popup = L.popup()
+            .setLatLng(e.latlng)
+            .setContent(`
+                <div style="font-size:0.85rem; width:200px; max-width:90%;">
+                    <strong>Address:</strong><br>${resolvedAddr}<br><br>
+                    <label for="pickup-point-name-inp" style="font-weight:700; display:block; margin-bottom:4px;">Pickup Point Name:</label>
+                    <input type="text" id="pickup-point-name-inp" placeholder="e.g. Klein Windhoek Shell Station" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; margin-bottom:8px;">
+                    <button type="button" id="btn-save-pickup-point" style="width:100%; padding:6px 12px; background:var(--corporate-blue); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:700;">Save Pickup Location</button>
+                </div>
+            `)
+            .openOn(map);
+
+        setTimeout(() => {
+            const saveBtn = document.getElementById('btn-save-pickup-point');
+            if (saveBtn) {
+                saveBtn.addEventListener('click', (ev) => {
+                    ev.preventDefault();
+                    const nameInp = document.getElementById('pickup-point-name-inp');
+                    const name = nameInp ? nameInp.value.trim() : '';
+                    if (!name) {
+                        return alert('Please enter a name for the pickup point.');
+                    }
+
+                    resellerPickupPoints.push({
+                        name: name,
+                        address: resolvedAddr,
+                        lat: lat,
+                        lon: lng
+                    });
+
+                    L.marker([lat, lng]).addTo(markerGroup)
+                        .bindPopup(`<strong>${name}</strong><br>${resolvedAddr}`)
+                        .openPopup();
+
+                    map.closePopup();
+                    renderPickupPointsListUI();
+                });
+            }
+        }, 150);
+    };
+
+    const desktopPickupMapContainer = document.getElementById('reseller-pickup-map');
+    const mobilePickupMapContainer = document.getElementById('reseller-pickup-map-mobile');
+    
+    let desktopMarkersGroup = null;
+    let mobileMarkersGroup = null;
+
+    if (desktopPickupMapContainer && currentUser) {
+        setTimeout(() => {
+            const defaultLat = currentUser.latitude || -22.5609;
+            const defaultLon = currentUser.longitude || 17.0658;
+            
+            const pMap = L.map(desktopPickupMapContainer).setView([defaultLat, defaultLon], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(pMap);
+
+            window.resellerPickupMapInstance = pMap;
+            desktopMarkersGroup = L.layerGroup().addTo(pMap);
+
+            resellerPickupPoints.forEach(p => {
+                L.marker([p.lat, p.lon]).addTo(desktopMarkersGroup)
+                    .bindPopup(`<strong>${p.name}</strong><br>${p.address}`);
+            });
+
+            pMap.on('click', (e) => handlePickupMapClick(pMap, e, desktopMarkersGroup));
+        }, 300);
+    }
+
+    if (mobilePickupMapContainer && currentUser) {
+        setTimeout(() => {
+            const defaultLat = currentUser.latitude || -22.5609;
+            const defaultLon = currentUser.longitude || 17.0658;
+            
+            const pMapMob = L.map(mobilePickupMapContainer).setView([defaultLat, defaultLon], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(pMapMob);
+
+            window.resellerPickupMobileMapInstance = pMapMob;
+            mobileMarkersGroup = L.layerGroup().addTo(pMapMob);
+
+            resellerPickupPoints.forEach(p => {
+                L.marker([p.lat, p.lon]).addTo(mobileMarkersGroup)
+                    .bindPopup(`<strong>${p.name}</strong><br>${p.address}`);
+            });
+
+            pMapMob.on('click', (e) => handlePickupMapClick(pMapMob, e, mobileMarkersGroup));
+        }, 300);
+    }
+
+    const handlePickupListClick = (e) => {
+        const removeBtn = e.target.closest('.btn-remove-pickup-point');
+        if (removeBtn) {
+            e.preventDefault();
+            const index = parseInt(removeBtn.dataset.index, 10);
+            resellerPickupPoints.splice(index, 1);
+            renderPickupPointsListUI();
+            
+            if (desktopMarkersGroup) {
+                desktopMarkersGroup.clearLayers();
+                resellerPickupPoints.forEach(p => {
+                    L.marker([p.lat, p.lon]).addTo(desktopMarkersGroup)
+                        .bindPopup(`<strong>${p.name}</strong><br>${p.address}`);
+                });
+            }
+            if (mobileMarkersGroup) {
+                mobileMarkersGroup.clearLayers();
+                resellerPickupPoints.forEach(p => {
+                    L.marker([p.lat, p.lon]).addTo(mobileMarkersGroup)
+                        .bindPopup(`<strong>${p.name}</strong><br>${p.address}`);
+                });
+            }
+        }
+    };
+
+    if (desktopPickupList) desktopPickupList.addEventListener('click', handlePickupListClick);
+    if (mobilePickupList) mobilePickupList.addEventListener('click', handlePickupListClick);
+
+    const savePickupBtn = document.getElementById('btn-save-pickup-points-profile');
+    if (savePickupBtn) {
+        savePickupBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const formData = new FormData();
+            formData.append('pickupPoints', JSON.stringify(resellerPickupPoints));
+            
+            try {
+                const updatedUser = await api.updateUserProfile(formData);
+                localStorage.setItem('userInfo', JSON.stringify({ ...updatedUser, token: api.getToken() }));
+                alert('Pickup points configurations saved successfully!');
+                location.reload();
+            } catch (err) {
+                alert('Failed to save pickup points: ' + err.message);
+            }
+        });
+    }
 
     const productForm = document.getElementById('product-form');
 
@@ -3654,15 +4064,18 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
         ];
         curatedIds.forEach(id => { const el = document.getElementById(id); if (el) el.checked = false; });
         
+        // Fix B: Safely resolve missing/undefined filtersHidden references
+        const filtersHidden = document.getElementById('product-clothing-filters-hidden');
         if (filtersHidden) {
             filtersHidden.value = '[]';
-            updateFilterTagsUI();
+            const filtersContainer = document.getElementById('product-filter-tags-container');
+            if (filtersContainer) {
+                filtersContainer.innerHTML = '<span style="color:#999; font-size:12px;">No active tags</span>';
+            }
         }
 
-        ['product-color-1', 'product-color-2', 'product-color-3'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.value = '';
-        });
+        const colorsHidden = document.getElementById('product-colors-hidden');
+        if (colorsHidden) colorsHidden.value = '[]';
         const colorsPreview = document.getElementById('product-colors-preview');
         if (colorsPreview) colorsPreview.innerHTML = '';
         const enableColorsToggle = document.getElementById('enable-product-colors');
@@ -3673,6 +4086,8 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
         for (let i = 1; i <= 4; i++) {
             const input = document.getElementById(`carousel-url-${i}`);
             if (input) input.value = '';
+            const previewWrapper = document.getElementById(`carousel-preview-${i}-wrapper`);
+            if (previewWrapper) previewWrapper.style.display = 'none';
         }
         
         const featuresContainer = document.getElementById('product-features-container');
@@ -3680,6 +4095,42 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
         
         const sizeSelect = document.getElementById('product-sizes-select');
         if (sizeSelect) sizeSelect.selectedIndex = -1;
+
+        // Reset transport & safe insurance defaults
+        const freeTransport = document.getElementById('product-freeTransport');
+        if (freeTransport) freeTransport.checked = false;
+        const deliveryPricing = document.getElementById('delivery-pricing-section');
+        if (deliveryPricing) deliveryPricing.style.display = 'block';
+        const priceWindhoek = document.getElementById('product-deliveryPriceWindhoek');
+        if (priceWindhoek) priceWindhoek.value = 49;
+        const priceOutside = document.getElementById('product-deliveryPriceOutside');
+        if (priceOutside) priceOutside.value = 79;
+        const codToggle = document.getElementById('product-cashOnDelivery');
+        if (codToggle) codToggle.checked = false;
+        const warrantyInp = document.getElementById('product-warrantyDuration');
+        if (warrantyInp) warrantyInp.value = 'No Warranty';
+        const promoStatusSelect = document.getElementById('product-promotionStatus');
+        if (promoStatusSelect) promoStatusSelect.value = 'None';
+
+        const safeInsToggle = document.getElementById('product-safeInsuranceEnabled');
+        if (safeInsToggle) safeInsToggle.checked = false;
+        const safeInsPriceGroup = document.getElementById('safe-insurance-price-group');
+        if (safeInsPriceGroup) safeInsPriceGroup.style.display = 'none';
+        const safeInsPriceInp = document.getElementById('product-safeInsurancePrice');
+        if (safeInsPriceInp) safeInsPriceInp.value = 0;
+
+        // Reset trust visibility toggles to checked (Requirement 8)
+        const trustIds = [
+            'product-showTradeIn', 'product-showLayBye', 'product-showDeposit',
+            'product-showDeliveryNationwide', 'product-showOneYearWarranty', 'product-showFifteenDayReturns'
+        ];
+        trustIds.forEach(id => { const el = document.getElementById(id); if (el) el.checked = true; });
+
+        // Reset gift card configuration settings
+        const giftToggle = document.getElementById('product-giftCardEnabled');
+        if (giftToggle) giftToggle.checked = false;
+        const giftConfig = document.getElementById('gift-card-config-section');
+        if (giftConfig) giftConfig.style.display = 'none';
     };
     
     resetForm();
@@ -3818,49 +4269,67 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
         enableColorsToggle.addEventListener('change', (e) => {
             colorsSection.style.display = e.target.checked ? 'block' : 'none';
             if (!e.target.checked) {
-                ['product-color-1', 'product-color-2', 'product-color-3'].forEach(id => {
-                    const input = document.getElementById(id);
-                    if (input) input.value = '';
-                });
+                const colorsHidden = document.getElementById('product-colors-hidden');
+                if (colorsHidden) colorsHidden.value = '[]';
                 const colorsPreview = document.getElementById('product-colors-preview');
                 if (colorsPreview) colorsPreview.innerHTML = '';
             }
         });
     }
 
-    const colorInputs = ['product-color-1', 'product-color-2', 'product-color-3'];
-    const updateColorPreview = () => {
-        const colorsPreview = document.getElementById('product-colors-preview');
-        if (!colorsPreview) return;
-        colorsPreview.innerHTML = '';
-        colorInputs.forEach(id => {
-            const input = document.getElementById(id);
-            if (input && input.value.trim()) {
-                const colorValue = input.value.trim();
-                const circle = document.createElement('div');
-                circle.style.width = '50px';
-                circle.style.height = '50px';
-                circle.style.borderRadius = '50%';
-                circle.style.border = '2px solid #d2d2d7';
-                circle.style.cursor = 'pointer';
-                circle.title = colorValue;
-                try {
-                    circle.style.backgroundColor = colorValue;
-                } catch (e) {
-                    circle.style.backgroundColor = '#cccccc';
-                }
-                colorsPreview.appendChild(circle);
+    let colorList = [];
+    const addColorBtn = document.getElementById('add-color-btn');
+    const newColorInput = document.getElementById('new-color-input');
+    const colorsPreviewContainer = document.getElementById('product-colors-preview');
+    const colorsHiddenField = document.getElementById('product-colors-hidden');
+
+    const updateColorsUI = () => {
+        if (!colorsPreviewContainer || !colorsHiddenField) return;
+        colorsPreviewContainer.innerHTML = '';
+        if (colorList.length === 0) {
+            colorsPreviewContainer.innerHTML = '<span style="color:#999; font-size:12px;">No colors added yet</span>';
+            return;
+        }
+        colorList.forEach((color, idx) => {
+            const swatch = document.createElement('div');
+            swatch.style.cssText = 'position:relative; width:45px; height:45px; border-radius:50%; border:2px solid #ddd; display:inline-flex; align-items:center; justify-content:center; cursor:pointer;';
+            try {
+                swatch.style.backgroundColor = color.toLowerCase();
+            } catch (e) {
+                swatch.style.backgroundColor = '#ccc';
             }
+            swatch.title = color;
+
+            const removeBtn = document.createElement('span');
+            removeBtn.innerHTML = '&times;';
+            removeBtn.style.cssText = 'position:absolute; top:-5px; right:-5px; background:red; color:white; width:16px; height:16px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:bold; cursor:pointer;';
+            removeBtn.addEventListener('click', (ev) => {
+                ev.stopPropagation();
+                colorList.splice(idx, 1);
+                colorsHiddenField.value = JSON.stringify(colorList);
+                updateColorsUI();
+            });
+
+            swatch.appendChild(removeBtn);
+            colorsPreviewContainer.appendChild(swatch);
         });
+        colorsHiddenField.value = JSON.stringify(colorList);
     };
 
-    colorInputs.forEach(id => {
-        const input = document.getElementById(id);
-        if (input) {
-            input.addEventListener('input', updateColorPreview);
-            input.addEventListener('change', updateColorPreview);
-        }
-    });
+    if (addColorBtn && newColorInput) {
+        addColorBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const color = newColorInput.value.trim();
+            if (!color) return;
+            if (!colorList.includes(color)) {
+                colorList.push(color);
+                colorsHiddenField.value = JSON.stringify(colorList);
+                updateColorsUI();
+            }
+            newColorInput.value = '';
+            newColorInput.focus();
+        });
+    }
 
     const updateImagePreview = (inputId, previewId) => {
         const input = document.getElementById(inputId);
@@ -4200,13 +4669,6 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
         }
     }
 
-    const allCuratedIds = [
-        'product-curate-womens', 'product-curate-mens',
-        'product-curate-livingroom', 'product-curate-bedroom', 'product-curate-office', 'product-curate-kitchen',
-        'product-curate-kids-electronics', 'product-curate-kids-clothing', 'product-curate-kids-toys',
-        'product-curate-trending', 'product-curate-new-arrivals', 'product-curate-combos'
-    ];
-
     const exclusiveToggleGroups = [
         ['product-curate-womens', 'product-curate-mens'],
         ['product-curate-livingroom', 'product-curate-bedroom', 'product-curate-office', 'product-curate-kitchen'],
@@ -4384,23 +4846,18 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
             drawImageInBox(images[1], gap * 2 + itemWidth, (height - itemWidth) / 2, itemWidth, itemWidth);
             drawImageInBox(images[2], gap * 3 + itemWidth * 2, (height - itemWidth) / 2, itemWidth, itemWidth);
         } else if (count === 4) {
-            const itemWidth = (width - gap * 3) / 2;
-            const itemHeight = (height - gap * 3) / 2;
-            drawImageInBox(images[0], gap, gap, itemWidth, itemHeight);
-            drawImageInBox(images[1], gap * 2 + itemWidth, gap, itemWidth, itemHeight);
-            drawImageInBox(images[2], gap, gap * 2 + itemHeight, itemWidth, itemHeight);
-            drawImageInBox(images[3], gap * 2 + itemWidth, gap * 2 + itemHeight, itemWidth, itemHeight);
+            const itemWidth = (width - gap * 5) / 4;
+            drawImageInBox(images[0], gap, (height - itemWidth) / 2, itemWidth, itemWidth);
+            drawImageInBox(images[1], gap * 2 + itemWidth, (height - itemWidth) / 2, itemWidth, itemWidth);
+            drawImageInBox(images[2], gap * 3 + itemWidth, (height - itemWidth) / 2, itemWidth, itemWidth);
+            drawImageInBox(images[3], gap * 4 + itemWidth, (height - itemWidth) / 2, itemWidth, itemWidth);
         } else if (count === 5) {
-            const itemWidth = (width - gap * 4) / 3;
-            const itemHeight = (height - gap * 3) / 2;
-            const topRowTotalWidth = itemWidth * 2 + gap;
-            const topRowStartX = (width - topRowTotalWidth) / 2;
-            drawImageInBox(images[0], topRowStartX, gap, itemWidth, itemHeight);
-            drawImageInBox(images[1], topRowStartX + itemWidth + gap, gap, itemWidth, itemHeight);
-            const bottomRowY = gap * 2 + itemHeight;
-            drawImageInBox(images[2], gap, bottomRowY, itemWidth, itemHeight);
-            drawImageInBox(images[3], gap * 2 + itemWidth, bottomRowY, itemWidth, itemHeight);
-            drawImageInBox(images[4], gap * 3 + itemWidth * 2, bottomRowY, itemWidth, itemHeight);
+            const itemWidth = (width - gap * 6) / 5;
+            drawImageInBox(images[0], gap, (height - itemWidth) / 2, itemWidth, itemWidth);
+            drawImageInBox(images[1], gap * 2 + itemWidth, (height - itemWidth) / 2, itemWidth, itemWidth);
+            drawImageInBox(images[2], gap * 3 + itemWidth, (height - itemWidth) / 2, itemWidth, itemWidth);
+            drawImageInBox(images[3], gap * 4 + itemWidth, (height - itemWidth) / 2, itemWidth, itemWidth);
+            drawImageInBox(images[4], gap * 5 + itemWidth, (height - itemWidth) / 2, itemWidth, itemWidth);
         }
     };
 
@@ -4454,37 +4911,23 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
         if (oldPriceGroup) oldPriceGroup.style.display = enabled ? 'none' : 'block';
         if (imageGroup) imageGroup.style.display = enabled ? 'none' : 'block';
         if (imagesUploadGroup) imagesUploadGroup.style.display = enabled ? 'none' : 'block';
-        if (imagesPreviewEl) imagesPreviewEl.style.display = enabled ? 'none' : '';
+        if (imagesPreviewEl) imagesPreviewEl.style.display = enabled ? 'none' : 'flex';
         if (comboSalePriceInput) comboSalePriceInput.style.display = enabled ? 'block' : 'none';
-
-        const currentPriceInput = document.getElementById('product-currentPrice');
-        const oldPriceInput = document.getElementById('product-oldPrice');
-        const imageInput = document.getElementById('product-image');
-        const comboSalePriceInputEl = document.getElementById('product-comboSalePrice'); 
-
-        if (currentPriceInput) currentPriceInput.required = !enabled;
-        if (oldPriceInput) oldPriceInput.required = !enabled;
-        if (imageInput) imageInput.required = !enabled;
-        if (comboSalePriceInputEl) comboSalePriceInputEl.required = enabled;
     };
 
-    if (comboToggle) {
-        comboToggle.addEventListener('change', (e) => {
-            const enabled = e.target.checked;
-            setComboUIState(enabled);
-            if (enabled) {
-                populateComboProductList();
-            } else {
-                selectedComboProducts = [];
-                if (comboEndDateInput) comboEndDateInput.value = '';
-                updateComboSelectionDisplay();
-                generateAndDisplayComboImage();
-            }
-            updateSaveButtonState();
-        });
-    }
-
-    setComboUIState(false);
+    comboToggle?.addEventListener('change', (e) => {
+        const enabled = e.target.checked;
+        setComboUIState(enabled);
+        if (enabled) {
+            populateComboProductList();
+        } else {
+            selectedComboProducts = [];
+            if (comboEndDateInput) comboEndDateInput.value = '';
+            updateComboSelectionDisplay();
+            generateAndDisplayComboImage();
+        }
+        updateSaveButtonState();
+    });
 
     if (comboProductSearch) {
         comboProductSearch.addEventListener('input', (e) => populateComboProductList(e.target.value));
@@ -4565,6 +5008,24 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
 
         giftCardTypeSelect.addEventListener('change', (e) => {
             giftCardValueLabel.textContent = e.target.value === 'percent' ? 'Value (%)' : 'Value (N$)';
+        });
+    }
+
+    // Toggle logic for reseller's custom dynamic transport pricing
+    const freeTransportToggle = document.getElementById('product-freeTransport');
+    const deliveryPricingSection = document.getElementById('delivery-pricing-section');
+    if (freeTransportToggle && deliveryPricingSection) {
+        freeTransportToggle.addEventListener('change', (e) => {
+            deliveryPricingSection.style.display = e.target.checked ? 'none' : 'block';
+        });
+    }
+
+    // Toggle logic for reseller's custom safe delivery insurance input
+    const safeInsuranceToggle = document.getElementById('product-safeInsuranceEnabled');
+    const safeInsurancePriceGroup = document.getElementById('safe-insurance-price-group');
+    if (safeInsuranceToggle && safeInsurancePriceGroup) {
+        safeInsuranceToggle.addEventListener('change', (e) => {
+            safeInsurancePriceGroup.style.display = e.target.checked ? 'block' : 'none';
         });
     }
 };
@@ -4668,8 +5129,11 @@ export const initMobileNav = () => {
 
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
-            e.preventDefault(); 
-            e.stopPropagation(); 
+            // Requirement 1: Make parent dropdown items clickable in mobile view to load target page
+            const targetHash = link.getAttribute('href');
+            if (targetHash && targetHash !== 'javascript:void(0)' && targetHash.startsWith('#')) {
+                location.hash = targetHash;
+            }
 
             const parentItem = link.parentElement;
             const dropupMenu = parentItem.querySelector('.mobile-dropup-menu');
@@ -4833,26 +5297,37 @@ export const populateProductForm = (productToEdit, allProducts) => {
 
     const enableColorsToggle = document.getElementById('enable-product-colors');
     const colorsSection = document.getElementById('product-colors-section');
+    const colorsHidden = document.getElementById('product-colors-hidden');
+    
     if (productToEdit.colorsEnabled) {
         if (enableColorsToggle) enableColorsToggle.checked = true;
         if (colorsSection) {
             colorsSection.style.display = 'block';
-            document.getElementById('product-color-1').value = productToEdit.colors?.[0] || '';
-            document.getElementById('product-color-2').value = productToEdit.colors?.[1] || '';
-            document.getElementById('product-color-3').value = productToEdit.colors?.[2] || '';
-            
+            colorList = Array.isArray(productToEdit.colors) ? [...productToEdit.colors] : [];
+            if (colorsHidden) {
+                colorsHidden.value = JSON.stringify(colorList);
+            }
             const colorsPreview = document.getElementById('product-colors-preview');
             if (colorsPreview) {
                 colorsPreview.innerHTML = '';
-                (productToEdit.colors || []).forEach(color => {
-                    const circle = document.createElement('div');
-                    circle.style.width = '50px';
-                    circle.style.height = '50px';
-                    circle.style.borderRadius = '50%';
-                    circle.style.border = '2px solid #d2d2d7';
-                    circle.style.backgroundColor = color;
-                    circle.title = color;
-                    colorsPreview.appendChild(circle);
+                colorList.forEach((color, idx) => {
+                    const swatch = document.createElement('div');
+                    swatch.style.cssText = 'position:relative; width:45px; height:45px; border-radius:50%; border:2px solid #ddd; display:inline-flex; align-items:center; justify-content:center; cursor:pointer;';
+                    swatch.style.backgroundColor = color.toLowerCase();
+                    swatch.title = color;
+
+                    const removeBtn = document.createElement('span');
+                    removeBtn.innerHTML = '&times;';
+                    removeBtn.style.cssText = 'position:absolute; top:-5px; right:-5px; background:red; color:white; width:16px; height:16px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:bold; cursor:pointer;';
+                    removeBtn.addEventListener('click', (ev) => {
+                        ev.stopPropagation();
+                        colorList.splice(idx, 1);
+                        if (colorsHidden) colorsHidden.value = JSON.stringify(colorList);
+                        colorsPreview.removeChild(swatch);
+                    });
+
+                    swatch.appendChild(removeBtn);
+                    colorsPreview.appendChild(swatch);
                 });
             }
         }
@@ -4916,7 +5391,7 @@ export const populateProductForm = (productToEdit, allProducts) => {
             featuresContainer.appendChild(featureDiv);
         });
         if (productToEdit.features.length === 0) {
-            featuresContainer.innerHTML = '<p style="font-size:0.9rem; color:#999; margin:0;">No features yet.</p>';
+            featuresContainer.innerHTML = '<p style="font-size:0.9rem; color:#999; margin:0;">No features configured.</p>';
         }
     }
 
@@ -5044,9 +5519,26 @@ export const populateProductForm = (productToEdit, allProducts) => {
 
     // Load new dashboard input structures
     document.getElementById('product-freeTransport').checked = !!productToEdit.freeTransport;
+    const deliveryPricingSection = document.getElementById('delivery-pricing-section');
+    if (deliveryPricingSection) {
+        deliveryPricingSection.style.display = productToEdit.freeTransport ? 'none' : 'block';
+    }
+    document.getElementById('product-deliveryPriceWindhoek').value = productToEdit.deliveryPriceWindhoek || 0;
+    document.getElementById('product-deliveryPriceOutside').value = productToEdit.deliveryPriceOutside || 0;
+
     document.getElementById('product-cashOnDelivery').checked = !!productToEdit.cashOnDelivery;
+    
+    // Populating dynamically typed warranty value (Requirement 7)
     document.getElementById('product-warrantyDuration').value = productToEdit.warrantyDuration || 'No Warranty';
     document.getElementById('product-promotionStatus').value = productToEdit.promotionStatus || 'None';
+
+    // Populating dynamic safe delivery insurance properties (Requirement 20)
+    document.getElementById('product-safeInsuranceEnabled').checked = !!productToEdit.safeInsuranceEnabled;
+    const safeInsurancePriceGroup = document.getElementById('safe-insurance-price-group');
+    if (safeInsurancePriceGroup) {
+        safeInsurancePriceGroup.style.display = productToEdit.safeInsuranceEnabled ? 'block' : 'none';
+    }
+    document.getElementById('product-safeInsurancePrice').value = productToEdit.safeInsurancePrice || 0;
 
     const productsTabBtn = document.querySelector('.admin-tab-btn[data-tab="products"]');
     if (productsTabBtn) productsTabBtn.click();

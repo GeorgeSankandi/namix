@@ -114,7 +114,7 @@ export const sessionLogin = async (email, password) => {
   return await response.json();
 };
 
-export const sessionSignup = async (name, email, password, sellerType = 'customer', sellerIdNumber = '', businessRegistrationNumber = '', physicalAddress = '', businessRegistrationDocument = null, sellerIdImage = null, businessName = '') => {
+export const sessionSignup = async (name, email, password, sellerType = 'customer', sellerIdNumber = '', businessRegistrationNumber = '', physicalAddress = '', businessRegistrationDocument = null, sellerIdImage = null, businessName = '', phone = '') => {
   let response;
   if (businessRegistrationDocument || sellerIdImage) {
     const formData = new FormData();
@@ -126,6 +126,7 @@ export const sessionSignup = async (name, email, password, sellerType = 'custome
     formData.append('businessRegistrationNumber', businessRegistrationNumber);
     formData.append('physicalAddress', physicalAddress);
     formData.append('businessName', businessName);
+    formData.append('phone', phone);
     if (businessRegistrationDocument) {
         formData.append('businessRegistrationDocument', businessRegistrationDocument);
     }
@@ -141,7 +142,7 @@ export const sessionSignup = async (name, email, password, sellerType = 'custome
     response = await fetch('/auth/signup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password, sellerType, sellerIdNumber, businessRegistrationNumber, physicalAddress, businessName })
+      body: JSON.stringify({ name, email, password, sellerType, sellerIdNumber, businessRegistrationNumber, physicalAddress, businessName, phone })
     });
   }
 
@@ -209,6 +210,24 @@ export const approveUser = async (userId, updateBody) => {
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || 'Failed to update user parameters');
+    }
+    return await response.json();
+};
+
+export const updateUserProfile = async (formData) => {
+    const token = getToken();
+    const headers = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const response = await fetch('/api/users/profile', {
+      method: 'PUT',
+      headers: headers,
+      credentials: 'same-origin',
+      body: formData
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to update profile settings');
     }
     return await response.json();
 };
@@ -396,7 +415,6 @@ export const deleteFAQ = async (id) => {
 
     const response = await fetch(`/api/faqs/${id}`, {
         method: 'DELETE',
-        headers,
         credentials: 'same-origin'
     });
     if (!response.ok) throw new Error('Failed to delete FAQ');
@@ -458,7 +476,6 @@ export const deleteBrand = async (id) => {
 
   const response = await fetch(`/api/brands/${id}`, {
     method: 'DELETE',
-    headers,
     credentials: 'same-origin'
   });
   if (!response.ok) throw new Error('Failed to delete brand');

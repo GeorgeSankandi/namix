@@ -29,7 +29,6 @@ import aiRoutes from './routes/aiRoutes.js';
 import faqRoutes from './routes/faqRoutes.js';
 import brandRoutes from './routes/brandRoutes.js';
 
-// Schemas & Mutlers
 import Competition from './models/competitionModel.js';
 import Agreement from './models/agreementModel.js';
 import multer from 'multer';
@@ -58,7 +57,6 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Multer Storage Configuration for Competitions Uploads
 const compStorage = multer.diskStorage({
     destination(req, file, cb) {
         cb(null, 'public/uploads/competitions/');
@@ -69,7 +67,6 @@ const compStorage = multer.diskStorage({
 });
 const uploadComp = multer({ storage: compStorage });
 
-// --- REST Endpoints for Competitions & Agreements ---
 app.get('/api/competitions', async (req, res) => {
     try {
         const comps = await Competition.find({});
@@ -178,6 +175,9 @@ const startServer = async () => {
                     senderId: payload.senderId,
                     senderName: payload.senderName,
                     text: payload.text,
+                    voiceUrl: payload.voiceUrl || null,
+                    attachmentUrl: payload.attachmentUrl || null,
+                    attachmentName: payload.attachmentName || null,
                     createdAt: new Date().toISOString(),
                 };
                 if (!message.roomId) return;

@@ -72,20 +72,8 @@ main {
 /* 2. GLOBAL HEADER & NAVIGATION       */
 /* =================================== */
 .free-shipping-banner {
-    background-color: var(--corporate-blue);
-    color: var(--white);
-    text-align: center;
-    padding: 10px 5%;
-    font-size: clamp(12px, 2.5vw, 14px); /* Responsive font size */
-    font-weight: 500;
+    display: none !important; /* Removed from the top of the screen */
 }
-
-/* Namibia flag sizing inside the free-shipping banner */
-.free-shipping-banner p { display: inline-flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
-.free-shipping-banner .flag-icon svg { width: 20px; height: 14px; display: inline-block; vertical-align: middle; }
-.free-shipping-banner .flag-icon { display: inline-flex; align-items: center; transform: scale(1.5); }
-.free-shipping-banner .flag-heart { color: #ff4d6d; margin-left: 6px; display: inline-flex; align-items: center; font-size: 1rem; }
-.free-shipping-banner .flag-heart .fa-heart { margin-left: 2px; }
 
 .top-header {
     display: flex;
@@ -350,12 +338,49 @@ main {
 .dot { width: 12px; height: 12px; border-radius: 50%; background-color: rgba(255,255,255,0.4); cursor: pointer; transition: var(--transition); border: 1px solid rgba(255,255,255,0.2); }
 .dot.active { background-color: var(--white); transform: scale(1.1); }
 
-.home-category-carousel { display: flex; padding: 60px 5%; gap: 30px; overflow-x: auto; scroll-snap-type: x mandatory; }
-.home-category-carousel::-webkit-scrollbar { display: none; }
-.home-category-carousel .item { flex: 0 0 320px; height: 220px; border-radius: var(--border-radius); display: flex; flex-direction: column; justify-content: flex-end; padding: 30px; box-shadow: var(--shadow-soft); transition: var(--transition); background-size: cover; background-position: center; position: relative; overflow: hidden; text-decoration: none; }
-.home-category-carousel .item:hover { transform: translateY(-8px); box-shadow: var(--shadow-medium); }
-.home-category-carousel .item::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.7), transparent); }
-.home-category-carousel .item h2 { font-size: clamp(1.4rem, 4vw, 1.6rem); color: var(--white); position: relative; z-index: 1; }
+/* Stacked dynamic category containers underneath homepage hero instead of carousels */
+.home-category-carousel {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+    gap: 30px !important;
+    padding: 60px 5% !important;
+    width: 100% !important;
+    overflow-x: visible !important;
+    scroll-snap-type: none !important;
+}
+.home-category-carousel .item {
+    flex: none !important;
+    width: 100% !important;
+    height: 220px;
+    border-radius: var(--border-radius);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 30px;
+    box-shadow: var(--shadow-soft);
+    transition: var(--transition);
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    overflow: hidden;
+    text-decoration: none;
+}
+.home-category-carousel .item:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-medium);
+}
+.home-category-carousel .item::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+}
+.home-category-carousel .item h2 {
+    font-size: clamp(1.4rem, 4vw, 1.6rem);
+    color: var(--white);
+    position: relative;
+    z-index: 1;
+}
 .home-category-carousel .item .shop-now-btn {
     position: relative;
     z-index: 1;
@@ -376,51 +401,9 @@ main {
     color: var(--corporate-blue-dark);
 }
 
-/* Carousel Wrapper & Chevrons */
-.carousel-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 0;
-    width: 100%;
-}
-
-.carousel-chevron {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    background-color: var(--corporate-blue);
-    color: var(--white);
-    border: none;
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    font-size: 20px;
-    cursor: pointer;
-    z-index: 10;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: var(--transition);
-    box-shadow: var(--shadow-medium);
-}
-
-.carousel-chevron:hover {
-    background-color: var(--corporate-blue-dark);
-    transform: translateY(-50%) scale(1.1);
-    box-shadow: 0 10px 30px rgba(4, 44, 107, 0.3);
-}
-
-.carousel-chevron:active {
-    transform: translateY(-50%) scale(0.95);
-}
-
-.carousel-chevron-left {
-    left: 20px;
-}
-
-.carousel-chevron-right {
-    right: 20px;
+/* Hide navigation chevrons for the stacked homepage grids */
+.carousel-wrapper .carousel-chevron {
+    display: none !important;
 }
 
 /* =================================== */
@@ -742,6 +725,7 @@ main {
     padding-top: 3rem;
     border-top: 1px solid var(--border-color);
 }
+
 /* =================================== */
 /* 6. CART & CHECKOUT PAGES            */
 /* =================================== */
@@ -3159,7 +3143,7 @@ input:checked + .slider:before {
 /* ======================================================= */
 
 @media (max-width: 600px) {
-    /* 1. Large Trending Now containers on mobile */
+    /* Large Trending Now containers on mobile */
     .home-category-carousel {
         padding: 30px 15px !important;
         gap: 15px !important;
@@ -3169,7 +3153,7 @@ input:checked + .slider:before {
         height: 250px !important; /* Slightly taller for highly visible layout */
     }
 
-    /* 2. Smaller home page hero section on mobile */
+    /* Smaller home page hero section on mobile */
     .hero {
         height: 320px !important; /* Reduced from 550px for tight mobile view */
     }

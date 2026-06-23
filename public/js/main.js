@@ -45,6 +45,24 @@ document.body.addEventListener('click', async (e) => {
         return;
     }
 
+    const togglePasswordIcon = e.target.closest('.toggle-password');
+    if (togglePasswordIcon) {
+        e.preventDefault();
+        const inputField = togglePasswordIcon.parentElement.querySelector('input');
+        if (inputField) {
+            if (inputField.type === 'password') {
+                inputField.type = 'text';
+                togglePasswordIcon.classList.remove('fa-eye');
+                togglePasswordIcon.classList.add('fa-eye-slash');
+            } else {
+                inputField.type = 'password';
+                togglePasswordIcon.classList.remove('fa-eye-slash');
+                togglePasswordIcon.classList.add('fa-eye');
+            }
+        }
+        return;
+    }
+
     const backToAdminBtn = e.target.closest('#back-to-main-admin');
     if (backToAdminBtn) {
         e.preventDefault();
@@ -161,9 +179,8 @@ document.body.addEventListener('click', async (e) => {
             document.getElementById('faq-answer').value = faqToEdit.answer;
             const faqSaveBtn = document.getElementById('faq-save-btn');
             if (faqSaveBtn) faqSaveBtn.textContent = 'Update FAQ';
-            const addFaqTabBtn = document.querySelector('.admin-tab-btn[data-tab="faqs"]');
-            if (addFaqTabBtn) addFaqTabBtn.click();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            const faqsTabBtn = document.querySelector('.admin-tab-btn[data-tab="faqs"]');
+            if (faqsTabBtn) faqsTabBtn.click();
         }
         return;
     }
@@ -242,7 +259,6 @@ document.body.addEventListener('click', async (e) => {
         simLog.innerHTML = 'Starting simulation...\n=========================\n';
 
         const delay = ms => new Promise(res => setTimeout(res, ms));
-
         const allProducts = await api.fetchProducts();
 
         const simulationPlan = [
@@ -323,7 +339,7 @@ document.body.addEventListener('click', async (e) => {
                     console.error(`Failed to add viewer for product ${product.productId}:`, err);
                 }
             }
-            simLog.innerHTML += `  - Created ${createdCount} viewers for products like "${targetProducts[0].title}".\n`;
+            simLog.innerHTML += `  - Created ${createdCount} viewers.\n`;
             simLog.scrollTop = simLog.scrollHeight;
             await delay(300);
         }
@@ -332,14 +348,13 @@ document.body.addEventListener('click', async (e) => {
         simLog.scrollTop = simLog.scrollHeight;
         startSimBtn.disabled = false;
         startSimBtn.textContent = 'Start One-Month Simulation';
-        alert('Traffic simulation complete! Check the "Manage Viewers" tab to see the results.');
+        alert('Traffic simulation complete! Check the "Manage Viewers" tab.');
         return;
     }
 });
 
 // Listener for Transaction Verification & Seller Approval Toggles (Change Event)
 document.body.addEventListener('change', async (e) => {
-    // Transaction Verification
     if (e.target.classList.contains('verify-switch')) {
         const checkbox = e.target;
         const row = checkbox.closest('tr');
@@ -357,33 +372,20 @@ document.body.addEventListener('change', async (e) => {
         }
     }
 
-    // Seller Account Approval Toggle
     if (e.target.classList.contains('seller-approve-toggle')) {
         const checkbox = e.target;
         const userId = checkbox.dataset.userId;
         const isApproved = checkbox.checked;
 
         const confirmationMessage = isApproved
-            ? 'Are you sure you want to approve this seller? They will be able to log in.'
-            : 'Are you sure you want to deactivate this seller? They will lose access to their dashboard.';
+            ? 'Are you sure you want to approve this seller?'
+            : 'Are you sure you want to deactivate this seller?';
 
         if (confirm(confirmationMessage)) {
             try {
                 await api.approveUser(userId, { isApproved });
                 alert(`Seller account has been ${isApproved ? 'approved' : 'deactivated'}.`);
-                const listItem = checkbox.closest('.seller-account-item') || checkbox.closest('li');
-                const statusBadge = listItem.querySelector('.status-badge');
-                if (statusBadge) {
-                    if (isApproved) {
-                        statusBadge.textContent = 'Active';
-                        statusBadge.style.background = '#e6ffed';
-                        statusBadge.style.color = '#065f46';
-                    } else {
-                        statusBadge.textContent = 'Deactivated';
-                        statusBadge.style.background = '#e0e0e0';
-                        statusBadge.style.color = '#333';
-                    }
-                }
+                location.reload();
             } catch (error) {
                 alert('Failed to update seller status: ' + error.message);
                 checkbox.checked = !isApproved; 
@@ -393,7 +395,6 @@ document.body.addEventListener('change', async (e) => {
         }
     }
 
-    // Best Seller Badge administrative toggle
     if (e.target.classList.contains('seller-bestseller-toggle')) {
         const checkbox = e.target;
         const userId = checkbox.dataset.userId;
@@ -407,8 +408,21 @@ document.body.addEventListener('change', async (e) => {
             checkbox.checked = !showBestSellerBadge;
         }
     }
+
+    if (e.target.classList.contains('seller-verified-toggle')) {
+        const checkbox = e.target;
+        const userId = checkbox.dataset.userId;
+        const isVerified = checkbox.checked;
+
+        try {
+            await api.approveUser(userId, { isVerified });
+            alert('Seller verification status updated successfully.');
+        } catch (error) {
+            alert('Failed to update verification status.');
+            checkbox.checked = !isVerified;
+        }
+    }
     
-    // Dynamic Hero file configuration change event listener
     if (e.target.classList.contains('dynamic-hero-file-input')) {
         const fileInput = e.target;
         const settingKey = fileInput.dataset.settingKey;
@@ -424,7 +438,7 @@ document.body.addEventListener('change', async (e) => {
                     if (textInput) {
                         textInput.value = data.image;
                         textInput.dispatchEvent(new Event('change'));
-                        alert('Image uploaded successfully and path saved into URL input.');
+                        alert('Image uploaded successfully.');
                     }
                 }
             } catch (err) {
@@ -516,13 +530,11 @@ document.body.addEventListener('submit', async e => {
         const fileInputs = form.querySelectorAll('input[type="file"]:not(.dynamic-hero-file-input):not(.card-image-file-input)');
         
         try {
-            // Handle URL inputs
             for (const input of inputs) {
                 if (input.name) {
                     await api.updateSetting(input.name, input.value);
                 }
             }
-            // Handle File uploads for hero images
             for (const fileInput of fileInputs) {
                 if (fileInput.files.length > 0) {
                     const fd = new FormData();
@@ -530,20 +542,7 @@ document.body.addEventListener('submit', async e => {
                     const res = await fetch('/api/upload/hero', { method: 'POST', body: fd });
                     const data = await res.json();
                     
-                    // Prioritize dataset settingKey for dynamic multi-slide edits
                     let settingKey = fileInput.dataset.settingKey;
-                    if (!settingKey) {
-                        if (fileInput.id.startsWith('home-hero-file-')) {
-                            const index = fileInput.id.split('-').pop();
-                            settingKey = `home_hero_${index}`;
-                        } else if (fileInput.id.startsWith('cat-hero-file-')) {
-                            const catKey = fileInput.id.replace('cat-hero-file-', '');
-                            settingKey = `heroImage_${catKey}`;
-                        } else if (fileInput.id.startsWith('payment-carousel-file-')) {
-                            const index = fileInput.id.split('-').pop();
-                            settingKey = `payment_carousel_${index}`;
-                        }
-                    }
                     
                     if (settingKey && data.image) {
                         await api.updateSetting(settingKey, data.image);
@@ -551,7 +550,6 @@ document.body.addEventListener('submit', async e => {
                 }
             }
             
-            // Save dynamically edited Home Page Category Cards into global collection setting
             if (window.currentUnderHeroCards) {
                 await api.updateSetting('home_under_hero_cards', JSON.stringify(window.currentUnderHeroCards));
             }
@@ -584,6 +582,33 @@ document.body.addEventListener('submit', async e => {
             }
         } else {
             alert('No file selected.');
+        }
+        return;
+    }
+
+    // --- Reseller Profile form update (Requirement 3/8) ---
+    if (e.target.id === 'reseller-profile-form') {
+        e.preventDefault();
+        const form = e.target;
+        const formData = new FormData();
+        formData.append('name', document.getElementById('profile-name').value);
+        formData.append('businessName', document.getElementById('profile-business-name').value);
+        formData.append('phone', document.getElementById('profile-phone').value);
+        formData.append('defaultWarranty', document.getElementById('profile-warranty').value);
+        formData.append('defaultDeliveryOption', document.getElementById('profile-delivery').value);
+        
+        const fileInput = document.getElementById('profile-image-file');
+        if (fileInput && fileInput.files.length > 0) {
+            formData.append('profileImage', fileInput.files[0]);
+        }
+
+        try {
+            const updatedUser = await api.updateUserProfile(formData);
+            localStorage.setItem('userInfo', JSON.stringify({ ...updatedUser, token: api.getToken() }));
+            alert('Profile settings saved successfully!');
+            location.reload();
+        } catch (error) {
+            alert('Failed to update profile settings: ' + error.message);
         }
         return;
     }
@@ -622,12 +647,20 @@ document.body.addEventListener('submit', async e => {
         const name = e.target.elements.name.value;
         const email = e.target.elements.email.value;
         const password = e.target.elements.password.value;
-        const sellerType = e.target.elements.sellerType ? e.target.elements.sellerType.value : 'customer';
         const sellerIdNumber = e.target.elements.sellerIdNumber ? e.target.elements.sellerIdNumber.value.trim() : '';
         const businessRegistrationNumber = e.target.elements.businessRegistrationNumber ? e.target.elements.businessRegistrationNumber.value.trim() : '';
         const physicalAddress = e.target.elements.physicalAddress ? e.target.elements.physicalAddress.value.trim() : '';
         const businessName = e.target.elements.businessName ? e.target.elements.businessName.value.trim() : '';
+        const phone = e.target.elements.phone ? e.target.elements.phone.value.trim() : '';
         
+        // Multi-select parse to comma-separated string (Requirement 7)
+        const sellerTypeSelect = e.target.elements.sellerType;
+        let sellerType = 'customer';
+        if (sellerTypeSelect) {
+            const selected = Array.from(sellerTypeSelect.selectedOptions).map(opt => opt.value);
+            sellerType = selected.join(',');
+        }
+
         const registrationDocumentInput = e.target.elements.businessRegistrationDocument;
         const businessRegistrationDocument = registrationDocumentInput && registrationDocumentInput.files.length ? registrationDocumentInput.files[0] : null;
 
@@ -647,7 +680,8 @@ document.body.addEventListener('submit', async e => {
             return;
         }
 
-        if (sellerType !== 'customer') {
+        const isSeller = sellerType.split(',').some(val => val !== 'customer');
+        if (isSeller) {
             if (!physicalAddress) {
                 if (msgEl) {
                     msgEl.textContent = 'Physical address is required for reseller accounts.';
@@ -656,26 +690,10 @@ document.body.addEventListener('submit', async e => {
                 }
                 return;
             }
-            if (!businessRegistrationDocument) {
-                if (msgEl) {
-                    msgEl.textContent = 'Business registration PDF document is required for reseller accounts.';
-                    msgEl.classList.remove('success');
-                    msgEl.classList.add('error');
-                }
-                return;
-            }
-            if (!sellerIdImage) {
-                if (msgEl) {
-                    msgEl.textContent = 'A picture upload of your ID is required for reseller accounts.';
-                    msgEl.classList.remove('success');
-                    msgEl.classList.add('error');
-                }
-                return;
-            }
         }
         
         try {
-            const res = await api.sessionSignup(name, email, password, sellerType, sellerIdNumber, businessRegistrationNumber, physicalAddress, businessRegistrationDocument, sellerIdImage, businessName);
+            const res = await api.sessionSignup(name, email, password, sellerType, sellerIdNumber, businessRegistrationNumber, physicalAddress, businessRegistrationDocument, sellerIdImage, businessName, phone);
             
             if (res.pendingApproval) {
                 if (msgEl) {
@@ -813,11 +831,15 @@ async function handleProductFormSubmit(e) {
                          .map(input => input.value.trim())
                          .filter(Boolean);
 
-    const colors = [
-        form.elements['product-color-1']?.value.trim(),
-        form.elements['product-color-2']?.value.trim(),
-        form.elements['product-color-3']?.value.trim(),
-    ].filter(Boolean);
+    let colors = [];
+    const colorsHidden = document.getElementById('product-colors-hidden');
+    if (colorsHidden && colorsHidden.value) {
+        try {
+            colors = JSON.parse(colorsHidden.value);
+        } catch (e) {
+            colors = [];
+        }
+    }
 
     const sizeSelect = document.getElementById('product-sizes-select');
     const sizes = sizeSelect ? Array.from(sizeSelect.selectedOptions).map(opt => opt.value) : [];
@@ -828,9 +850,9 @@ async function handleProductFormSubmit(e) {
         form.elements['carousel-url-2']?.value,
         form.elements['carousel-url-3']?.value,
         form.elements['carousel-url-4']?.value,
-    ].filter(Boolean);
+    ];
 
-    const productData = {
+    const product = {
         productId: form.elements['product-id'].value,
         title: form.elements['product-title'].value,
         currentPrice: parseFloat(form.elements['product-currentPrice'].value),
@@ -852,15 +874,26 @@ async function handleProductFormSubmit(e) {
         thumbnails: carouselUrls,
         exploreMoreReseller: form.elements['product-exploreMoreReseller']?.value || undefined,
         
-        // Dynamic newly added transport & promo values
         freeTransport: document.getElementById('product-freeTransport')?.checked || false,
+        deliveryPriceWindhoek: parseFloat(document.getElementById('product-deliveryPriceWindhoek')?.value) || 0,
+        deliveryPriceOutside: parseFloat(document.getElementById('product-deliveryPriceOutside')?.value) || 0,
         cashOnDelivery: document.getElementById('product-cashOnDelivery')?.checked || false,
         warrantyDuration: document.getElementById('product-warrantyDuration')?.value || 'No Warranty',
-        promotionStatus: document.getElementById('product-promotionStatus')?.value || 'None'
+        promotionStatus: document.getElementById('product-promotionStatus')?.value || 'None',
+
+        safeInsuranceEnabled: document.getElementById('product-safeInsuranceEnabled')?.checked || false,
+        safeInsurancePrice: parseFloat(document.getElementById('product-safeInsurancePrice')?.value) || 0,
+
+        showTradeIn: document.getElementById('product-showTradeIn')?.checked,
+        showLayBye: document.getElementById('product-showLayBye')?.checked,
+        showDeposit: document.getElementById('product-showDeposit')?.checked,
+        showDeliveryNationwide: document.getElementById('product-showDeliveryNationwide')?.checked,
+        showOneYearWarranty: document.getElementById('product-showOneYearWarranty')?.checked,
+        showFifteenDayReturns: document.getElementById('product-showFifteenDayReturns')?.checked
     };
     
-    if (productData.image && !productData.thumbnails.includes(productData.image)) {
-        productData.thumbnails.unshift(productData.image);
+    if (product.image && !product.thumbnails.includes(product.image)) {
+        product.thumbnails.unshift(product.image);
     }
 
     const comboProductIdsInput = document.getElementById('combo-product-ids-hidden');
@@ -868,14 +901,14 @@ async function handleProductFormSubmit(e) {
     
     if (isCombo && comboProductIdsInput && comboProductIdsInput.value) {
         try {
-            productData.comboProductIds = JSON.parse(comboProductIdsInput.value);
+            product.comboProductIds = JSON.parse(comboProductIdsInput.value);
             const comboEndDateValue = document.getElementById('product-comboEndDate')?.value;
             if (comboEndDateValue) {
-                productData.comboEndDate = new Date(comboEndDateValue);
+                product.comboEndDate = new Date(comboEndDateValue);
             }
             const comboPrice = document.getElementById('product-comboSalePrice')?.value;
             if (comboPrice) {
-                productData.currentPrice = parseFloat(comboPrice);
+                product.currentPrice = parseFloat(comboPrice);
             }
         } catch (e) {
             console.error("Error parsing combo IDs", e);
@@ -884,10 +917,10 @@ async function handleProductFormSubmit(e) {
 
     const giftCardEnabled = document.getElementById('product-giftCardEnabled');
     if (giftCardEnabled) {
-        productData.giftCardEnabled = giftCardEnabled.checked;
+        product.giftCardEnabled = giftCardEnabled.checked;
         if (giftCardEnabled.checked) {
-            productData.giftCardType = document.getElementById('product-giftCardType')?.value || 'percent';
-            productData.giftCardValue = parseFloat(document.getElementById('product-giftCardValue')?.value) || 0;
+            product.giftCardType = document.getElementById('product-giftCardType')?.value || 'percent';
+            product.giftCardValue = parseFloat(document.getElementById('product-giftCardValue')?.value) || 0;
         }
     }
 
@@ -909,14 +942,14 @@ async function handleProductFormSubmit(e) {
         }
         
         if (filePaths.length > 0) {
-            if (!productData.image) productData.image = filePaths[0];
-            productData.thumbnails = [...filePaths, ...productData.thumbnails];
+            if (!product.image) product.image = filePaths[0];
+            product.thumbnails = [...filePaths, ...product.thumbnails];
         }
     }
 
     const canvas = document.getElementById('combo-image-canvas');
     if (isCombo && canvas) {
-        if (productData.comboProductIds && productData.comboProductIds.length > 0) {
+        if (product.comboProductIds && product.comboProductIds.length > 0) {
             try {
                 const dataURL = canvas.toDataURL('image/jpeg', 0.9);
                 const blob = await (await fetch(dataURL)).blob();
@@ -926,8 +959,8 @@ async function handleProductFormSubmit(e) {
                 const res = await fetch('/api/upload/product', { method: 'POST', body: fd });
                 if (res.ok) {
                     const json = await res.json();
-                    productData.image = json.image; 
-                    productData.thumbnails.unshift(json.image);
+                    product.image = json.image; 
+                    product.thumbnails.unshift(json.image);
                 }
             } catch (err) {
                 console.error("Combo image upload failed", err);
@@ -935,28 +968,26 @@ async function handleProductFormSubmit(e) {
         }
     }
 
-    if (productData.thumbnails) {
-        productData.thumbnails = [...new Set(productData.thumbnails)];
+    if (product.thumbnails) {
+        product.thumbnails = [...new Set(product.thumbnails)];
     }
 
     try {
         if (hiddenId) {
-            await api.updateProduct(hiddenId, productData);
+            await api.updateProduct(hiddenId, product);
             alert('Product updated successfully!');
         } else {
-            await api.createProduct(productData);
+            await api.createProduct(product);
             alert('Product created successfully!');
         }
         location.reload();
     } catch (err) {
         if (err.message && err.message.includes('401')) {
-            alert('Your session has expired or the token is invalid. Please log in again.');
+            alert('Your session has expired. Please log in again.');
             logout(); 
             return;
         }
-        
         alert(`Error saving product: ${err.message}`);
-        console.error("Error saving product:", err);
     }
 }
 
@@ -972,21 +1003,21 @@ function validatePassword(password) {
     if (password.length < minLength) {
         return {
             valid: false,
-            message: `❌ Password must contain at least ${minLength} characters. Current: ${password.length} characters.`
+            message: `❌ Password must contain at least ${minLength} characters.`
         };
     }
     
     if (capitalLetterCount < minCapitalLetters) {
         return {
             valid: false,
-            message: `❌ Password must contain at least ${minCapitalLetters} capital letter(s). Current: ${capitalLetterCount} capital letter(s).`
+            message: `❌ Password must contain at least ${minCapitalLetters} capital letter(s).`
         };
     }
     
     if (numberCount < minNumbers) {
         return {
             valid: false,
-            message: `❌ Password must contain at least ${minNumbers} number(s). Current: ${numberCount} number(s).`
+            message: `❌ Password must contain at least ${minNumbers} number(s).`
         };
     }
     
