@@ -67,7 +67,13 @@ const productSchema = mongoose.Schema({
   
   // Transport options
   freeTransport: { type: Boolean, default: false },
+  deliveryPriceWindhoek: { type: Number, default: 0 },
+  deliveryPriceOutside: { type: Number, default: 0 },
   cashOnDelivery: { type: Boolean, default: false },
+
+  // Flexible safe delivery insurance details
+  safeInsuranceEnabled: { type: Boolean, default: false },
+  safeInsurancePrice: { type: Number, default: 0 },
 
   // Flexible Warranty duration
   warrantyDuration: { type: String, default: 'No Warranty' },

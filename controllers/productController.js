@@ -59,10 +59,28 @@ const getProducts = async (req, res) => {
     }
   }
 
-  if (curated) query.curatedPages = curated;
+  if (curated) {
+    if (curated === 'trending') {
+      // Include curated trending items OR items with a positive purchase count
+      query.$or = [
+        { curatedPages: 'trending' },
+        { purchaseCount: { $gt: 0 } }
+      ];
+    } else {
+      query.curatedPages = curated;
+    }
+  }
 
   try {
-    const products = await Product.find(query).populate('seller', 'name businessName isVerified showBestSellerBadge location');
+    let products;
+    if (curated === 'trending') {
+      // Sort trending items by purchase count descending
+      products = await Product.find(query)
+        .sort({ purchaseCount: -1 })
+        .populate('seller', 'name businessName isVerified showBestSellerBadge location');
+    } else {
+      products = await Product.find(query).populate('seller', 'name businessName isVerified showBestSellerBadge location');
+    }
     res.json(products);
   } catch (error) {
     res.status(500).json({ message: 'Server Error' });
@@ -106,15 +124,33 @@ const createProduct = async (req, res) => {
             }
         }
 
-        if (req.body.productId) {
-          const existing = await Product.findOne({ productId: req.body.productId });
-          if (existing) {
-            return res.status(400).json({ message: 'Duplicate productId', details: { productId: req.body.productId } });
-          }
+        // Automatic sequential product ID assignment
+        let finalProductId = req.body.productId;
+        if (!finalProductId || finalProductId.trim() === '') {
+            const lastProduct = await Product.findOne().sort({ createdAt: -1 });
+            let nextNum = 1;
+            if (lastProduct && lastProduct.productId) {
+                const match = lastProduct.productId.match(/\d+/);
+                if (match) {
+                    nextNum = parseInt(match[0], 10) + 1;
+                } else {
+                    const count = await Product.countDocuments();
+                    nextNum = count + 1;
+                }
+            } else {
+                const count = await Product.countDocuments();
+                nextNum = count + 1;
+            }
+            finalProductId = `PROD-${nextNum}`;
+        } else {
+            const existing = await Product.findOne({ productId: finalProductId });
+            if (existing) {
+                return res.status(400).json({ message: 'Duplicate productId', details: { productId: finalProductId } });
+            }
         }
 
         const product = new Product({
-            productId: req.body.productId,
+            productId: finalProductId,
             title: req.body.title,
             description: req.body.description,
             oldPrice: req.body.oldPrice,
@@ -143,9 +179,15 @@ const createProduct = async (req, res) => {
             
             // Transport & Delivery Details
             freeTransport: req.body.freeTransport !== undefined ? req.body.freeTransport : false,
+            deliveryPriceWindhoek: req.body.deliveryPriceWindhoek !== undefined ? req.body.deliveryPriceWindhoek : 0,
+            deliveryPriceOutside: req.body.deliveryPriceOutside !== undefined ? req.body.deliveryPriceOutside : 0,
             cashOnDelivery: req.body.cashOnDelivery !== undefined ? req.body.cashOnDelivery : false,
             warrantyDuration: req.body.warrantyDuration || 'No Warranty',
             promotionStatus: req.body.promotionStatus || 'None',
+
+            // Safe Delivery Insurance
+            safeInsuranceEnabled: req.body.safeInsuranceEnabled !== undefined ? req.body.safeInsuranceEnabled : false,
+            safeInsurancePrice: req.body.safeInsurancePrice !== undefined ? req.body.safeInsurancePrice : 0,
 
             // Trust Visibility Badges
             showTradeIn: req.body.showTradeIn !== undefined ? req.body.showTradeIn : true,
@@ -154,10 +196,10 @@ const createProduct = async (req, res) => {
             showDeliveryNationwide: req.body.showDeliveryNationwide !== undefined ? req.body.showDeliveryNationwide : true,
             showOneYearWarranty: req.body.showOneYearWarranty !== undefined ? req.body.showOneYearWarranty : true,
             showFifteenDayReturns: req.body.showFifteenDayReturns !== undefined ? req.body.showFifteenDayReturns : true
-          });
+        });
 
-          if (req.body.seller) product.seller = req.body.seller;
-          else if (req.user && req.user._id && req.user.sellerType && req.user.sellerType !== 'customer') product.seller = req.user._id;
+        if (req.body.seller) product.seller = req.body.seller;
+        else if (req.user && req.user._id && req.user.sellerType && req.user.sellerType !== 'customer') product.seller = req.user._id;
 
         const createdProduct = await product.save();
         res.status(201).json(createdProduct);
@@ -172,13 +214,17 @@ const createProduct = async (req, res) => {
 
 const updateProduct = async (req, res) => {
   try {
-    const product = await Product.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
-    });
-
+    const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ message: 'Product not found' });
-    res.json(product);
+
+    // Restrict editing access to the owning reseller (admins exempted)
+    if (req.user && !req.user.isAdmin && String(product.seller) !== String(req.user._id)) {
+      return res.status(401).json({ message: 'Not authorized to modify this product.' });
+    }
+
+    Object.assign(product, req.body);
+    const updatedProduct = await product.save();
+    res.json(updatedProduct);
   } catch (error) {
     console.error('Error updating product', error);
     res.status(500).json({ message: 'Server Error' });
@@ -187,8 +233,15 @@ const updateProduct = async (req, res) => {
 
 const deleteProduct = async (req, res) => {
   try {
-    const product = await Product.findByIdAndDelete(req.params.id);
+    const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ message: 'Product not found' });
+
+    // Restrict deletion access to the owning reseller (admins exempted)
+    if (req.user && !req.user.isAdmin && String(product.seller) !== String(req.user._id)) {
+      return res.status(401).json({ message: 'Not authorized to remove this product.' });
+    }
+
+    await Product.findByIdAndDelete(req.params.id);
     res.json({ message: 'Product removed' });
   } catch (error) {
     console.error('Error deleting product', error);

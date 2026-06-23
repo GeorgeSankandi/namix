@@ -10,6 +10,22 @@ const userSchema = mongoose.Schema({
     type: String,
     default: ''
   },
+  phone: {
+    type: String,
+    default: ''
+  },
+  profileImage: {
+    type: String,
+    default: ''
+  },
+  defaultWarranty: {
+    type: String,
+    default: '1-Year Warranty'
+  },
+  defaultDeliveryOption: {
+    type: String,
+    default: 'Delivery Nationwide'
+  },
   email: {
     type: String,
     required: true,
@@ -26,7 +42,6 @@ const userSchema = mongoose.Schema({
   },
   sellerType: {
     type: String,
-    enum: ['customer', 'admin', 'electronics', 'solar', 'fashion', 'groceries', 'appliances', 'vehicles', 'crafts', 'farm', 'fuel', 'other'],
     default: 'customer',
   },
   isVerified: {
@@ -61,6 +76,20 @@ const userSchema = mongoose.Schema({
     type: String,
     default: ''
   },
+  latitude: {
+    type: Number
+  },
+  longitude: {
+    type: Number
+  },
+  pickupPoints: [
+    {
+      name: { type: String, required: true },
+      address: { type: String, required: true },
+      lat: { type: Number, required: true },
+      lon: { type: Number, required: true }
+    }
+  ],
   sellerRating: {
     type: Number,
     default: 0

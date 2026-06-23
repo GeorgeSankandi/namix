@@ -2,7 +2,7 @@ import Agreement from '../models/agreementModel.js';
 
 export const saveAgreement = async (req, res) => {
     try {
-        const { roomId, sellerId, buyerId, agreedPrice, deposit, laybyMonths, deliveryDate, transportMethod, notes } = req.body;
+        const { roomId, sellerId, buyerId, agreedPrice, deposit, tradeItem, tradeValue, deliveryDate, transportMethod, notes } = req.body;
         
         const agreement = new Agreement({
             roomId,
@@ -10,7 +10,8 @@ export const saveAgreement = async (req, res) => {
             buyerId,
             agreedPrice,
             deposit,
-            laybyMonths,
+            tradeItem,
+            tradeValue,
             deliveryDate,
             transportMethod,
             notes,

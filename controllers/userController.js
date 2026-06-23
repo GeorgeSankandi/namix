@@ -18,6 +18,11 @@ const authUser = async (req, res) => {
         _id: user._id,
         name: user.name,
         email: user.email,
+        businessName: user.businessName || '',
+        phone: user.phone || '',
+        profileImage: user.profileImage || '',
+        defaultWarranty: user.defaultWarranty || '1-Year Warranty',
+        defaultDeliveryOption: user.defaultDeliveryOption || 'Delivery Nationwide',
         isAdmin: user.isAdmin,
         sellerType: user.sellerType || 'customer',
         isVerified: user.isVerified || false,
@@ -33,7 +38,7 @@ const authUser = async (req, res) => {
 };
 
 const registerUser = async (req, res) => {
-  const { name, email, password, sellerType, sellerIdNumber, businessRegistrationNumber, physicalAddress } = req.body;
+  const { name, email, password, sellerType, sellerIdNumber, businessRegistrationNumber, physicalAddress, businessName, phone } = req.body;
 
   try {
     const userExists = await User.findOne({ email });
@@ -46,7 +51,11 @@ const registerUser = async (req, res) => {
     let isApproved = true;
     let isVerified = false;
 
-    if (['electronics', 'solar', 'fashion', 'groceries', 'appliances', 'vehicles', 'crafts', 'farm', 'fuel', 'other'].includes(sellerType)) {
+    const selectedTypes = (sellerType || '').split(',').map(t => t.trim());
+    const validSellerTypes = ['electronics', 'solar', 'fashion', 'groceries', 'appliances', 'vehicles', 'crafts', 'farm', 'fuel', 'other'];
+    const hasSellerSelection = selectedTypes.some(type => validSellerTypes.includes(type));
+
+    if (hasSellerSelection) {
       userSellerType = sellerType;
       isApproved = false;
       if (!physicalAddress) {
@@ -65,7 +74,11 @@ const registerUser = async (req, res) => {
       sellerIdNumber: sellerIdNumber || '',
       businessRegistrationNumber: businessRegistrationNumber || '',
       businessRegistrationDocument: req.body.businessRegistrationDocument || '',
-      physicalAddress: physicalAddress || ''
+      physicalAddress: physicalAddress || '',
+      businessName: businessName || '',
+      phone: phone || '',
+      defaultWarranty: '1-Year Warranty',
+      defaultDeliveryOption: 'Delivery Nationwide'
     });
 
     if (user) {
@@ -73,6 +86,11 @@ const registerUser = async (req, res) => {
         _id: user._id,
         name: user.name,
         email: user.email,
+        businessName: user.businessName,
+        phone: user.phone,
+        profileImage: user.profileImage || '',
+        defaultWarranty: user.defaultWarranty,
+        defaultDeliveryOption: user.defaultDeliveryOption,
         isAdmin: user.isAdmin,
         sellerType: user.sellerType,
         isApproved: user.isApproved,
@@ -119,9 +137,10 @@ const approveUser = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        const { isApproved, showBestSellerBadge } = req.body;
+        const { isApproved, showBestSellerBadge, isVerified } = req.body;
         if (isApproved !== undefined) user.isApproved = isApproved;
         if (showBestSellerBadge !== undefined) user.showBestSellerBadge = showBestSellerBadge;
+        if (isVerified !== undefined) user.isVerified = isVerified;
 
         await user.save();
         res.json({ message: 'Status updated successfully', user });
@@ -147,4 +166,62 @@ const getUserBalance = async (req, res) => {
     }
 };
 
-export { authUser, registerUser, getUsers, deleteUser, approveUser, getUserBalance };
+const updateUserProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.name = req.body.name || user.name;
+    user.businessName = req.body.businessName !== undefined ? req.body.businessName : user.businessName;
+    user.phone = req.body.phone !== undefined ? req.body.phone : user.phone;
+    user.defaultWarranty = req.body.defaultWarranty || user.defaultWarranty;
+    user.defaultDeliveryOption = req.body.defaultDeliveryOption || user.defaultDeliveryOption;
+    user.physicalAddress = req.body.physicalAddress !== undefined ? req.body.physicalAddress : user.physicalAddress;
+
+    if (req.body.latitude !== undefined && req.body.latitude !== '') {
+      user.latitude = Number(req.body.latitude);
+    }
+    if (req.body.longitude !== undefined && req.body.longitude !== '') {
+      user.longitude = Number(req.body.longitude);
+    }
+
+    if (req.body.pickupPoints) {
+      try {
+        user.pickupPoints = JSON.parse(req.body.pickupPoints);
+      } catch (e) {
+        console.error('Error parsing pickup points', e);
+      }
+    }
+
+    if (req.file) {
+      user.profileImage = `/uploads/profiles/${req.file.filename}`;
+    }
+
+    const updatedUser = await user.save();
+    res.json({
+      _id: updatedUser._id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      businessName: updatedUser.businessName,
+      phone: updatedUser.phone,
+      profileImage: updatedUser.profileImage,
+      defaultWarranty: updatedUser.defaultWarranty,
+      defaultDeliveryOption: updatedUser.defaultDeliveryOption,
+      physicalAddress: updatedUser.physicalAddress,
+      latitude: updatedUser.latitude,
+      longitude: updatedUser.longitude,
+      pickupPoints: updatedUser.pickupPoints,
+      isAdmin: updatedUser.isAdmin,
+      sellerType: updatedUser.sellerType,
+      isVerified: updatedUser.isVerified,
+      showBestSellerBadge: updatedUser.showBestSellerBadge,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+export { authUser, registerUser, getUsers, deleteUser, approveUser, getUserBalance, updateUserProfile };

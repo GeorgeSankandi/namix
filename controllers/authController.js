@@ -33,7 +33,7 @@ const validatePassword = (password) => {
 };
 
 const signup = async (req, res) => {
-  const { name, email, password, sellerType, sellerIdNumber, businessRegistrationNumber, physicalAddress, businessName } = req.body;
+  const { name, email, password, sellerType, sellerIdNumber, businessRegistrationNumber, physicalAddress, businessName, phone } = req.body;
   
   try {
     const passwordValidation = validatePassword(password);
@@ -48,19 +48,18 @@ const signup = async (req, res) => {
     let isApproved = true;
     let isVerified = false;
 
-    if (['electronics', 'solar', 'fashion', 'groceries', 'appliances', 'vehicles', 'crafts', 'farm', 'fuel', 'other'].includes(sellerType)) {
-      userSellerType = sellerType;
+    const resolvedSellerType = Array.isArray(sellerType) ? sellerType.join(',') : (sellerType || 'customer');
+    const selectedTypes = resolvedSellerType.split(',').map(t => t.trim());
+    const validSellerTypes = ['electronics', 'solar', 'fashion', 'groceries', 'appliances', 'vehicles', 'crafts', 'farm', 'fuel', 'other'];
+
+    const hasSellerSelection = selectedTypes.some(type => validSellerTypes.includes(type));
+
+    if (hasSellerSelection) {
+      userSellerType = resolvedSellerType;
       isApproved = false; // Resellers require administrative verification
       if (!physicalAddress) {
         return res.status(400).json({ message: 'Physical address is required for reseller signup.' });
       }
-      if (!req.files || !req.files['businessRegistrationDocument']) {
-        return res.status(400).json({ message: 'Business registration document (PDF, max 25MB) is required for reseller signup.' });
-      }
-      if (!req.files['sellerIdImage']) {
-        return res.status(400).json({ message: 'A picture of your ID is required for reseller signup.' });
-      }
-      isVerified = true; 
     }
 
     let businessRegistrationDocumentPath = '';
@@ -80,14 +79,17 @@ const signup = async (req, res) => {
       email, 
       password,
       businessName: businessName || '',
+      phone: phone || '',
       sellerType: userSellerType,
       isApproved: isApproved,
-      isVerified: isVerified,
+      isVerified: isApproved ? false : true,
       sellerIdNumber: sellerIdNumber || '',
       sellerIdImage: sellerIdImagePath,
       businessRegistrationNumber: businessRegistrationNumber || '',
       businessRegistrationDocument: businessRegistrationDocumentPath,
-      physicalAddress: physicalAddress || ''
+      physicalAddress: physicalAddress || '',
+      defaultWarranty: '1-Year Warranty',
+      defaultDeliveryOption: 'Delivery Nationwide'
     });
 
     if (!isApproved) {
@@ -100,7 +102,19 @@ const signup = async (req, res) => {
 
     req.login(user, (err) => {
       if (err) return res.status(500).json({ message: 'Signup error' });
-      return res.json({ message: 'Signed up', user: { _id: user._id, name: user.name, email: user.email, sellerType: user.sellerType, isVerified: user.isVerified } });
+      return res.json({ 
+        message: 'Signed up', 
+        user: { 
+          _id: user._id, 
+          name: user.name, 
+          email: user.email, 
+          businessName: user.businessName,
+          phone: user.phone,
+          profileImage: user.profileImage || '',
+          sellerType: user.sellerType, 
+          isVerified: user.isVerified 
+        } 
+      });
     });
   } catch (err) {
     console.error(err);
