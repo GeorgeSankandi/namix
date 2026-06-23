@@ -3090,7 +3090,7 @@ input:checked + .slider:before {
     /* Position the CTA button absolutely at the bottom of the slide */
     .hero .slide .cta {
         position: absolute !important;
-        bottom: 15px !important;
+        margin-top: 20% !important;
         left: 50% !important;
         transform: translateX(-50%) !important;
         z-index: 10 !important;
