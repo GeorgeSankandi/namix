@@ -17,51 +17,174 @@ const getProducts = async (req, res) => {
   if (category) {
     const categories = category.split(',').map(c => c.trim()).filter(Boolean);
     const lowerCats = categories.map(c => c.toLowerCase());
+    
+    const catQueries = lowerCats.map(cat => {
+      switch (cat) {
+        case 'electronics':
+          return { category: { $in: ['electronics', 'phones', 'computers', 'tvs-audio', 'chargers-power', 'other-electronics'] } };
+        case 'phones':
+          return { category: 'phones' };
+        case 'iphones':
+          return { $or: [{ category: 'iphones' }, { category: 'phones' }, { title: { $regex: 'iphone', $options: 'i' } }, { clothingFilters: 'brand-iphone' }] };
+        case 'samsung-phones':
+          return { $or: [{ category: 'samsung-phones' }, { category: 'phones' }, { title: { $regex: 'samsung', $options: 'i' } }, { clothingFilters: 'brand-samsung' }] };
+        case 'android-phones':
+          return { $or: [{ category: 'android-phones' }, { category: 'phones' }, { title: { $regex: 'android', $options: 'i' } }, { title: { $regex: 'samsung', $options: 'i' } }, { clothingFilters: 'brand-samsung' }] };
+        case 'tablets':
+          return { $or: [{ category: 'tablets' }, { title: { $regex: 'tablet', $options: 'i' } }, { title: { $regex: 'ipad', $options: 'i' } }, { title: { $regex: 'tab', $options: 'i' } }] };
+        case 'ipads':
+          return { $or: [{ category: 'ipads' }, { title: { $regex: 'ipad', $options: 'i' } }] };
+        case 'samsung-tabs':
+          return { $or: [{ category: 'samsung-tabs' }, { title: { $regex: 'samsung.*tab', $options: 'i' } }, { title: { $regex: 'tab.*samsung', $options: 'i' } }, { $and: [{ title: { $regex: 'samsung', $options: 'i' } }, { title: { $regex: 'tab', $options: 'i' } }] }] };
+        case 'lenovo-tabs':
+          return { $or: [{ category: 'lenovo-tabs' }, { title: { $regex: 'lenovo.*tab', $options: 'i' } }, { $and: [{ title: { $regex: 'lenovo', $options: 'i' } }, { title: { $regex: 'tab', $options: 'i' } }] }] };
+        case 'computers':
+          return { category: { $in: ['computers', 'macbooks', 'dell-laptops', 'hp-laptops', 'lenovo-laptops', 'imacs', 'hp-aio'] } };
+        case 'laptops':
+          return { $or: [{ category: 'computers' }, { title: { $regex: 'laptop', $options: 'i' } }, { title: { $regex: 'macbook', $options: 'i' } }] };
+        case 'macbooks':
+          return { $or: [{ category: 'macbooks' }, { title: { $regex: 'macbook', $options: 'i' } }] };
+        case 'hp-laptops':
+          return { $or: [{ category: 'hp-laptops' }, { title: { $regex: 'hp.*laptop', $options: 'i' } }, { $and: [{ title: { $regex: 'hp', $options: 'i' } }, { $or: [{ title: { $regex: 'laptop', $options: 'i' } }, { category: 'computers' }] }] }] };
+        case 'dell-laptops':
+          return { $or: [{ category: 'dell-laptops' }, { title: { $regex: 'dell.*laptop', $options: 'i' } }, { $and: [{ title: { $regex: 'dell', $options: 'i' } }, { $or: [{ title: { $regex: 'laptop', $options: 'i' } }, { category: 'computers' }] }] }] };
+        case 'imacs':
+          return { $or: [{ category: 'imacs' }, { title: { $regex: 'imac', $options: 'i' } }] };
+        case 'hp-aio':
+          return { $or: [{ title: { $regex: 'hp.*all-in-one', $options: 'i' } }, { title: { $regex: 'hp.*aio', $options: 'i' } }, { title: { $regex: 'aio.*hp', $options: 'i' } }] };
+        case 'tvs-audio':
+          return { category: 'tvs-audio' };
+        case 'chargers-power':
+          return { category: 'chargers-power' };
+        case 'other-electronics':
+          return { category: 'other-electronics' };
+        
+        case 'solar':
+          return { category: { $in: ['solar', 'solar-panels', 'solar-lights', 'inverters-batteries', 'solar-kits'] } };
+        case 'solar-panels':
+          return { $or: [{ category: 'solar-panels' }, { title: { $regex: 'panel', $options: 'i' } }] };
+        case 'solar-lights':
+          return { $or: [{ category: 'solar-lights' }, { title: { $regex: 'light', $options: 'i' } }, { title: { $regex: 'lamp', $options: 'i' } }] };
+        case 'inverters-batteries':
+          return { $or: [{ category: 'inverters-batteries' }, { title: { $regex: 'inverter', $options: 'i' } }, { title: { $regex: 'batter', $options: 'i' } }] };
+        case 'solar-kits':
+          return { $or: [{ category: 'solar-kits' }, { title: { $regex: 'kit', $options: 'i' } }] };
+          
+        case 'fashion':
+          return { category: { $in: ['fashion', 'clothes-shoes', 'mens-clothing', 'womens-clothing', 'kids-clothing', 'traditional-attire', 'beauty-products', 'jewellery-accessories'] } };
+        case 'clothes-shoes':
+          return { $or: [{ category: { $in: ['clothes-shoes', 'mens-clothing', 'womens-clothing', 'kids-clothing'] } }, { curatedPages: { $in: ['womens-clothes', 'mens-clothes', 'kids-clothing'] } }] };
+        case 'mens-clothing':
+        case 'mens-clothes':
+          return { $or: [{ category: 'mens-clothing' }, { curatedPages: 'mens-clothes' }, { title: { $regex: 'men', $options: 'i' } }] };
+        case 'womens-clothing':
+        case 'womens-clothes':
+          return { $or: [{ category: 'womens-clothing' }, { curatedPages: 'womens-clothes' }, { title: { $regex: 'women', $options: 'i' } }] };
+        case 'kids-clothing':
+          return { $or: [{ category: 'kids-clothing' }, { curatedPages: 'kids-clothing' }, { title: { $regex: 'kid', $options: 'i' } }, { title: { $regex: 'child', $options: 'i' } }] };
+        case 'traditional-attire':
+          return { $or: [{ category: 'traditional-attire' }, { title: { $regex: 'traditional', $options: 'i' } }, { clothingFilters: 'traditional' }] };
+        case 'beauty-products':
+          return { $or: [{ category: 'beauty-products' }, { title: { $regex: 'beauty', $options: 'i' } }, { title: { $regex: 'makeup', $options: 'i' } }] };
+        case 'jewellery-accessories':
+          return { $or: [{ category: 'jewellery-accessories' }, { title: { $regex: 'jewel', $options: 'i' } }, { title: { $regex: 'ring', $options: 'i' } }, { title: { $regex: 'necklace', $options: 'i' } }] };
+          
+        case 'groceries':
+          return { category: { $in: ['groceries', 'food-items', 'drinks-beverages', 'household-essentials'] } };
+        case 'food-items':
+          return { $or: [{ category: 'food-items' }, { title: { $regex: 'food', $options: 'i' } }, { title: { $regex: 'meal', $options: 'i' } }, { title: { $regex: 'kapana', $options: 'i' } }] };
+        case 'drinks-beverages':
+          return { $or: [{ category: 'drinks-beverages' }, { title: { $regex: 'drink', $options: 'i' } }, { title: { $regex: 'juice', $options: 'i' } }, { title: { $regex: 'soda', $options: 'i' } }, { title: { $regex: 'beer', $options: 'i' } }] };
+        case 'household-essentials':
+          return { $or: [{ category: 'household-essentials' }, { title: { $regex: 'essential', $options: 'i' } }, { title: { $regex: 'soap', $options: 'i' } }] };
+          
+        case 'appliances':
+          return { category: { $in: ['appliances', 'fridges-freezers', 'stoves-cookers', 'furniture', 'kitchen-tools'] } };
+        case 'fridges-freezers':
+          return { $or: [{ category: 'fridges-freezers' }, { title: { $regex: 'fridge', $options: 'i' } }, { title: { $regex: 'freezer', $options: 'i' } }] };
+        case 'stoves-cookers':
+          return { $or: [{ category: 'stoves-cookers' }, { title: { $regex: 'stove', $options: 'i' } }, { title: { $regex: 'cooker', $options: 'i' } }] };
+        case 'furniture':
+          return { $or: [{ category: 'furniture' }, { category: { $in: ['beds', 'tables', 'chairs', 'sofas', 'wardrobes'] } }, { curatedPages: { $in: ['living-room', 'bedroom', 'office', 'kitchen'] } }] };
+        case 'beds':
+          return { $or: [{ category: 'beds' }, { title: { $regex: 'bed', $options: 'i' } }] };
+        case 'tables':
+          return { $or: [{ category: 'tables' }, { title: { $regex: 'table', $options: 'i' } }] };
+        case 'chairs':
+          return { $or: [{ category: 'chairs' }, { title: { $regex: 'chair', $options: 'i' } }] };
+        case 'sofas':
+          return { $or: [{ category: 'sofas' }, { title: { $regex: 'sofa', $options: 'i' } }, { title: { $regex: 'couch', $options: 'i' } }] };
+        case 'wardrobes':
+          return { $or: [{ category: 'wardrobes' }, { title: { $regex: 'wardrobe', $options: 'i' } }] };
+        case 'kitchen-tools':
+          return { $or: [{ category: 'kitchen-tools' }, { title: { $regex: 'kitchen', $options: 'i' } }, { title: { $regex: 'tool', $options: 'i' } }] };
+          
+        case 'vehicles':
+          return { category: { $in: ['vehicles', 'cars-bakkies', 'motorcycles', 'vehicle-parts', 'bicycles'] } };
+        case 'cars-bakkies':
+          return { $or: [{ category: 'cars-bakkies' }, { title: { $regex: 'car', $options: 'i' } }, { title: { $regex: 'bakkie', $options: 'i' } }, { title: { $regex: 'hilux', $options: 'i' } }, { title: { $regex: 'toyota', $options: 'i' } }, { clothingFilters: 'bakkies' }] };
+        case 'motorcycles':
+          return { $or: [{ category: 'motorcycles' }, { title: { $regex: 'motorcycle', $options: 'i' } }, { title: { $regex: 'bike', $options: 'i' } }] };
+        case 'vehicle-parts':
+          return { $or: [{ category: 'vehicle-parts' }, { title: { $regex: 'part', $options: 'i' } }, { title: { $regex: 'tyre', $options: 'i' } }] };
+        case 'bicycles':
+          return { $or: [{ category: 'bicycles' }, { title: { $regex: 'bicycle', $options: 'i' } }] };
+          
+        case 'crafts':
+          return { category: { $in: ['crafts', 'handmade-crafts', 'traditional-items', 'art-decor'] } };
+        case 'handmade-crafts':
+          return { $or: [{ category: 'handmade-crafts' }, { title: { $regex: 'handmade', $options: 'i' } }, { title: { $regex: 'craft', $options: 'i' } }] };
+        case 'traditional-items':
+          return { $or: [{ category: 'traditional-items' }, { title: { $regex: 'traditional', $options: 'i' } }] };
+        case 'art-decor':
+          return { $or: [{ category: 'art-decor' }, { title: { $regex: 'art', $options: 'i' } }, { title: { $regex: 'decor', $options: 'i' } }] };
+          
+        case 'farm':
+          return { category: { $in: ['farm', 'fresh-produce', 'meat-poultry', 'farm-tools'] } };
+        case 'fresh-produce':
+          return { $or: [{ category: 'fresh-produce' }, { title: { $regex: 'produce', $options: 'i' } }, { title: { $regex: 'fresh', $options: 'i' } }] };
+        case 'meat-poultry':
+          return { $or: [{ category: 'meat-poultry' }, { title: { $regex: 'meat', $options: 'i' } }, { title: { $regex: 'poultry', $options: 'i' } }, { title: { $regex: 'biltong', $options: 'i' } }] };
+        case 'farm-tools':
+          return { $or: [{ category: 'farm-tools' }, { title: { $regex: 'farm', $options: 'i' } }] };
+          
+        case 'fuel':
+          return { category: { $in: ['fuel', 'charcoal', 'firewood', 'other-fuel'] } };
+        case 'charcoal':
+          return { $or: [{ category: 'charcoal' }, { title: { $regex: 'charcoal', $options: 'i' } }] };
+        case 'firewood':
+          return { $or: [{ category: 'firewood' }, { title: { $regex: 'firewood', $options: 'i' } }] };
+        case 'other-fuel':
+          return { $or: [{ category: 'other-fuel' }, { title: { $regex: 'fuel', $options: 'i' } }] };
+          
+        case 'other':
+          return { category: { $in: ['other', 'books-stationery', 'sports-toys', 'services', 'anything-else'] } };
+        case 'books-stationery':
+          return { $or: [{ category: 'books-stationery' }, { title: { $regex: 'book', $options: 'i' } }, { title: { $regex: 'stationery', $options: 'i' } }] };
+        case 'sports-toys':
+          return { $or: [{ category: 'sports-toys' }, { title: { $regex: 'sport', $options: 'i' } }, { title: { $regex: 'toy', $options: 'i' } }] };
+        case 'services':
+          return { $or: [{ category: 'services' }, { title: { $regex: 'service', $options: 'i' } }] };
+        case 'anything-else':
+          return { $or: [{ category: 'anything-else' }, { title: { $regex: 'anything', $options: 'i' } }] };
+        
+        default:
+          const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&');
+          return { category: new RegExp(`^${escapeRegex(cat)}$`, 'i') };
+      }
+    });
 
-    if (lowerCats.includes('womens-clothes') || lowerCats.includes('womens-clothing')) {
-      query.curatedPages = { $in: ['womens-clothes'] };
-    } else if (lowerCats.includes('mens-clothes') || lowerCats.includes('mens-clothing')) {
-      query.curatedPages = { $in: ['mens-clothes'] };
-    } else if (lowerCats.some(c => ['living-room','livingroom','bedroom','office','kitchen'].includes(c))) {
-      const furnitureSlugs = [];
-      if (lowerCats.includes('living-room') || lowerCats.includes('livingroom')) furnitureSlugs.push('living-room');
-      if (lowerCats.includes('bedroom')) furnitureSlugs.push('bedroom');
-      if (lowerCats.includes('office')) furnitureSlugs.push('office');
-      if (lowerCats.includes('kitchen')) furnitureSlugs.push('kitchen');
-      if (furnitureSlugs.length) query.curatedPages = { $in: furnitureSlugs };
-    } else if (lowerCats.includes('furniture') || lowerCats.includes('furnitures')) {
-      query.$or = [
-        { category: { $in: [/^furniture$/i, /^furnitures$/i] } },
-        { curatedPages: { $in: ['living-room','bedroom','office','kitchen'] } }
-      ];
-    } else if (lowerCats.some(c => ['kids-electronics','kids-clothing','kids-toys'].includes(c))) {
-      const kidsSlugs = [];
-      if (lowerCats.includes('kids-electronics')) kidsSlugs.push('kids-electronics');
-      if (lowerCats.includes('kids-clothing')) kidsSlugs.push('kids-clothing');
-      if (lowerCats.includes('kids-toys')) kidsSlugs.push('kids-toys');
-      if (kidsSlugs.length) query.curatedPages = { $in: kidsSlugs };
-    } else if (lowerCats.includes('kids')) {
-      query.$or = [
-        { category: { $in: [/^kids$/i] } },
-        { curatedPages: { $in: ['kids-electronics','kids-clothing','kids-toys'] } }
-      ];
-    } else {
-      const clothesAliases = ['clothes','clothing'];
-      if (lowerCats.some(c => clothesAliases.includes(c))) {
-        query.$or = [
-          { category: { $in: [/^clothes$/i, /^clothing$/i] } },
-          { curatedPages: { $in: ['womens-clothes','mens-clothes'] } }
-        ];
+    if (catQueries.length > 0) {
+      if (catQueries.length === 1) {
+        Object.assign(query, catQueries[0]);
       } else {
-        const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&');
-        query.category = { $in: categories.map(c => new RegExp(`^${escapeRegex(c)}$`, 'i')) };
+        query.$or = catQueries;
       }
     }
   }
 
   if (curated) {
     if (curated === 'trending') {
-      // Include curated trending items OR items with a positive purchase count
       query.$or = [
         { curatedPages: 'trending' },
         { purchaseCount: { $gt: 0 } }
@@ -74,7 +197,6 @@ const getProducts = async (req, res) => {
   try {
     let products;
     if (curated === 'trending') {
-      // Sort trending items by purchase count descending
       products = await Product.find(query)
         .sort({ purchaseCount: -1 })
         .populate('seller', 'name businessName isVerified showBestSellerBadge location');
@@ -124,7 +246,6 @@ const createProduct = async (req, res) => {
             }
         }
 
-        // Automatic sequential product ID assignment
         let finalProductId = req.body.productId;
         if (!finalProductId || finalProductId.trim() === '') {
             const lastProduct = await Product.findOne().sort({ createdAt: -1 });
@@ -177,7 +298,6 @@ const createProduct = async (req, res) => {
             giftCardValue: req.body.giftCardValue,
             exploreMoreReseller: req.body.exploreMoreReseller || undefined,
             
-            // Transport & Delivery Details
             freeTransport: req.body.freeTransport !== undefined ? req.body.freeTransport : false,
             deliveryPriceWindhoek: req.body.deliveryPriceWindhoek !== undefined ? req.body.deliveryPriceWindhoek : 0,
             deliveryPriceOutside: req.body.deliveryPriceOutside !== undefined ? req.body.deliveryPriceOutside : 0,
@@ -185,11 +305,9 @@ const createProduct = async (req, res) => {
             warrantyDuration: req.body.warrantyDuration || 'No Warranty',
             promotionStatus: req.body.promotionStatus || 'None',
 
-            // Safe Delivery Insurance
             safeInsuranceEnabled: req.body.safeInsuranceEnabled !== undefined ? req.body.safeInsuranceEnabled : false,
             safeInsurancePrice: req.body.safeInsurancePrice !== undefined ? req.body.safeInsurancePrice : 0,
 
-            // Trust Visibility Badges
             showTradeIn: req.body.showTradeIn !== undefined ? req.body.showTradeIn : true,
             showLayBye: req.body.showLayBye !== undefined ? req.body.showLayBye : true,
             showDeposit: req.body.showDeposit !== undefined ? req.body.showDeposit : true,
@@ -217,7 +335,6 @@ const updateProduct = async (req, res) => {
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ message: 'Product not found' });
 
-    // Restrict editing access to the owning reseller (admins exempted)
     if (req.user && !req.user.isAdmin && String(product.seller) !== String(req.user._id)) {
       return res.status(401).json({ message: 'Not authorized to modify this product.' });
     }
@@ -236,7 +353,6 @@ const deleteProduct = async (req, res) => {
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ message: 'Product not found' });
 
-    // Restrict deletion access to the owning reseller (admins exempted)
     if (req.user && !req.user.isAdmin && String(product.seller) !== String(req.user._id)) {
       return res.status(401).json({ message: 'Not authorized to remove this product.' });
     }
