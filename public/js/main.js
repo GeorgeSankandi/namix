@@ -888,6 +888,8 @@ async function handleProductFormSubmit(e) {
         currentPrice: parseFloat(form.elements['product-currentPrice'].value),
         oldPrice: parseFloat(form.elements['product-oldPrice'].value),
         category: category,
+        mainCategory: form.elements['edit-hero-page-select'] ? form.elements['edit-hero-page-select'].value : undefined,
+        subCategory: form.elements['product-sizes-select'] ? form.elements['product-sizes-select'].value : undefined,
         image: mainImageUrl,
         description: form.elements['product-description'].value,
         stock: form.elements['product-stockToggle'].checked ? parseInt(form.elements['product-stock'].value) : undefined,

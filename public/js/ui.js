@@ -1,4 +1,4 @@
-import { isLoggedIn, logout } from './auth.js';
+import { isLoggedIn, logout, getToken } from './auth.js';
 import { getSellerType } from './adminAuth.js';
 import { CartManager, setCartUpdateCallback } from './cart.js';
 import * as api from './api.js';
@@ -32,6 +32,16 @@ const PEAK_ACTIVITY_TIMES = [
   { label: '8:00 PM', hour: 20, minute: 0 },
   { label: '10:00 PM', hour: 22, minute: 0 },
 ];
+
+const mapSellerToCategory = (st) => {
+    if (!st) return '';
+    const map = {
+        'electronics': 'electronics', 'solar': 'solar', 'fashion': 'fashion',
+        'groceries': 'groceries', 'appliances': 'appliances', 'vehicles': 'vehicles',
+        'crafts': 'crafts', 'farm': 'farm', 'fuel': 'fuel', 'other': 'other'
+    };
+    return map[st] || st;
+};
 
 setCartUpdateCallback(() => {
     updateFloatingCartButton();
@@ -2229,7 +2239,7 @@ export const renderCartPage = (detailedCartItems) => {
                     <h3>Order Summary</h3>
                     <div class="summary-row" style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>Subtotal:</span> <span>${formatCurrency(subtotal)}</span></div>
                     <div class="summary-row" style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>Delivery:</span> <span id="summary-delivery-fee">${formatCurrency(shippingFee)}</span></div>
-                    <div class="summary-row" style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>Insurance:</span> <span id="summary-insurance-fee">${formatCurrency(insuranceFee)}</span></div>
+                    <div class="summary-row; display: flex; justify-content: space-between; margin-bottom: 10px;"><span>Insurance:</span> <span id="summary-insurance-fee">${formatCurrency(insuranceFee)}</span></div>
                     <div class="summary-row total-row" style="display: flex; justify-content: space-between; font-weight: bold; margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;"><span>Total:</span> <span id="summary-total-fee" style="color:var(--corporate-green);">${formatCurrency(subtotal + shippingFee + insuranceFee)}</span></div>
                 </div>` : ''}
 
@@ -2927,6 +2937,149 @@ export const renderRegisterPage = () => {
     });
 };
 
+export const populateCategoryDropdowns = (isMainAdmin, mappedSellerCategory, currentCategory = '') => {
+    const mainSelect = document.getElementById('product-main-category');
+    const subSelect = document.getElementById('product-sub-category');
+    const innerSelect = document.getElementById('product-inner-sub-category');
+    const hiddenCat = document.getElementById('product-category');
+
+    if (!mainSelect || !subSelect || !innerSelect || !hiddenCat) return;
+
+    let selectedMain = '';
+    let selectedSub = '';
+    let selectedInner = '';
+
+    if (currentCategory) {
+        const catInfo = categoryData[currentCategory];
+        if (catInfo) {
+            if (catInfo.parent) {
+                const parentInfo = categoryData[catInfo.parent];
+                if (parentInfo && parentInfo.parent) {
+                    selectedInner = currentCategory;
+                    selectedSub = catInfo.parent;
+                    selectedMain = parentInfo.parent;
+                } else {
+                    selectedSub = currentCategory;
+                    selectedMain = catInfo.parent;
+                }
+            } else {
+                selectedMain = currentCategory;
+            }
+        } else {
+            selectedMain = currentCategory;
+        }
+    }
+
+    // Populate Level 1 (Main Menu Categories)
+    mainSelect.innerHTML = '<option value="" disabled selected>Select Main Menu Item...</option>';
+    const rootCategories = Object.keys(categoryData).filter(key => !categoryData[key].parent);
+    rootCategories.forEach(key => {
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = categoryData[key].name;
+        mainSelect.appendChild(opt);
+    });
+
+    if (!isMainAdmin && mappedSellerCategory) {
+        mainSelect.value = mappedSellerCategory;
+        mainSelect.disabled = true;
+        selectedMain = mappedSellerCategory;
+    } else if (selectedMain) {
+        mainSelect.value = selectedMain;
+    }
+
+    const updateSubCategories = () => {
+        const mainVal = mainSelect.value;
+        subSelect.innerHTML = '<option value="">-- No Dropdown Placement --</option>';
+        innerSelect.innerHTML = '<option value="">-- No Sub-Dropdown Placement --</option>';
+        innerSelect.disabled = true;
+
+        if (!mainVal) {
+            subSelect.disabled = true;
+            hiddenCat.value = '';
+            return;
+        }
+
+        subSelect.disabled = false;
+        const subKeys = categoryData[mainVal]?.subcategories || [];
+        subKeys.forEach(key => {
+            if (categoryData[key]) {
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.textContent = categoryData[key].name;
+                subSelect.appendChild(opt);
+            }
+        });
+
+        if (selectedSub && subKeys.includes(selectedSub)) {
+            subSelect.value = selectedSub;
+        } else {
+            subSelect.value = '';
+        }
+        updateInnerSubCategories();
+    };
+
+    const updateInnerSubCategories = () => {
+        const subVal = subSelect.value;
+        innerSelect.innerHTML = '<option value="">-- No Sub-Dropdown Placement --</option>';
+
+        if (!subVal) {
+            innerSelect.disabled = true;
+            hiddenCat.value = mainSelect.value || '';
+            return;
+        }
+
+        const innerKeys = categoryData[subVal]?.subcategories || [];
+        if (innerKeys.length > 0) {
+            innerSelect.disabled = false;
+            innerKeys.forEach(key => {
+                if (categoryData[key]) {
+                    const opt = document.createElement('option');
+                    opt.value = key;
+                    opt.textContent = categoryData[key].name;
+                    innerSelect.appendChild(opt);
+                }
+            });
+
+            if (selectedInner && innerKeys.includes(selectedInner)) {
+                innerSelect.value = selectedInner;
+            } else {
+                innerSelect.value = '';
+            }
+        } else {
+            innerSelect.disabled = true;
+        }
+        updateHiddenCategory();
+    };
+
+    const updateHiddenCategory = () => {
+        if (innerSelect.value) {
+            hiddenCat.value = innerSelect.value;
+        } else if (subSelect.value) {
+            hiddenCat.value = subSelect.value;
+        } else {
+            hiddenCat.value = mainSelect.value || '';
+        }
+    };
+
+    mainSelect.onchange = () => {
+        selectedSub = '';
+        selectedInner = '';
+        updateSubCategories();
+    };
+
+    subSelect.onchange = () => {
+        selectedInner = '';
+        updateInnerSubCategories();
+    };
+
+    innerSelect.onchange = () => {
+        updateHiddenCategory();
+    };
+
+    updateSubCategories();
+};
+
 export const renderAdminPage = async (allProducts, allUsers, allViewers, allTransactions, allFAQs, settings, sellerType, allComps) => {
     sellerType = sellerType || 'admin';
     allProducts = Array.isArray(allProducts) ? allProducts : (allProducts ? Array.from(allProducts) : []);
@@ -2936,15 +3089,6 @@ export const renderAdminPage = async (allProducts, allUsers, allViewers, allTran
     allFAQs = Array.isArray(allFAQs) ? allFAQs : [];
 
     isMainAdmin = sellerType === 'admin';
-    const mapSellerToCategory = (st) => {
-        if (!st) return '';
-        const map = {
-            'electronics': 'electronics', 'solar': 'solar', 'fashion': 'fashion',
-            'groceries': 'groceries', 'appliances': 'appliances', 'vehicles': 'vehicles',
-            'crafts': 'crafts', 'farm': 'farm', 'fuel': 'fuel', 'other': 'other'
-        };
-        return map[st] || st;
-    };
     const mappedSellerCategory = mapSellerToCategory(sellerType);
     
     isClothesAdmin = mappedSellerCategory === 'fashion';
@@ -3121,7 +3265,26 @@ export const renderAdminPage = async (allProducts, allUsers, allViewers, allTran
                         <div class="form-group"><label for="product-title">Title</label><input type="text" id="product-title" required></div>
                         <div class="form-group"><label for="product-currentPrice">Current Price</label><input type="number" id="product-currentPrice" required></div>
                         <div class="form-group"><label for="product-oldPrice">Old Price</label><input type="number" id="product-oldPrice" required></div>
-                        <div class="form-group"><label for="product-category">Category</label><input type="text" id="product-category" value="${isMainAdmin ? '' : mappedSellerCategory}" ${!isMainAdmin ? 'readonly' : ''} required></div>
+                        
+                        <div class="form-group full-width" style="background: #ffffff; border: 1px solid var(--border-color); padding: 15px; border-radius: var(--border-radius); margin-top: 10px;">
+                            <label style="font-weight: 700; margin-bottom: 10px; display: block;">Marketplace Menu Placement</label>
+                            <div class="form-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">
+                                <div class="form-group">
+                                    <label for="product-main-category">Main Menu Item *</label>
+                                    <select id="product-main-category" name="product-main-category" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);"></select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="product-sub-category">Menu Dropdown Item (Optional)</label>
+                                    <select id="product-sub-category" name="product-sub-category" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);"></select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="product-inner-sub-category">Sub-Dropdown Item (Optional)</label>
+                                    <select id="product-inner-sub-category" name="product-inner-sub-category" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);"></select>
+                                </div>
+                            </div>
+                            <input type="hidden" id="product-category" name="product-category" required>
+                        </div>
+                        
                         <div class="form-group">
                             <label for="product-image">Main Image URL</label>
                             <input type="text" id="product-image" required>
@@ -3197,8 +3360,8 @@ export const renderAdminPage = async (allProducts, allUsers, allViewers, allTran
 
                         <div class="form-group full-width" style="margin-top:1.5rem; padding:1rem; background:#fafafa; border-radius:8px; display:flex; flex-direction:column; gap:10px;">
                             <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:700;">
-                                <input type="checkbox" id="product-freeTransport" style="width:18px; height:18px;">
                                 Eligible for Free Delivery
+                                <input type="checkbox" id="product-freeTransport" class="product-curate-toggle">
                             </label>
                             <div id="delivery-pricing-section" style="display:block; margin-top:5px;">
                                 <label style="display:block; margin-bottom:5px; font-weight:600;">Delivery Price by Region / Distance</label>
@@ -3214,15 +3377,15 @@ export const renderAdminPage = async (allProducts, allUsers, allViewers, allTran
                                 </div>
                             </div>
                             <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin-top:10px;">
-                                <input type="checkbox" id="product-cashOnDelivery" style="width:18px; height:18px;">
                                 Offer Cash on Delivery (COD)
+                                <input type="checkbox" id="product-cashOnDelivery" class="product-curate-toggle">
                             </label>
                         </div>
 
                         <div class="form-group full-width" style="margin-top:1rem; padding:1rem; background:#fafafa; border-radius:8px; display:flex; flex-direction:column; gap:10px;">
                             <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:700;">
-                                <input type="checkbox" id="product-safeInsuranceEnabled" style="width:18px; height:18px;">
                                 Enable Safe Delivery Insurance for this product
+                                <input type="checkbox" id="product-safeInsuranceEnabled" class="product-curate-toggle">
                             </label>
                             <div id="safe-insurance-price-group" style="display:none; margin-top:5px;">
                                 <label for="product-safeInsurancePrice">Safe Delivery Insurance Price (N$)</label>
@@ -3688,6 +3851,8 @@ export const renderAdminPage = async (allProducts, allUsers, allViewers, allTran
     if (isMainAdmin) {
         initAdminViewers();
     }
+
+    populateCategoryDropdowns(isMainAdmin, mappedSellerCategory, '');
 };
 
 const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, relevantTransactions, allFAQs, allComps) => {
@@ -4138,7 +4303,7 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
             
             try {
                 const updatedUser = await api.updateUserProfile(formData);
-                localStorage.setItem('userInfo', JSON.stringify({ ...updatedUser, token: api.getToken() }));
+                localStorage.setItem('userInfo', JSON.stringify({ ...updatedUser, token: getToken() }));
                 alert('Pickup points configurations saved successfully!');
                 location.reload();
             } catch (err) {
@@ -4226,7 +4391,10 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
         const priceOutside = document.getElementById('product-deliveryPriceOutside');
         if (priceOutside) priceOutside.value = 79;
         const codToggle = document.getElementById('product-cashOnDelivery');
-        if (codToggle) codToggle.checked = false;
+        if (codToggle) {
+            codToggle.checked = false;
+            codToggle.disabled = false;
+        }
         const warrantyInp = document.getElementById('product-warrantyDuration');
         if (warrantyInp) warrantyInp.value = 'No Warranty';
         const promoStatusSelect = document.getElementById('product-promotionStatus');
@@ -4803,7 +4971,23 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
         }
     };
 
-    // --- Combo Builder Integration ---
+    const freeTransportToggle = document.getElementById('product-freeTransport');
+    const pricingSection = document.getElementById('delivery-pricing-section');
+    const codToggle = document.getElementById('product-cashOnDelivery');
+
+    if (freeTransportToggle && pricingSection && codToggle) {
+        freeTransportToggle.addEventListener('change', () => {
+            if (freeTransportToggle.checked) {
+                pricingSection.style.display = 'none';
+                codToggle.checked = false;
+                codToggle.disabled = true;
+            } else {
+                pricingSection.style.display = 'block';
+                codToggle.disabled = false;
+            }
+        });
+    }
+
     const curateCombos = document.getElementById('product-curate-combos');
     const comboBuilderSection = document.getElementById('combo-builder-section');
     const comboExpirySection = document.getElementById('combo-expiry-section');
@@ -4866,7 +5050,6 @@ const attachAdminEventListeners = (isMainAdmin, isFashionAdmin, allProducts, rel
                 renderComboProductsList();
             }
         });
-        // Run once on load to establish correct state
         comboBuilderSection.style.display = curateCombos.checked ? 'block' : 'none';
         comboExpirySection.style.display = curateCombos.checked ? 'block' : 'none';
     }
@@ -5098,7 +5281,6 @@ export const populateProductForm = (productToEdit, allProducts) => {
     document.getElementById('product-title').value = productToEdit.title || '';
     document.getElementById('product-currentPrice').value = productToEdit.currentPrice || '';
     document.getElementById('product-oldPrice').value = productToEdit.oldPrice || '';
-    document.getElementById('product-category').value = productToEdit.category || '';
     document.getElementById('product-image').value = productToEdit.image || '';
     
     const mainImagePreview = document.getElementById('main-image-preview');
@@ -5260,9 +5442,13 @@ export const populateProductForm = (productToEdit, allProducts) => {
     }
 
     const curatedPages = productToEdit.curatedPages || [];
-    const isMainAdmin = getSellerType() === 'admin';
+    const isMainAdminVal = getSellerType() === 'admin';
+    const mappedSellerCategory = mapSellerToCategory(getSellerType());
+    const isKidsAdminVal = mappedSellerCategory === 'electronics';
+    const isFashionAdminVal = mappedSellerCategory === 'fashion';
+    const isFurnitureAdminVal = mappedSellerCategory === 'appliances';
 
-    if (isMainAdmin) {
+    if (isMainAdminVal) {
         const curateTrending = document.getElementById('product-curate-trending');
         if (curateTrending) curateTrending.checked = curatedPages.includes('trending');
         
@@ -5275,15 +5461,7 @@ export const populateProductForm = (productToEdit, allProducts) => {
             curateCombos.dispatchEvent(new Event('change'));
         }
     } else {
-        const st = getSellerType();
-        const map = { 
-            'electronics': 'electronics', 'solar': 'solar', 'fashion': 'fashion',
-            'groceries': 'groceries', 'appliances': 'appliances', 'vehicles': 'vehicles',
-            'crafts': 'crafts', 'farm': 'farm', 'fuel': 'fuel', 'other': 'other'
-        };
-        const mappedSellerCategory = map[st] || st || '';
-        const isKidsAdmin = mappedSellerCategory === 'electronics' || mappedSellerCategory === 'kids';
-        if (isKidsAdmin) {
+        if (isKidsAdminVal) {
             const curateKidsElec = document.getElementById('product-curate-kids-electronics');
             if (curateKidsElec) curateKidsElec.checked = curatedPages.includes('kids-electronics');
             const curateKidsCloth = document.getElementById('product-curate-kids-clothing');
@@ -5339,7 +5517,7 @@ export const populateProductForm = (productToEdit, allProducts) => {
         generateAndDisplayComboImage();
     }
 
-    if (isMainAdmin || (getSellerType() && getSellerType() !== 'customer')) {
+    if (isMainAdminVal || (getSellerType() && getSellerType() !== 'customer')) {
         const giftCardToggle = document.getElementById('product-giftCardEnabled');
         if (giftCardToggle) {
             giftCardToggle.checked = !!productToEdit.giftCardEnabled;
@@ -5363,15 +5541,22 @@ export const populateProductForm = (productToEdit, allProducts) => {
     document.getElementById('product-showOneYearWarranty').checked = productToEdit.showOneYearWarranty !== false;
     document.getElementById('product-showFifteenDayReturns').checked = productToEdit.showFifteenDayReturns !== false;
 
-    document.getElementById('product-freeTransport').checked = !!productToEdit.freeTransport;
+    // Set toggle state and delivery region display
+    const isFreeDel = !!productToEdit.freeTransport;
+    document.getElementById('product-freeTransport').checked = isFreeDel;
     const deliveryPricingSection = document.getElementById('delivery-pricing-section');
     if (deliveryPricingSection) {
-        deliveryPricingSection.style.display = productToEdit.freeTransport ? 'none' : 'block';
+        deliveryPricingSection.style.display = isFreeDel ? 'none' : 'block';
     }
     document.getElementById('product-deliveryPriceWindhoek').value = productToEdit.deliveryPriceWindhoek || 0;
     document.getElementById('product-deliveryPriceOutside').value = productToEdit.deliveryPriceOutside || 0;
 
-    document.getElementById('product-cashOnDelivery').checked = !!productToEdit.cashOnDelivery;
+    // Set Cash on Delivery toggle state and disabled state
+    const codToggleElement = document.getElementById('product-cashOnDelivery');
+    if (codToggleElement) {
+        codToggleElement.checked = !isFreeDel && !!productToEdit.cashOnDelivery;
+        codToggleElement.disabled = isFreeDel;
+    }
     
     document.getElementById('product-warrantyDuration').value = productToEdit.warrantyDuration || 'No Warranty';
     document.getElementById('product-promotionStatus').value = productToEdit.promotionStatus || 'None';
@@ -5390,6 +5575,8 @@ export const populateProductForm = (productToEdit, allProducts) => {
     if (cancelBtn) cancelBtn.style.display = 'inline-block';
     const formHeader = document.querySelector('form h2');
     if (formHeader) formHeader.textContent = 'Edit Product';
+
+    populateCategoryDropdowns(getSellerType() === 'admin', mapSellerToCategory(getSellerType()), productToEdit.category || '');
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
 };
